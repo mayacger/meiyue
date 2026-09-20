@@ -15,17 +15,18 @@
 │   ├── meiyue-boot/         # API 启动（组装各域）
 │   ├── meiyue-worker/       # Worker 进程空壳
 │   ├── meiyue-common/       # 租户上下文 / 安全常量 / 错误码
-│   ├── meiyue-identity/     # IAM 空壳（I1）
-│   ├── meiyue-tenant/       # 租户/店铺空壳（I1）
-│   ├── meiyue-catalog/ …    # 各业务域占位
-│   └── meiyue-payment/      # 微信/支付宝通道占位（无真实对接）
+│   ├── meiyue-identity/     # IAM：JWT / RBAC（I1）
+│   ├── meiyue-tenant/       # 入驻审核开店（I1）
+│   ├── meiyue-catalog/      # 类目 / SPU·SKU（I2）
+│   ├── meiyue-decoration/   # 模板装修（I2）
+│   └── meiyue-payment/      # 微信/支付宝通道占位
 ├── frontend/                # pnpm monorepo · React + TS + Vite
 │   ├── apps/web-buyer       # 买家商城
 │   ├── apps/web-seller      # 商家后台
 │   ├── apps/web-admin       # 平台后台
-│   └── packages/ui|types    # 共享最小包
-├── docs/                    # 仓内补充说明（可选）
-└── docker/                  # 编排占位（后续）
+│   └── packages/ui|types|api
+├── docs/                    # scaffold-progress / dev-progress
+└── docker/                  # docker-compose（PostgreSQL）
 ```
 
 ---
@@ -69,7 +70,8 @@
 | Node.js | **≥ 20** |
 | pnpm | **≥ 9**（仓库约定） |
 
-PostgreSQL / Redis：配置已在 `backend/meiyue-boot/src/main/resources/application.yml` 占位；**脚手架启动类已 exclude 数据源与 Redis 自动配置**，本地可不启中间件即可跑 API。
+PostgreSQL：本地或 `docker compose -f docker/docker-compose.yml up -d postgres`。  
+Redis：配置占位；**I3 前 API 仍 exclude Redis 自动配置**。
 
 ---
 
