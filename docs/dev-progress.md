@@ -1,6 +1,6 @@
 # 美月商城 · 开发进度（用户可读）
 
-> 状态：**I1 完成 · I2 完成**（持续开发授权 C19，无需逐步确认）  
+> 状态：**I1 + I2 + I3 已完成**（持续开发授权 C19，无需逐步确认）  
 > 仓库：`mayacger/meiyue` · 分支：`cursor/meiyue-mall-scaffold-9727` · PR #1  
 > 规划：`ecommerce-platform-plan.md` / `project-context.md` **v1.2 + C19**
 
@@ -31,13 +31,9 @@
 ### I1 验证
 
 ```bash
-# 需 JDK 21 + PostgreSQL（库 meiyue_mall / 用户 meiyue）
 cd backend && mvn -q -DskipTests package
 java -jar meiyue-boot/target/meiyue-boot-0.1.0-SNAPSHOT.jar
-
-curl -s -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: application/json' \
-  -d '{"username":"admin","password":"admin123"}'
-# 商家注册 → /seller/onboarding/apply → admin approve → /seller/store
+# admin 登录 → 商家注册 → apply → approve → /seller/store
 ```
 
 ---
@@ -47,32 +43,46 @@ curl -s -X POST localhost:8080/api/v1/auth/login -H 'Content-Type: application/j
 - 平台类目；商品 SPU/SKU 商家 CRUD + 上/下架；买家公开浏览
 - 装修：3 套模板、草稿/发布、主题色、楼层 JSON；**禁止直播楼层**
 - Flyway `V2__i2_catalog_decoration.sql`
-- 前端：seller 商品/装修页；buyer 商品列表/详情/店铺页
+- 前端：seller 商品/装修；buyer 列表/详情/店铺页
 
 ### I2 验证
 
 ```bash
-# 登录商家后
-POST /api/v1/seller/products
-POST /api/v1/seller/products/{id}/status  {"status":"ON_SALE"}
+POST /api/v1/seller/products → POST .../status {"status":"ON_SALE"}
 GET  /api/v1/products
-PUT  /api/v1/seller/decoration/draft
-POST /api/v1/seller/decoration/publish
+PUT  /api/v1/seller/decoration/draft → POST .../publish
 GET  /api/v1/stores/{tenantId}/page
 ```
 
 ---
 
-## 下一步（按规划自动推进）
+## I3 已交付
 
-- **I3**：购物车、下单、预占库存、模拟支付  
+- 跨店购物车；下单预占库存（悲观锁扣减）；一单多店行 + MOCK 支付单
+- 模拟支付成功 → 订单 PAID；30 分钟超时 `@Scheduled` 关单回滚库存
+- Flyway `V3__i3_trade_payment.sql`
+- 买家端：登录 / 加购 / 结算 / 模拟支付
+
+### I3 验证
+
+```bash
+POST /api/v1/buyer/cart/items  {"skuId":1,"quantity":2}
+POST /api/v1/buyer/orders/checkout
+POST /api/v1/buyer/orders/{id}/mock-pay
+```
+
+---
+
+## 下一步
+
 - **I4**：微信/支付宝真实对接、幂等、查单、日对账  
+- **I5/I6**：正逆向物流  
 
 ---
 
 ## 已知限制
 
-- Redis 仍 exclude（I3 预占/延迟关单再启用）
-- 装修楼层为 JSON 编辑，非可视化拖拽（符合 MVP 定稿）
-- 前端为最小可用页，未上 Ant Design 皮肤
-- JWT secret 为开发默认值，生产须覆盖
+- Redis 仍 exclude（超时关单用 DB 扫描）
+- 装修为 JSON 编辑非拖拽
+- JWT secret / MOCK 支付仅开发用途
+- 真实支付未对接（I4）
