@@ -76,6 +76,12 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/seller/decoration",
                                 SecurityConstants.API_PREFIX + "/seller/decoration/**"
                         ).hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
+                        .requestMatchers(
+                                SecurityConstants.API_PREFIX + "/seller/shipments",
+                                SecurityConstants.API_PREFIX + "/seller/shipments/**",
+                                SecurityConstants.API_PREFIX + "/seller/aftersales",
+                                SecurityConstants.API_PREFIX + "/seller/aftersales/**"
+                        ).hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
                         .requestMatchers(SecurityConstants.API_PREFIX + "/seller/onboarding/**")
                         .authenticated()
                         .requestMatchers(SecurityConstants.API_PREFIX + "/**").authenticated()

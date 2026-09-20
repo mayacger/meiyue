@@ -1,6 +1,6 @@
 # 美月商城 · 开发进度（用户可读）
 
-> 状态：**I1 + I2 + I3 已完成**（持续开发授权 C19，无需逐步确认）  
+> 状态：**I1 → I6 已完成**（持续开发授权 C19，无需逐步确认）  
 > 仓库：`mayacger/meiyue` · 分支：`cursor/meiyue-mall-scaffold-9727` · PR #1  
 > 规划：`ecommerce-platform-plan.md` / `project-context.md` **v1.2 + C19**
 
@@ -16,7 +16,7 @@
 | 买家端 | `frontend/apps/web-buyer` → `:5173` |
 | Compose | `docker/docker-compose.yml`（本环境亦可用系统 PostgreSQL） |
 
-种子账号：`admin` / `admin123`（PLATFORM_ADMIN）
+种子账号：`admin` / `admin123`（PLATFORM_ADMIN）；联调常用 `seller1`/`seller123`、`buyer1`/`buyer123`
 
 ---
 
@@ -73,16 +73,73 @@ POST /api/v1/buyer/orders/{id}/mock-pay
 
 ---
 
+## I4 已交付
+
+- 通道骨架：`MOCK` / `WECHAT` / `ALIPAY`（本地默认 MOCK）；密钥仅配置/环境变量，不入库明文
+- 回调验签 + 幂等（`payment_notify_logs`）；主动查单任务；日对账任务占位
+- 周期结算账本 `settlement_ledgers`（SALE/REFUND 记账；官方分账二期再接）
+- Flyway `V4__i4_payment_security_settlement.sql`
+
+### I4 验证
+
+```bash
+POST /api/v1/payments/notify/mock   # paymentNo=&channelTradeNo=&amountCents=&success=true
+# 重复回调应幂等；GET /api/v1/payments/{paymentNo} 可见 SUCCESS
+```
+
+---
+
+## I5 已交付
+
+- 正向运单全状态：`PENDING_PICKUP → PICKED_UP → IN_TRANSIT → OUT_FOR_DELIVERY → DELIVERED`（异常态 EXCEPTION/REJECTED/RETURNED_TO_SENDER）
+- 轨迹表 + `PlaceholderExpressTrackQuery` 占位查询；商家可 `sync-tracks` / 手工推进状态
+- 订单状态扩展：`PAID → FULFILLING → COMPLETED`（全部正向运单签收后完成）
+- Flyway `V5__i5_forward_logistics.sql`
+- 模块说明：`backend/meiyue-logistics/README.md`
+
+### I5 验证
+
+```bash
+POST /api/v1/seller/shipments
+POST /api/v1/seller/shipments/{id}/sync-tracks
+POST /api/v1/seller/shipments/{id}/status  {"status":"OUT_FOR_DELIVERY"}
+GET  /api/v1/buyer/orders/{orderId}/shipments
+```
+
+---
+
+## I6 已交付
+
+- 售后类型：`REFUND_ONLY` / `RETURN_REFUND`
+- 流程：申请 → 审核（商家同意/拒绝；**48h 超时自动同意**）→ 仅退款直接入账关闭；退货退款填逆向运单 → 商家确认收货 → 账本 REFUND → CLOSED
+- Flyway `V6__i6_aftersale_reverse.sql`；任务 `AftersaleAutoApproveJob`（60s 扫描）
+- 模块说明：`backend/meiyue-aftersale/README.md`
+
+### I6 验证
+
+```bash
+POST /api/v1/buyer/aftersales
+POST /api/v1/seller/aftersales/{id}/approve
+# RETURN_REFUND：
+POST /api/v1/buyer/aftersales/{id}/reverse-tracking
+POST /api/v1/seller/aftersales/{id}/confirm-return
+# 48h：将 seller_deadline_at 回拨后等待定时任务 → status=CLOSED、reviewNote 含「48h」
+```
+
+---
+
 ## 下一步
 
-- **I4**：微信/支付宝真实对接、幂等、查单、日对账  
-- **I5/I6**：正逆向物流  
+- **I7+**：库存增强 / 消息通知 / Redis 接入 / 前端发货与售后页 / 真实微信支付宝证书联调
+- 官方分账与周期打款仍属二期
 
 ---
 
 ## 已知限制
 
-- Redis 仍 exclude（超时关单用 DB 扫描）
+- Redis 仍 exclude（超时关单 / 售后扫描用 DB）
 - 装修为 JSON 编辑非拖拽
 - JWT secret / MOCK 支付仅开发用途
-- 真实支付未对接（I4）
+- 微信/支付宝为对接骨架（验签/查单/对账可切换通道，生产密钥需环境变量）
+- 轨迹查询为占位实现，未接真实快递公司 API
+- 售后退款为账本记账，非通道原路退款

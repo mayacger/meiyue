@@ -53,6 +53,23 @@ public class SettlementLedgerService {
         }
     }
 
+    /**
+     * 退款入账：金额为负，表示从商家账本扣回。
+     */
+    @Transactional
+    public void recordRefund(Long tenantId, Long orderId, Long orderItemId, long refundCents, String remark) {
+        SettlementLedger row = new SettlementLedger();
+        row.setTenantId(tenantId);
+        row.setOrderId(orderId);
+        row.setOrderItemId(orderItemId);
+        row.setEntryType("REFUND");
+        row.setAmountCents(-Math.abs(refundCents));
+        row.setStatus("PENDING");
+        row.setPeriodKey(currentPeriodKey());
+        row.setRemark(remark);
+        ledgerRepository.save(row);
+    }
+
     @Transactional(readOnly = true)
     public List<SettlementLedger> listPending(Long tenantId) {
         return ledgerRepository.findByTenantIdAndStatusOrderByCreatedAtDesc(tenantId, "PENDING");
