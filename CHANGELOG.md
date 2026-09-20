@@ -1,0 +1,62 @@
+# 美月商城 · CHANGELOG
+
+## [0.1.0-SNAPSHOT] · I13 工程化收尾（当前 PR）
+
+### 新增
+
+- **GitHub Actions CI**（`.github/workflows/ci.yml`）
+  - Backend：`mvn -B -DskipTests package` + 关键单测 `CouponStackingRulesTest` / `MockPaymentChannelClientTest`
+  - Frontend：`pnpm install --frozen-lockfile` + `pnpm build`（买家/商家/平台三端）
+- **演示种子**（`meiyue.demo.enabled` / profile `demo`）
+  - `DemoSeeder`：buyer1、seller1、示例店 `demo-flower`、2 件上架商品、已发布装修页
+  - 说明：`backend/meiyue-boot/src/main/resources/db/demo/README.md`
+
+### I1–I12 能力摘要
+
+| 迭代 | 能力 |
+|------|------|
+| I1 | 身份 / JWT / 平台管理员种子 / 模块化单体骨架 |
+| I2 | 入驻审核开店、类目/商品 SKU、店铺装修模板 |
+| I3 | 购物车、下单、库存预占 |
+| I4 | 支付通道抽象（默认 MOCK；微信/支付宝配置位） |
+| I5 | 发货 / 物流轨迹 |
+| I6 | 售后（退款/退货）与结算账本骨架 |
+| I7 | Actuator、限流、审计 |
+| I8 | AI 出图/详情（默认 MOCK） |
+| I9 | Redis 延迟队列、店券、结算增强 |
+| I10 | 平台券、评价、搜索、装修/通知骨架 |
+| I11 | 通知投递、装修可视化、电子面单/推广视频 MOCK |
+| I12 | 冒烟脚本、MOCK 退款、跨店券规则、运维手册 |
+
+### 已知限制
+
+- 无真实微信/支付宝支付与退款 SDK 联调（需商户密钥）
+- AI / 电子面单 / 推广视频默认 MOCK
+- **无官方分账打款**（仅结算账本）
+- 店券不可跨店；平台券可跨店但与店券默认互斥
+- **禁止**将密钥提交入库
+
+### 如何跑 Smoke
+
+```bash
+# 1) 依赖
+docker compose -f docker/docker-compose.yml up -d
+
+# 2) API（可选加 demo 种子）
+cd backend && mvn -DskipTests package
+java -jar meiyue-boot/target/meiyue-boot-0.1.0-SNAPSHOT.jar
+# 演示数据：再加 --spring.profiles.active=demo
+# 账号：admin/admin123；demo 下另有 seller1/seller123、buyer1/buyer123
+
+# 3) 冒烟（自注册账号，不依赖 demo）
+BASE_URL=http://localhost:8080 ./scripts/smoke-e2e.sh
+
+# 4) CI 等价本地命令
+cd backend && mvn -B -DskipTests package \
+  && mvn -B -pl meiyue-trade,meiyue-payment -am test \
+     -Dtest=CouponStackingRulesTest,MockPaymentChannelClientTest \
+     -Dsurefire.failIfNoSpecifiedTests=false
+cd frontend && pnpm install && pnpm build
+```
+
+详阅：`docs/ops-runbook.md` · `docs/dev-progress.md` · `docs/i13-engineering.md`

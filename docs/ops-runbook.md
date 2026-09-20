@@ -1,6 +1,6 @@
-# 美月商城 · 运维手册（I12）
+# 美月商城 · 运维手册（I12 / I13）
 
-> 范围：本地/联调启动、健康检查、备份、密钥环境变量清单。  
+> 范围：本地/联调启动、健康检查、备份、密钥环境变量清单、演示种子与 CI。  
 > **禁止**将真实密钥提交入库；官方分账打款本迭代不做。
 
 ---
@@ -25,6 +25,8 @@ cd backend
 mvn -DskipTests package
 java -jar meiyue-boot/target/meiyue-boot-0.1.0-SNAPSHOT.jar
 # 默认 :8080
+# 开箱演示种子（可选）：
+# java -jar meiyue-boot/target/meiyue-boot-0.1.0-SNAPSHOT.jar --spring.profiles.active=demo
 ```
 
 ### 前端（可选）
@@ -32,9 +34,9 @@ java -jar meiyue-boot/target/meiyue-boot-0.1.0-SNAPSHOT.jar
 ```bash
 cd frontend
 pnpm install
-pnpm --filter web-buyer dev    # :5173
-pnpm --filter web-seller dev   # :5174
-pnpm --filter web-admin dev    # :5175
+pnpm --filter @meiyue/web-buyer dev    # :5173
+pnpm --filter @meiyue/web-seller dev   # :5174
+pnpm --filter @meiyue/web-admin dev    # :5175
 ```
 
 ### 端到端冒烟
@@ -45,7 +47,27 @@ chmod +x scripts/smoke-e2e.sh
 BASE_URL=http://localhost:8080 ./scripts/smoke-e2e.sh
 ```
 
-种子账号：`admin` / `admin123`（启动时 `PlatformAdminSeeder` 写入）。
+种子账号：
+
+| 账号 | 密码 | 来源 |
+|------|------|------|
+| `admin` | `admin123` | 始终（`PlatformAdminSeeder`） |
+| `seller1` | `seller123` | 仅 `demo` profile（`DemoSeeder`） |
+| `buyer1` | `buyer123` | 仅 `demo` profile |
+
+演示店 slug：`demo-flower`。详阅 `docs/i13-engineering.md`。
+
+### CI 等价本地命令（I13）
+
+```bash
+# 后端
+cd backend && mvn -B -DskipTests package \
+  && mvn -B -pl meiyue-trade,meiyue-payment -am test \
+     -Dtest=CouponStackingRulesTest,MockPaymentChannelClientTest \
+     -Dsurefire.failIfNoSpecifiedTests=false
+# 前端
+cd frontend && pnpm install --frozen-lockfile && pnpm build
+```
 
 ---
 
@@ -88,6 +110,7 @@ BASE_URL=http://localhost:8080 ./scripts/smoke-e2e.sh
 | `meiyue.notify.events-enabled` | 站内通知事件 |
 | `meiyue.coupon.stacking` | `MUTUAL_EXCLUSIVE` |
 | `meiyue.jobs.db-fallback-enabled` | 定时任务 DB 兜底 |
+| `meiyue.demo.enabled` | I13 演示种子（默认 `false`；profile `demo` 为 `true`） |
 
 ---
 

@@ -1,5 +1,4 @@
 import { FormEvent, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { apiFetch, setToken } from "@meiyue/api";
 import { PageShell } from "@meiyue/ui";
 import type { OnboardingApplication } from "@meiyue/types";
