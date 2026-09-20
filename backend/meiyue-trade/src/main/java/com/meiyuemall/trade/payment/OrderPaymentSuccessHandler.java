@@ -1,5 +1,7 @@
 package com.meiyuemall.trade.payment;
 
+import com.meiyuemall.common.notify.NotificationPublisher;
+import com.meiyuemall.common.tenant.SellerOwnerLookup;
 import com.meiyuemall.payment.service.PaymentSuccessHandler;
 import com.meiyuemall.payment.service.SettlementLedgerService;
 import com.meiyuemall.trade.domain.Order;
@@ -16,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 支付成功：标记订单 PAID + 写入周期结算账本（按店拆分）。
+ * 支付成功：标记订单 PAID + 写入周期结算账本（按店拆分）+ 站内通知。
  */
 @Component
 public class OrderPaymentSuccessHandler implements PaymentSuccessHandler {
@@ -25,13 +27,19 @@ public class OrderPaymentSuccessHandler implements PaymentSuccessHandler {
 
     private final OrderRepository orderRepository;
     private final SettlementLedgerService settlementLedgerService;
+    private final NotificationPublisher notificationPublisher;
+    private final SellerOwnerLookup sellerOwnerLookup;
 
     public OrderPaymentSuccessHandler(
             OrderRepository orderRepository,
-            SettlementLedgerService settlementLedgerService
+            SettlementLedgerService settlementLedgerService,
+            NotificationPublisher notificationPublisher,
+            SellerOwnerLookup sellerOwnerLookup
     ) {
         this.orderRepository = orderRepository;
         this.settlementLedgerService = settlementLedgerService;
+        this.notificationPublisher = notificationPublisher;
+        this.sellerOwnerLookup = sellerOwnerLookup;
     }
 
     @Override
@@ -42,7 +50,8 @@ public class OrderPaymentSuccessHandler implements PaymentSuccessHandler {
             log.error("支付成功但订单不存在 orderId={} paymentNo={}", orderId, paymentNo);
             return;
         }
-        if (order.getStatus() != OrderStatus.PAID) {
+        boolean firstPaid = order.getStatus() != OrderStatus.PAID;
+        if (firstPaid) {
             order.setStatus(OrderStatus.PAID);
             order.setPaidAt(Instant.now());
         }
@@ -57,5 +66,25 @@ public class OrderPaymentSuccessHandler implements PaymentSuccessHandler {
         }
         settlementLedgerService.recordOrderSalesIfAbsent(orderId, lines);
         log.info("订单已支付 orderId={} paymentNo={} tradeNo={}", orderId, paymentNo, channelTradeNo);
+
+        // I11：仅首次置 PAID 时投递，避免幂等回调重复刷屏
+        if (firstPaid) {
+            notificationPublisher.publish(
+                    order.getBuyerUserId(), "BUYER",
+                    "支付成功",
+                    "订单 " + order.getOrderNo() + " 已支付，商家将尽快发货",
+                    "ORDER", "ORDER", String.valueOf(order.getId())
+            );
+            order.getItems().stream().map(OrderItem::getTenantId).distinct().forEach(tenantId ->
+                    sellerOwnerLookup.findOwnerUserId(tenantId).ifPresent(ownerId ->
+                            notificationPublisher.publish(
+                                    ownerId, "SELLER",
+                                    "新订单待发货",
+                                    "订单 " + order.getOrderNo() + " 已付款，请安排发货",
+                                    "ORDER", "ORDER", String.valueOf(order.getId())
+                            )
+                    )
+            );
+        }
     }
 }

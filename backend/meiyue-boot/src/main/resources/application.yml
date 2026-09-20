@@ -61,10 +61,13 @@ info:
     name: 美月商城
     code: meiyue-mall
     module: boot
-    description: B2B2C 多租户电商 API（I1–I10）
+    description: B2B2C 多租户电商 API（I1–I11）
 
 # JWT（生产务必用环境变量覆盖 secret）
 meiyue:
+  # I11：站内通知事件自动投递开关
+  notify:
+    events-enabled: true
   # I10：店券与平台券叠加规则（默认互斥；STACKABLE 预留未启用）
   coupon:
     stacking: MUTUAL_EXCLUSIVE

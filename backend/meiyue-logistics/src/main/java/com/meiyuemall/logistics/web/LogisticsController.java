@@ -36,6 +36,12 @@ public class LogisticsController {
         return ApiResponse.ok(logisticsService.listMineForward());
     }
 
+    @PostMapping(SecurityConstants.API_PREFIX + "/seller/shipments/{id}/ewaybill/print")
+    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    public ApiResponse<ShipmentResponse> printEwaybill(@PathVariable Long id) {
+        return ApiResponse.ok(logisticsService.printEwaybill(id));
+    }
+
     @PostMapping(SecurityConstants.API_PREFIX + "/seller/shipments/{id}/status")
     @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
     public ApiResponse<ShipmentResponse> status(

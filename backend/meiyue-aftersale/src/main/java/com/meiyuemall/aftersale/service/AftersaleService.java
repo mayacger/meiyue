@@ -10,9 +10,11 @@ import com.meiyuemall.aftersale.dto.ReviewAftersaleRequest;
 import com.meiyuemall.aftersale.repo.AftersaleRepository;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
+import com.meiyuemall.common.notify.NotificationPublisher;
 import com.meiyuemall.common.redis.DelayTaskPort;
 import com.meiyuemall.common.security.MeiyuePrincipal;
 import com.meiyuemall.common.security.SecurityUtils;
+import com.meiyuemall.common.tenant.SellerOwnerLookup;
 import com.meiyuemall.logistics.domain.Shipment;
 import com.meiyuemall.logistics.service.LogisticsService;
 import com.meiyuemall.payment.service.SettlementLedgerService;
@@ -41,19 +43,25 @@ public class AftersaleService {
     private final LogisticsService logisticsService;
     private final SettlementLedgerService settlementLedgerService;
     private final DelayTaskPort delayTaskPort;
+    private final NotificationPublisher notificationPublisher;
+    private final SellerOwnerLookup sellerOwnerLookup;
 
     public AftersaleService(
             AftersaleRepository aftersaleRepository,
             OrderRepository orderRepository,
             LogisticsService logisticsService,
             SettlementLedgerService settlementLedgerService,
-            DelayTaskPort delayTaskPort
+            DelayTaskPort delayTaskPort,
+            NotificationPublisher notificationPublisher,
+            SellerOwnerLookup sellerOwnerLookup
     ) {
         this.aftersaleRepository = aftersaleRepository;
         this.orderRepository = orderRepository;
         this.logisticsService = logisticsService;
         this.settlementLedgerService = settlementLedgerService;
         this.delayTaskPort = delayTaskPort;
+        this.notificationPublisher = notificationPublisher;
+        this.sellerOwnerLookup = sellerOwnerLookup;
     }
 
     @Transactional
@@ -89,6 +97,15 @@ public class AftersaleService {
                 String.valueOf(as.getId()),
                 as.getSellerDeadlineAt()
         );
+        // I11：售后申请 → 商家
+        sellerOwnerLookup.findOwnerUserId(as.getTenantId()).ifPresent(ownerId ->
+                notificationPublisher.publish(
+                        ownerId, "SELLER",
+                        "新售后待审核",
+                        "售后单 " + as.getAftersaleNo() + " 待处理（" + as.getType() + "）",
+                        "AFTERSALE", "AFTERSALE", String.valueOf(as.getId())
+                )
+        );
         return toResponse(as);
     }
 
@@ -105,6 +122,13 @@ public class AftersaleService {
             doRefundAndClose(as);
         }
         // RETURN_REFUND：等待买家填逆向运单 → 商家签收 → 退款
+        notificationPublisher.publish(
+                as.getBuyerUserId(), "BUYER",
+                auto ? "售后已自动同意" : "售后已同意",
+                "售后单 " + as.getAftersaleNo() + " 商家已同意"
+                        + (as.getType() == AftersaleType.RETURN_REFUND ? "，请填写退货运单" : "，退款处理中"),
+                "AFTERSALE", "AFTERSALE", String.valueOf(as.getId())
+        );
         return toResponse(as);
     }
 
@@ -119,6 +143,13 @@ public class AftersaleService {
         as.setReviewNote(request == null ? null : request.reviewNote());
         as.setClosedAt(Instant.now());
         as.setStatus(AftersaleStatus.CLOSED);
+        notificationPublisher.publish(
+                as.getBuyerUserId(), "BUYER",
+                "售后已拒绝",
+                "售后单 " + as.getAftersaleNo() + " 商家已拒绝"
+                        + (as.getReviewNote() == null ? "" : "：" + as.getReviewNote()),
+                "AFTERSALE", "AFTERSALE", String.valueOf(as.getId())
+        );
         return toResponse(as);
     }
 

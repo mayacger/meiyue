@@ -25,18 +25,23 @@ interface Shipment {
   status: string;
   carrierCode: string;
   trackingNo: string;
+  packageSeq: number;
+  ewaybillNo: string | null;
+  ewaybillLabelUrl: string | null;
   tracks: { status: string; description: string }[];
 }
 
 const FORWARD_FLOW = ["PENDING_PICKUP", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
 
-/** 商家发货与运单状态推进 */
+/** 商家发货：多包裹 + MOCK 电子面单 */
 export function ShipmentsPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [orderId, setOrderId] = useState("");
+  const [orderItemId, setOrderItemId] = useState("");
   const [carrier, setCarrier] = useState("SF");
   const [tracking, setTracking] = useState("");
+  const [printEb, setPrintEb] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -54,19 +59,19 @@ export function ShipmentsPage() {
     setError(null);
     setMsg(null);
     try {
-      await apiFetch("/api/v1/seller/shipments", {
-        method: "POST",
-        json: {
-          orderId: Number(orderId),
-          carrierCode: carrier,
-          trackingNo: tracking,
-          receiverName: "买家",
-          receiverPhone: "",
-          receiverAddress: ""
-        }
-      });
+      const body: Record<string, unknown> = {
+        orderId: Number(orderId),
+        carrierCode: carrier,
+        printEwaybill: printEb,
+        receiverName: "买家",
+        receiverPhone: "",
+        receiverAddress: ""
+      };
+      if (tracking.trim()) body.trackingNo = tracking.trim();
+      if (orderItemId.trim()) body.orderItemId = Number(orderItemId);
+      const s = await apiFetch<Shipment>("/api/v1/seller/shipments", { method: "POST", json: body });
       setTracking("");
-      setMsg("已创建运单");
+      setMsg(`已创建包裹#${s.packageSeq}` + (s.ewaybillNo ? ` 面单 ${s.ewaybillNo}` : ""));
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "发货失败");
@@ -86,6 +91,17 @@ export function ShipmentsPage() {
     }
   }
 
+  async function printEwaybill(id: number) {
+    setError(null);
+    try {
+      const s = await apiFetch<Shipment>(`/api/v1/seller/shipments/${id}/ewaybill/print`, { method: "POST" });
+      setMsg(`面单 ${s.ewaybillNo} · ${s.ewaybillLabelUrl}`);
+      await reload();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "打单失败");
+    }
+  }
+
   async function syncTracks(id: number) {
     try {
       await apiFetch(`/api/v1/seller/shipments/${id}/sync-tracks`, { method: "POST" });
@@ -101,8 +117,10 @@ export function ShipmentsPage() {
     return FORWARD_FLOW[i + 1];
   }
 
+  const selectedOrder = orders.find((o) => String(o.id) === orderId);
+
   return (
-    <PageShell title="发货管理" subtitle="创建运单并推进正向物流状态">
+    <PageShell title="发货管理" subtitle="多包裹 · MOCK 电子面单（I5/I11）">
       <p><Link to="/">返回概览</Link></p>
       {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
       {msg ? <p style={{ color: "green" }}>{msg}</p> : null}
@@ -113,18 +131,30 @@ export function ShipmentsPage() {
           {orders.map((o) => (
             <li key={o.id}>
               #{o.id} {o.orderNo} · {o.status} · ¥{(o.totalCents / 100).toFixed(2)}
-              <button type="button" style={{ marginLeft: 8 }} onClick={() => setOrderId(String(o.id))}>选中发货</button>
+              <button type="button" style={{ marginLeft: 8 }} onClick={() => { setOrderId(String(o.id)); setOrderItemId(""); }}>选中发货</button>
             </li>
           ))}
         </ul>
       </section>
 
       <section>
-        <h2>新建运单</h2>
+        <h2>新建运单 / 拆包</h2>
         <form onSubmit={createShip}>
           <label>订单ID <input value={orderId} onChange={(e) => setOrderId(e.target.value)} required /></label>{" "}
+          <label>
+            订单行（可选拆包）{" "}
+            <select value={orderItemId} onChange={(e) => setOrderItemId(e.target.value)}>
+              <option value="">整店发货</option>
+              {(selectedOrder?.items || []).map((it) => (
+                <option key={it.id} value={it.id}>{it.productTitle} (行#{it.id})</option>
+              ))}
+            </select>
+          </label>{" "}
           <label>承运商 <input value={carrier} onChange={(e) => setCarrier(e.target.value)} /></label>{" "}
-          <label>运单号 <input value={tracking} onChange={(e) => setTracking(e.target.value)} required /></label>{" "}
+          <label>运单号（可空，MOCK 打单生成） <input value={tracking} onChange={(e) => setTracking(e.target.value)} /></label>{" "}
+          <label>
+            <input type="checkbox" checked={printEb} onChange={(e) => setPrintEb(e.target.checked)} /> MOCK 电子面单
+          </label>{" "}
           <button type="submit">发货</button>
         </form>
       </section>
@@ -136,9 +166,12 @@ export function ShipmentsPage() {
             const next = nextStatus(s.status);
             return (
               <li key={s.id} style={{ marginBottom: 12 }}>
-                运单#{s.id} 订单{s.orderId} · {s.carrierCode}/{s.trackingNo} · <b>{s.status}</b>
+                运单#{s.id} 订单{s.orderId} 包裹#{s.packageSeq} · {s.carrierCode}/{s.trackingNo} · <b>{s.status}</b>
+                {s.ewaybillNo ? <span> · 面单 {s.ewaybillNo}</span> : null}
                 {" "}
                 {next ? <button type="button" onClick={() => advance(s.id, next)}>→ {next}</button> : null}
+                {" "}
+                <button type="button" onClick={() => printEwaybill(s.id)}>补打面单</button>
                 {" "}
                 <button type="button" onClick={() => syncTracks(s.id)}>同步轨迹</button>
                 <ul>

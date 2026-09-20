@@ -1,5 +1,8 @@
 package com.meiyuemall.boot.job;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.meiyuemall.aiassist.service.AiAssistService;
 import com.meiyuemall.common.redis.RedisAiTaskQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -7,7 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * 可选 AI 异步队列消费者：出队后记录日志（同步 API 仍为主路径）。
+ * AI 异步队列消费者：IMAGE 记日志；VIDEO 调用 MOCK 生成并落库。
  */
 @Component
 public class AiTaskQueueJob {
@@ -15,9 +18,17 @@ public class AiTaskQueueJob {
     private static final Logger log = LoggerFactory.getLogger(AiTaskQueueJob.class);
 
     private final RedisAiTaskQueue queue;
+    private final AiAssistService aiAssistService;
+    private final ObjectMapper objectMapper;
 
-    public AiTaskQueueJob(RedisAiTaskQueue queue) {
+    public AiTaskQueueJob(
+            RedisAiTaskQueue queue,
+            AiAssistService aiAssistService,
+            ObjectMapper objectMapper
+    ) {
         this.queue = queue;
+        this.aiAssistService = aiAssistService;
+        this.objectMapper = objectMapper;
     }
 
     @Scheduled(fixedDelayString = "${meiyue.jobs.ai-queue-delay-ms:10000}")
@@ -27,7 +38,19 @@ public class AiTaskQueueJob {
             if (payload == null) {
                 return;
             }
-            log.info("AI 异步任务消费（骨架） payload={}", payload);
+            try {
+                JsonNode node = objectMapper.readTree(payload);
+                String type = node.path("type").asText("");
+                if ("VIDEO".equalsIgnoreCase(type)) {
+                    long taskId = node.path("taskId").asLong();
+                    boolean ok = aiAssistService.processVideoTask(taskId);
+                    log.info("AI 推广视频任务消费 taskId={} processed={}", taskId, ok);
+                } else {
+                    log.info("AI 异步任务消费 payload={}", payload);
+                }
+            } catch (Exception ex) {
+                log.warn("AI 任务消费失败 payload={} err={}", payload, ex.getMessage());
+            }
         }
     }
 }

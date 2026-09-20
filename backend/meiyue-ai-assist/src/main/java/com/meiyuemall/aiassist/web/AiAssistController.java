@@ -1,8 +1,10 @@
 package com.meiyuemall.aiassist.web;
 
+import com.meiyuemall.aiassist.dto.AiVideoTaskResponse;
 import com.meiyuemall.aiassist.dto.DetailGenerateResponse;
 import com.meiyuemall.aiassist.dto.GenerateDetailRequest;
 import com.meiyuemall.aiassist.dto.GenerateImageRequest;
+import com.meiyuemall.aiassist.dto.GenerateVideoRequest;
 import com.meiyuemall.aiassist.dto.MediaAssetResponse;
 import com.meiyuemall.aiassist.service.AiAssistService;
 import com.meiyuemall.catalog.dto.ProductResponse;
@@ -16,8 +18,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * I8 商家 AI 辅助 API。
- * <p>不做视频、不做直播。失败响应含 allowManualUpload / AI_DEGRADED。</p>
+ * I8/I11 商家 AI 辅助 API。
+ * <p>支持推广视频 MOCK（非直播）。失败响应含 allowManualUpload / AI_DEGRADED。</p>
  */
 @RestController
 @RequestMapping(SecurityConstants.API_PREFIX + "/seller/ai")
@@ -64,5 +66,24 @@ public class AiAssistController {
     @GetMapping("/assets")
     public ApiResponse<List<MediaAssetResponse>> assets() {
         return ApiResponse.ok(aiAssistService.listMine());
+    }
+
+    /** I11：提交推广视频异步任务（MOCK） */
+    @PostMapping("/videos")
+    public ApiResponse<AiVideoTaskResponse> submitVideo(@Valid @RequestBody GenerateVideoRequest request) {
+        return ApiResponse.ok(aiAssistService.submitVideo(request));
+    }
+
+    @GetMapping("/videos")
+    public ApiResponse<List<AiVideoTaskResponse>> listVideos() {
+        return ApiResponse.ok(aiAssistService.listVideoTasks());
+    }
+
+    @PostMapping("/products/{productId}/promo-video")
+    public ApiResponse<ProductResponse> attachPromoVideo(
+            @PathVariable Long productId,
+            @RequestBody Map<String, Long> body
+    ) {
+        return ApiResponse.ok(aiAssistService.attachPromoVideo(productId, body.get("assetId")));
     }
 }

@@ -28,7 +28,7 @@ export function DashboardPage() {
   }, [nav]);
 
   return (
-    <PageShell title="商家后台" subtitle="店铺概览（I1–I10）">
+    <PageShell title="商家后台" subtitle="店铺概览（I1–I11）">
       <p>
         <button type="button" onClick={() => { setToken(null); nav("/login"); }}>退出</button>{" "}
         <Link to="/onboarding">入驻</Link> · <Link to="/products">商品</Link> · <Link to="/decoration">装修</Link>

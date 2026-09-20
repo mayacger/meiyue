@@ -1,5 +1,6 @@
 package com.meiyuemall.tenant.repo;
 
+import com.meiyuemall.tenant.domain.MemberRole;
 import com.meiyuemall.tenant.domain.SellerMember;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -10,4 +11,7 @@ public interface SellerMemberRepository extends JpaRepository<SellerMember, Long
     Optional<SellerMember> findByUserId(Long userId);
 
     boolean existsByUserId(Long userId);
+
+    /** I11：租户 OWNER，用于站内通知投递 */
+    Optional<SellerMember> findFirstByTenantIdAndMemberRole(Long tenantId, MemberRole memberRole);
 }

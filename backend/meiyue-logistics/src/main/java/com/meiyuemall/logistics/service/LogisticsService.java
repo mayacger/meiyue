@@ -2,6 +2,7 @@ package com.meiyuemall.logistics.service;
 
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
+import com.meiyuemall.common.notify.NotificationPublisher;
 import com.meiyuemall.common.security.MeiyuePrincipal;
 import com.meiyuemall.common.security.SecurityUtils;
 import com.meiyuemall.logistics.domain.ForwardStatus;
@@ -13,6 +14,7 @@ import com.meiyuemall.logistics.dto.CreateForwardShipmentRequest;
 import com.meiyuemall.logistics.dto.ShipmentResponse;
 import com.meiyuemall.logistics.dto.ShipmentTrackResponse;
 import com.meiyuemall.logistics.dto.UpdateShipmentStatusRequest;
+import com.meiyuemall.logistics.ewaybill.EwaybillProvider;
 import com.meiyuemall.logistics.repo.ShipmentRepository;
 import com.meiyuemall.logistics.repo.ShipmentTrackRepository;
 import com.meiyuemall.logistics.track.ExpressTrackQueryPort;
@@ -27,7 +29,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * 物流服务：正向发货 / 状态推进 / 轨迹同步；逆向运单创建供售后使用。
+ * 物流服务：正向发货 / 多包裹 / MOCK 电子面单 / 状态推进 / 轨迹同步。
  */
 @Service
 public class LogisticsService {
@@ -36,17 +38,23 @@ public class LogisticsService {
     private final ShipmentTrackRepository trackRepository;
     private final OrderRepository orderRepository;
     private final ExpressTrackQueryPort trackQueryPort;
+    private final EwaybillProvider ewaybillProvider;
+    private final NotificationPublisher notificationPublisher;
 
     public LogisticsService(
             ShipmentRepository shipmentRepository,
             ShipmentTrackRepository trackRepository,
             OrderRepository orderRepository,
-            ExpressTrackQueryPort trackQueryPort
+            ExpressTrackQueryPort trackQueryPort,
+            EwaybillProvider ewaybillProvider,
+            NotificationPublisher notificationPublisher
     ) {
         this.shipmentRepository = shipmentRepository;
         this.trackRepository = trackRepository;
         this.orderRepository = orderRepository;
         this.trackQueryPort = trackQueryPort;
+        this.ewaybillProvider = ewaybillProvider;
+        this.notificationPublisher = notificationPublisher;
     }
 
     @Transactional
@@ -57,7 +65,6 @@ public class LogisticsService {
         if (order.getStatus() != OrderStatus.PAID && order.getStatus() != OrderStatus.FULFILLING) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "仅已支付订单可发货");
         }
-        // 防越权：订单行必须属于本租户
         boolean belongs = order.getItems().stream().anyMatch(i -> principal.getTenantId().equals(i.getTenantId()));
         if (!belongs) {
             throw new BusinessException(ErrorCode.TENANT_MISMATCH);
@@ -72,23 +79,81 @@ public class LogisticsService {
             }
         }
 
+        // 多包裹：未传 packageSeq 则取本店本单已有 FORWARD 数 + 1
+        int seq = request.packageSeq() != null && request.packageSeq() > 0
+                ? request.packageSeq()
+                : nextPackageSeq(order.getId(), principal.getTenantId());
+
+        String carrier = request.carrierCode();
+        String tracking = request.trackingNo();
+        String ewaybillNo = null;
+        String labelUrl = null;
+        String ewaybillProviderName = null;
+
+        // MOCK 打单：可生成运单号/面单；若客户端已填 trackingNo 则保留
+        boolean print = request.printEwaybill() == null || Boolean.TRUE.equals(request.printEwaybill());
+        if (print) {
+            EwaybillProvider.EwaybillResult eb = ewaybillProvider.print(carrier, order.getId(), seq);
+            ewaybillNo = eb.ewaybillNo();
+            labelUrl = eb.labelUrl();
+            ewaybillProviderName = eb.provider();
+            if (tracking == null || tracking.isBlank()) {
+                tracking = ewaybillNo;
+            }
+        }
+        if (tracking == null || tracking.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "运单号不能为空（可开启 printEwaybill 自动生成）");
+        }
+
         Shipment shipment = new Shipment();
         shipment.setTenantId(principal.getTenantId());
         shipment.setOrderId(order.getId());
         shipment.setOrderItemId(request.orderItemId());
         shipment.setDirection(ShipmentDirection.FORWARD);
-        shipment.setCarrierCode(request.carrierCode());
-        shipment.setTrackingNo(request.trackingNo());
+        shipment.setCarrierCode(carrier);
+        shipment.setTrackingNo(tracking);
+        shipment.setPackageSeq(seq);
+        shipment.setEwaybillNo(ewaybillNo);
+        shipment.setEwaybillLabelUrl(labelUrl);
+        shipment.setEwaybillProvider(ewaybillProviderName);
         shipment.setStatus(ForwardStatus.PENDING_PICKUP.name());
         shipment.setReceiverName(request.receiverName());
         shipment.setReceiverPhone(request.receiverPhone());
         shipment.setReceiverAddress(request.receiverAddress());
         shipmentRepository.save(shipment);
-        appendTrack(shipment, ForwardStatus.PENDING_PICKUP.name(), "商家已填运单，待揽收", "MANUAL");
+        appendTrack(shipment, ForwardStatus.PENDING_PICKUP.name(),
+                "商家已发货（包裹#" + seq + "）" + (ewaybillNo != null ? "，面单 " + ewaybillNo : ""),
+                "MANUAL");
 
         if (order.getStatus() == OrderStatus.PAID) {
             order.setStatus(OrderStatus.FULFILLING);
         }
+
+        // I11：发货通知买家
+        notificationPublisher.publish(
+                order.getBuyerUserId(), "BUYER",
+                "订单已发货",
+                "订单 " + order.getOrderNo() + " 包裹#" + seq + " 已发出，运单 " + tracking,
+                "SHIPMENT", "SHIPMENT", String.valueOf(shipment.getId())
+        );
+        return toResponse(shipment);
+    }
+
+    /** 对已有运单补打 MOCK 电子面单 */
+    @Transactional
+    public ShipmentResponse printEwaybill(Long shipmentId) {
+        MeiyuePrincipal principal = requireSeller();
+        Shipment shipment = shipmentRepository.findByIdAndTenantId(shipmentId, principal.getTenantId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "运单不存在"));
+        EwaybillProvider.EwaybillResult eb = ewaybillProvider.print(
+                shipment.getCarrierCode(), shipment.getOrderId(), shipment.getPackageSeq());
+        shipment.setEwaybillNo(eb.ewaybillNo());
+        shipment.setEwaybillLabelUrl(eb.labelUrl());
+        shipment.setEwaybillProvider(eb.provider());
+        if (shipment.getTrackingNo() == null || shipment.getTrackingNo().isBlank()) {
+            shipment.setTrackingNo(eb.ewaybillNo());
+        }
+        appendTrack(shipment, shipment.getStatus(), "MOCK 电子面单已生成 " + eb.ewaybillNo(), "MANUAL");
         return toResponse(shipment);
     }
 
@@ -109,6 +174,14 @@ public class LogisticsService {
                     request.description() == null ? ("状态变更为 " + to) : request.description(), "MANUAL");
             if (to == ForwardStatus.DELIVERED) {
                 maybeCompleteOrder(shipment.getOrderId());
+                orderRepository.findById(shipment.getOrderId()).ifPresent(order ->
+                        notificationPublisher.publish(
+                                order.getBuyerUserId(), "BUYER",
+                                "包裹已送达",
+                                "订单 " + order.getOrderNo() + " 包裹#" + shipment.getPackageSeq() + " 已签收",
+                                "SHIPMENT", "SHIPMENT", String.valueOf(shipment.getId())
+                        )
+                );
             }
         } else {
             ReverseStatus cur = ReverseStatus.valueOf(shipment.getStatus());
@@ -134,7 +207,6 @@ public class LogisticsService {
         }
         for (var node : result.nodes()) {
             appendTrack(shipment, node.status(), node.description(), "QUERY");
-            // 尝试推进正向状态（忽略非法流转）
             if (shipment.getDirection() == ShipmentDirection.FORWARD) {
                 try {
                     ForwardStatus cur = ForwardStatus.valueOf(shipment.getStatus());
@@ -143,16 +215,12 @@ public class LogisticsService {
                         shipment.setStatus(to.name());
                     }
                 } catch (Exception ignored) {
-                    // 轨迹状态与本地枚举不一致时仅记轨迹
                 }
             }
         }
         return toResponse(shipment);
     }
 
-    /**
-     * 售后创建逆向运单（买家寄回）。
-     */
     @Transactional
     public Shipment createReverse(Long tenantId, Long orderId, Long aftersaleId,
                                   String carrierCode, String trackingNo,
@@ -163,6 +231,7 @@ public class LogisticsService {
         shipment.setDirection(ShipmentDirection.REVERSE);
         shipment.setCarrierCode(carrierCode);
         shipment.setTrackingNo(trackingNo);
+        shipment.setPackageSeq(1);
         shipment.setStatus(ReverseStatus.PENDING_SEND.name());
         shipment.setAftersaleId(aftersaleId);
         shipment.setReceiverName(receiverName);
@@ -180,13 +249,7 @@ public class LogisticsService {
         if (shipment.getDirection() != ShipmentDirection.REVERSE) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "非逆向运单");
         }
-        ReverseStatus cur = ReverseStatus.valueOf(shipment.getStatus());
-        if (!cur.canTransitTo(ReverseStatus.DELIVERED_TO_SELLER) && cur != ReverseStatus.DELIVERED_TO_SELLER) {
-            // 允许从途中直接确认签收（人工校正）
-            shipment.setStatus(ReverseStatus.DELIVERED_TO_SELLER.name());
-        } else {
-            shipment.setStatus(ReverseStatus.DELIVERED_TO_SELLER.name());
-        }
+        shipment.setStatus(ReverseStatus.DELIVERED_TO_SELLER.name());
         appendTrack(shipment, ReverseStatus.DELIVERED_TO_SELLER.name(), "商家确认收到退货", "MANUAL");
         return toResponse(shipment);
     }
@@ -202,13 +265,22 @@ public class LogisticsService {
     public List<ShipmentResponse> listMineForward() {
         Long tenantId = requireSeller().getTenantId();
         return shipmentRepository.findByTenantIdAndDirectionOrderByCreatedAtDesc(tenantId, ShipmentDirection.FORWARD)
-                .stream().map(this::toResponse).toList();
+                .stream().map(this::toResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
     public Shipment requireById(Long id) {
         return shipmentRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "运单不存在"));
+    }
+
+    private int nextPackageSeq(Long orderId, Long tenantId) {
+        long count = shipmentRepository.findByOrderIdOrderByCreatedAtDesc(orderId).stream()
+                .filter(s -> s.getDirection() == ShipmentDirection.FORWARD)
+                .filter(s -> tenantId.equals(s.getTenantId()))
+                .count();
+        return (int) count + 1;
     }
 
     private void maybeCompleteOrder(Long orderId) {
@@ -252,7 +324,8 @@ public class LogisticsService {
         return new ShipmentResponse(
                 s.getId(), s.getTenantId(), s.getOrderId(), s.getOrderItemId(),
                 s.getDirection().name(), s.getCarrierCode(), s.getTrackingNo(), s.getStatus(),
-                s.getAftersaleId(), tracks
+                s.getAftersaleId(), s.getPackageSeq(), s.getEwaybillNo(), s.getEwaybillLabelUrl(),
+                s.getEwaybillProvider(), tracks
         );
     }
 }

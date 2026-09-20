@@ -6,9 +6,11 @@ import com.meiyuemall.catalog.domain.ProductStatus;
 import com.meiyuemall.catalog.repo.ProductSkuRepository;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
+import com.meiyuemall.common.notify.NotificationPublisher;
 import com.meiyuemall.common.redis.DelayTaskPort;
 import com.meiyuemall.common.security.MeiyuePrincipal;
 import com.meiyuemall.common.security.SecurityUtils;
+import com.meiyuemall.common.tenant.SellerOwnerLookup;
 import com.meiyuemall.payment.domain.PaymentChannel;
 import com.meiyuemall.payment.dto.PaymentResponse;
 import com.meiyuemall.payment.service.PaymentService;
@@ -48,6 +50,8 @@ public class OrderService {
     private final CouponService couponService;
     private final PlatformCouponService platformCouponService;
     private final String couponStackingMode;
+    private final NotificationPublisher notificationPublisher;
+    private final SellerOwnerLookup sellerOwnerLookup;
 
     public OrderService(
             CartItemRepository cartItemRepository,
@@ -57,7 +61,9 @@ public class OrderService {
             DelayTaskPort delayTaskPort,
             CouponService couponService,
             PlatformCouponService platformCouponService,
-            @org.springframework.beans.factory.annotation.Value("${meiyue.coupon.stacking:MUTUAL_EXCLUSIVE}") String couponStackingMode
+            @org.springframework.beans.factory.annotation.Value("${meiyue.coupon.stacking:MUTUAL_EXCLUSIVE}") String couponStackingMode,
+            NotificationPublisher notificationPublisher,
+            SellerOwnerLookup sellerOwnerLookup
     ) {
         this.cartItemRepository = cartItemRepository;
         this.orderRepository = orderRepository;
@@ -67,6 +73,8 @@ public class OrderService {
         this.couponService = couponService;
         this.platformCouponService = platformCouponService;
         this.couponStackingMode = couponStackingMode;
+        this.notificationPublisher = notificationPublisher;
+        this.sellerOwnerLookup = sellerOwnerLookup;
     }
 
     @Transactional
@@ -157,6 +165,13 @@ public class OrderService {
         cartItemRepository.deleteByBuyerUserIdAndSkuIdIn(buyerId, skuIdsToClear);
 
         PaymentResponse payment = paymentService.createPending(order.getId(), total, PaymentChannel.MOCK);
+        // I11：下单成功 → 买家通知
+        notificationPublisher.publish(
+                buyerId, "BUYER",
+                "下单成功",
+                "订单 " + order.getOrderNo() + " 已创建，请尽快支付",
+                "ORDER", "ORDER", String.valueOf(order.getId())
+        );
         return toResponse(order, payment.paymentNo());
     }
 
@@ -192,6 +207,17 @@ public class OrderService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "当前状态不可确认收货");
         }
         order.setStatus(OrderStatus.COMPLETED);
+        // I11：确认收货 → 商家 OWNER 通知
+        order.getItems().stream().map(OrderItem::getTenantId).distinct().forEach(tenantId ->
+                sellerOwnerLookup.findOwnerUserId(tenantId).ifPresent(ownerId ->
+                        notificationPublisher.publish(
+                                ownerId, "SELLER",
+                                "买家已确认收货",
+                                "订单 " + order.getOrderNo() + " 已完成，买家可评价",
+                                "ORDER", "ORDER", String.valueOf(order.getId())
+                        )
+                )
+        );
         return toResponse(order, null);
     }
 

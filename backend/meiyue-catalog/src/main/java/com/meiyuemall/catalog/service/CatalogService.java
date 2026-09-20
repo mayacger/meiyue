@@ -106,6 +106,28 @@ public class CatalogService {
         return toResponse(product);
     }
 
+    /**
+     * I11：挂接推广视频（商家主体校验）。
+     */
+    @Transactional
+    @Audited(action = "PRODUCT_ATTACH_PROMO_VIDEO", resourceType = "Product")
+    public ProductResponse attachPromoVideo(Long productId, Long assetId, String videoUrl) {
+        Long tenantId = requireSellerTenant();
+        return attachPromoVideoInternal(tenantId, productId, assetId, videoUrl);
+    }
+
+    /**
+     * 内部挂接（异步任务完成时调用，已校验租户）。
+     */
+    @Transactional
+    public ProductResponse attachPromoVideoInternal(Long tenantId, Long productId, Long assetId, String videoUrl) {
+        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        product.setPromoVideoAssetId(assetId);
+        product.setPromoVideoUrl(videoUrl);
+        return toResponse(product);
+    }
+
     @Transactional(readOnly = true)
     public List<ProductResponse> listMine() {
         Long tenantId = requireSellerTenant();
@@ -188,6 +210,8 @@ public class CatalogService {
                 product.getDetailHtml(),
                 product.getCoverImageUrl(),
                 product.getCoverAssetId(),
+                product.getPromoVideoUrl(),
+                product.getPromoVideoAssetId(),
                 product.getStatus().name(),
                 skus,
                 product.getUpdatedAt()

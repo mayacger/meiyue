@@ -3,7 +3,7 @@
 > B2B2C 多租户电商平台 · 中国大陆 · 工程标识 `meiyue-mall`  
 > 仓库：`mayacger/meiyue`（前后端同仓）  
 > 规划定稿：见项目 Context 中 `ecommerce-platform-plan.md` **v1.2**  
-> 进度：`docs/dev-progress.md`（**I1→I10 已完成**；持续开发授权 C19；详档 `docs/i10-phase2-capabilities.md`）
+> 进度：`docs/dev-progress.md`（**I1→I11 已完成**；持续开发授权 C19；详档 `docs/i10-phase2-capabilities.md` / `docs/i11-capabilities.md`）
 
 ---
 

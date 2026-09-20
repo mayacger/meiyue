@@ -31,6 +31,18 @@ public class Shipment {
     private String receiverAddress;
     @Column(name = "aftersale_id")
     private Long aftersaleId;
+    /** 同一订单下包裹序号（多运单） */
+    @Column(name = "package_seq", nullable = false)
+    private int packageSeq = 1;
+    /** 电子面单号 */
+    @Column(name = "ewaybill_no", length = 64)
+    private String ewaybillNo;
+    /** 面单打印占位 URL */
+    @Column(name = "ewaybill_label_url", length = 1024)
+    private String ewaybillLabelUrl;
+    /** 面单通道 MOCK 等 */
+    @Column(name = "ewaybill_provider", length = 32)
+    private String ewaybillProvider;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -62,5 +74,13 @@ public class Shipment {
     public void setReceiverAddress(String receiverAddress) { this.receiverAddress = receiverAddress; }
     public Long getAftersaleId() { return aftersaleId; }
     public void setAftersaleId(Long aftersaleId) { this.aftersaleId = aftersaleId; }
+    public int getPackageSeq() { return packageSeq; }
+    public void setPackageSeq(int packageSeq) { this.packageSeq = packageSeq; }
+    public String getEwaybillNo() { return ewaybillNo; }
+    public void setEwaybillNo(String ewaybillNo) { this.ewaybillNo = ewaybillNo; }
+    public String getEwaybillLabelUrl() { return ewaybillLabelUrl; }
+    public void setEwaybillLabelUrl(String ewaybillLabelUrl) { this.ewaybillLabelUrl = ewaybillLabelUrl; }
+    public String getEwaybillProvider() { return ewaybillProvider; }
+    public void setEwaybillProvider(String ewaybillProvider) { this.ewaybillProvider = ewaybillProvider; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

@@ -1,15 +1,20 @@
 package com.meiyuemall.aiassist.service;
 
 import com.meiyuemall.aiassist.config.AiProviderRegistry;
+import com.meiyuemall.aiassist.domain.AiVideoTask;
 import com.meiyuemall.aiassist.domain.AssetType;
 import com.meiyuemall.aiassist.domain.MediaAsset;
 import com.meiyuemall.aiassist.domain.ModerationStatus;
+import com.meiyuemall.aiassist.dto.AiVideoTaskResponse;
 import com.meiyuemall.aiassist.dto.DetailGenerateResponse;
 import com.meiyuemall.aiassist.dto.GenerateDetailRequest;
 import com.meiyuemall.aiassist.dto.GenerateImageRequest;
+import com.meiyuemall.aiassist.dto.GenerateVideoRequest;
 import com.meiyuemall.aiassist.dto.MediaAssetResponse;
 import com.meiyuemall.aiassist.provider.AiDetailProvider;
 import com.meiyuemall.aiassist.provider.AiImageProvider;
+import com.meiyuemall.aiassist.provider.AiVideoProvider;
+import com.meiyuemall.aiassist.repo.AiVideoTaskRepository;
 import com.meiyuemall.aiassist.repo.MediaAssetRepository;
 import com.meiyuemall.aiassist.safety.ContentSafetyPort;
 import com.meiyuemall.catalog.dto.ProductResponse;
@@ -26,13 +31,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 /**
- * I8 AI 辅助：出图入库+审核、详情生成、挂接商品；失败降级人工。
+ * I8/I11 AI 辅助：出图、详情、推广视频（MOCK 异步）；挂接商品；失败降级人工。
+ * <p>硬约束：推广视频 ≠ 直播。</p>
  */
 @Service
 public class AiAssistService {
 
     private final AiProviderRegistry registry;
     private final MediaAssetRepository mediaAssetRepository;
+    private final AiVideoTaskRepository videoTaskRepository;
     private final ContentSafetyPort contentSafetyPort;
     private final CatalogService catalogService;
     private final RedisAiTaskQueue aiTaskQueue;
@@ -40,12 +47,14 @@ public class AiAssistService {
     public AiAssistService(
             AiProviderRegistry registry,
             MediaAssetRepository mediaAssetRepository,
+            AiVideoTaskRepository videoTaskRepository,
             ContentSafetyPort contentSafetyPort,
             CatalogService catalogService,
             RedisAiTaskQueue aiTaskQueue
     ) {
         this.registry = registry;
         this.mediaAssetRepository = mediaAssetRepository;
+        this.videoTaskRepository = videoTaskRepository;
         this.contentSafetyPort = contentSafetyPort;
         this.catalogService = catalogService;
         this.aiTaskQueue = aiTaskQueue;
@@ -178,6 +187,101 @@ public class AiAssistService {
                 .toList();
     }
 
+    /**
+     * I11：提交推广视频异步任务（默认 MOCK）。
+     * 入队后由 {@code AiTaskQueueJob} 消费生成占位 URL 并可选挂商品。
+     */
+    @Transactional
+    @Audited(action = "AI_SUBMIT_VIDEO", resourceType = "AiVideoTask")
+    public AiVideoTaskResponse submitVideo(GenerateVideoRequest request) {
+        MeiyuePrincipal principal = requireSeller();
+        String prompt = request.prompt().trim();
+        if (prompt.toUpperCase().contains("LIVE") || prompt.contains("直播")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "禁止生成直播类内容；仅支持推广短视频");
+        }
+        AiVideoTask task = new AiVideoTask();
+        task.setTenantId(principal.getTenantId());
+        task.setProductId(request.productId());
+        task.setStatus("PENDING");
+        task.setPrompt(prompt);
+        task.setCreatedBy(principal.getUserId());
+        videoTaskRepository.save(task);
+        aiTaskQueue.enqueue("{\"type\":\"VIDEO\",\"taskId\":" + task.getId()
+                + ",\"tenantId\":" + task.getTenantId() + "}");
+        return toVideoResponse(task, null);
+    }
+
+    @Transactional(readOnly = true)
+    public List<AiVideoTaskResponse> listVideoTasks() {
+        Long tenantId = requireSeller().getTenantId();
+        return videoTaskRepository.findByTenantIdOrderByCreatedAtDesc(tenantId).stream()
+                .map(t -> {
+                    String url = null;
+                    if (t.getResultAssetId() != null) {
+                        url = mediaAssetRepository.findById(t.getResultAssetId()).map(MediaAsset::getUrl).orElse(null);
+                    }
+                    return toVideoResponse(t, url);
+                }).toList();
+    }
+
+    /**
+     * 消费 VIDEO 异步任务：MOCK 生成素材 → APPROVED → 可选挂商品。
+     * @return true 若已处理
+     */
+    @Transactional
+    public boolean processVideoTask(Long taskId) {
+        AiVideoTask task = videoTaskRepository.findById(taskId).orElse(null);
+        if (task == null) {
+            return false;
+        }
+        if ("SUCCEEDED".equals(task.getStatus()) || "FAILED".equals(task.getStatus())) {
+            return false;
+        }
+        task.setStatus("RUNNING");
+        AiVideoProvider provider = registry.videoProvider();
+        AiVideoProvider.VideoResult result = provider.generate(task.getPrompt());
+        if (!result.success()) {
+            task.setStatus("FAILED");
+            task.setFailReason(result.errorMessage());
+            return true;
+        }
+        MediaAsset asset = new MediaAsset();
+        asset.setTenantId(task.getTenantId());
+        asset.setAssetType(AssetType.VIDEO);
+        asset.setSource(result.source());
+        asset.setUrl(result.url());
+        asset.setPrompt(task.getPrompt());
+        asset.setModerationStatus(ModerationStatus.APPROVED);
+        asset.setModerationNote("MOCK 推广视频自动通过（非直播）");
+        asset.setCreatedBy(task.getCreatedBy());
+        mediaAssetRepository.save(asset);
+
+        task.setResultAssetId(asset.getId());
+        task.setStatus("SUCCEEDED");
+        if (task.getProductId() != null) {
+            catalogService.attachPromoVideoInternal(task.getTenantId(), task.getProductId(), asset.getId(), asset.getUrl());
+        }
+        return true;
+    }
+
+    /** 将已有 VIDEO 素材挂到商品 */
+    @Transactional
+    public ProductResponse attachPromoVideo(Long productId, Long assetId) {
+        MeiyuePrincipal principal = requireSeller();
+        MediaAsset asset = mediaAssetRepository.findById(assetId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "素材不存在"));
+        if (!principal.getTenantId().equals(asset.getTenantId())) {
+            throw new BusinessException(ErrorCode.TENANT_MISMATCH);
+        }
+        if (asset.getAssetType() != AssetType.VIDEO) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "仅 VIDEO 素材可挂推广视频");
+        }
+        if (asset.getModerationStatus() != ModerationStatus.APPROVED) {
+            throw new BusinessException(ErrorCode.MEDIA_NOT_APPROVED);
+        }
+        return catalogService.attachPromoVideo(productId, asset.getId(), asset.getUrl());
+    }
+
     private MeiyuePrincipal requireSeller() {
         MeiyuePrincipal p = SecurityUtils.requirePrincipal();
         if (p.getTenantId() == null) {
@@ -193,6 +297,14 @@ public class AiAssistService {
                 a.getId(), a.getTenantId(), a.getAssetType().name(), a.getSource(), a.getUrl(),
                 a.getPrompt(), a.getModerationStatus().name(), a.getModerationNote(), a.getFailReason(),
                 manual
+        );
+    }
+
+    private AiVideoTaskResponse toVideoResponse(AiVideoTask t, String resultUrl) {
+        return new AiVideoTaskResponse(
+                t.getId(), t.getTenantId(), t.getProductId(), t.getStatus(), t.getPrompt(),
+                t.getResultAssetId(), resultUrl, t.getFailReason(),
+                t.getCreatedAt() == null ? null : t.getCreatedAt().toString()
         );
     }
 }

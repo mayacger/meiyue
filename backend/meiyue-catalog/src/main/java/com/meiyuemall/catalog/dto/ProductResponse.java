@@ -12,6 +12,9 @@ public record ProductResponse(
         String detailHtml,
         String coverImageUrl,
         Long coverAssetId,
+        /** I11 推广视频 URL（非直播） */
+        String promoVideoUrl,
+        Long promoVideoAssetId,
         String status,
         List<SkuResponse> skus,
         Instant updatedAt

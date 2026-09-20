@@ -30,6 +30,12 @@ public class Product {
     /** I8：关联素材主键 */
     @Column(name = "cover_asset_id")
     private Long coverAssetId;
+    /** I11：推广视频 URL（非直播） */
+    @Column(name = "promo_video_url", length = 1024)
+    private String promoVideoUrl;
+    /** I11：推广视频素材 ID */
+    @Column(name = "promo_video_asset_id")
+    private Long promoVideoAssetId;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private ProductStatus status = ProductStatus.DRAFT;
@@ -66,6 +72,10 @@ public class Product {
     public void setCoverImageUrl(String coverImageUrl) { this.coverImageUrl = coverImageUrl; }
     public Long getCoverAssetId() { return coverAssetId; }
     public void setCoverAssetId(Long coverAssetId) { this.coverAssetId = coverAssetId; }
+    public String getPromoVideoUrl() { return promoVideoUrl; }
+    public void setPromoVideoUrl(String promoVideoUrl) { this.promoVideoUrl = promoVideoUrl; }
+    public Long getPromoVideoAssetId() { return promoVideoAssetId; }
+    public void setPromoVideoAssetId(Long promoVideoAssetId) { this.promoVideoAssetId = promoVideoAssetId; }
     public ProductStatus getStatus() { return status; }
     public void setStatus(ProductStatus status) { this.status = status; }
     public Instant getCreatedAt() { return createdAt; }
