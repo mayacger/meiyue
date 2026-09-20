@@ -1,0 +1,4 @@
+# pnpm workspace：apps 为三端应用，packages 为共享包
+packages:
+  - "apps/*"
+  - "packages/*"

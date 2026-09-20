@@ -1,0 +1,24 @@
+# 美月商城 Worker 配置示例（脚手架）
+spring:
+  application:
+    name: meiyue-worker
+
+server:
+  # Worker 仅暴露健康检查，与 API 错开端口
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+info:
+  app:
+    name: 美月商城
+    code: meiyue-mall
+    module: worker
+    description: 定时/延迟/异步任务进程（脚手架空壳）

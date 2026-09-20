@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 美月商城身份与访问控制（IAM）模块占位 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.meiyuemall</groupId>
+    <artifactId>meiyue-mall-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>meiyue-identity</artifactId>
+  <name>meiyue-identity</name>
+  <description>美月商城身份与访问控制（IAM）模块占位</description>
+  <dependencies>
+    <dependency>
+      <groupId>com.meiyuemall</groupId>
+      <artifactId>meiyue-common</artifactId>
+    </dependency>
+  </dependencies>
+</project>

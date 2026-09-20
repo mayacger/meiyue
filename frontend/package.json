@@ -1,0 +1,21 @@
+{
+  "name": "meiyue-mall-frontend",
+  "private": true,
+  "version": "0.1.0",
+  "description": "美月商城前端 pnpm monorepo（买家/商家/平台）",
+  "scripts": {
+    "dev:buyer": "pnpm --filter @meiyue/web-buyer dev",
+    "dev:seller": "pnpm --filter @meiyue/web-seller dev",
+    "dev:admin": "pnpm --filter @meiyue/web-admin dev",
+    "build:buyer": "pnpm --filter @meiyue/web-buyer build",
+    "build:seller": "pnpm --filter @meiyue/web-seller build",
+    "build:admin": "pnpm --filter @meiyue/web-admin build",
+    "build": "pnpm -r --filter \"./apps/*\" build",
+    "lint": "pnpm -r --if-present lint"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.15.0"
+}
