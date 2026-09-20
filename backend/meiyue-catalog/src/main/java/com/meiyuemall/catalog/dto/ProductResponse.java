@@ -10,6 +10,8 @@ public record ProductResponse(
         String title,
         String subtitle,
         String detailHtml,
+        String coverImageUrl,
+        Long coverAssetId,
         String status,
         List<SkuResponse> skus,
         Instant updatedAt

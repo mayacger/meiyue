@@ -24,6 +24,12 @@ public class Product {
     private String subtitle;
     @Column(name = "detail_html", columnDefinition = "TEXT")
     private String detailHtml;
+    /** I8：封面图 URL（人工或 AI 审核通过后） */
+    @Column(name = "cover_image_url", length = 1024)
+    private String coverImageUrl;
+    /** I8：关联素材主键 */
+    @Column(name = "cover_asset_id")
+    private Long coverAssetId;
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private ProductStatus status = ProductStatus.DRAFT;
@@ -56,6 +62,10 @@ public class Product {
     public void setSubtitle(String subtitle) { this.subtitle = subtitle; }
     public String getDetailHtml() { return detailHtml; }
     public void setDetailHtml(String detailHtml) { this.detailHtml = detailHtml; }
+    public String getCoverImageUrl() { return coverImageUrl; }
+    public void setCoverImageUrl(String coverImageUrl) { this.coverImageUrl = coverImageUrl; }
+    public Long getCoverAssetId() { return coverAssetId; }
+    public void setCoverAssetId(Long coverAssetId) { this.coverAssetId = coverAssetId; }
     public ProductStatus getStatus() { return status; }
     public void setStatus(ProductStatus status) { this.status = status; }
     public Instant getCreatedAt() { return createdAt; }

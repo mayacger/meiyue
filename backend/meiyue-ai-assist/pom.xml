@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- 美月商城 AI 素材辅助模块占位（I8） -->
+<!-- meiyue-ai-assist：I8 AI 出图 + 详情（可插拔 Provider；无视频/直播） -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -11,11 +11,19 @@
   </parent>
   <artifactId>meiyue-ai-assist</artifactId>
   <name>meiyue-ai-assist</name>
-  <description>美月商城 AI 素材辅助模块占位（I8）</description>
+  <description>美月商城 AI 素材辅助（I8）</description>
   <dependencies>
     <dependency>
       <groupId>com.meiyuemall</groupId>
       <artifactId>meiyue-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.meiyuemall</groupId>
+      <artifactId>meiyue-catalog</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
     </dependency>
   </dependencies>
 </project>

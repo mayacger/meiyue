@@ -38,6 +38,31 @@ spring:
       password:
       database: 0
 
+management:
+  endpoints:
+    web:
+      exposure:
+        # I7：健康 + 指标（prometheus 抓取）；敏感端点默认不暴露
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: 美月商城
+    code: meiyue-mall
+    module: boot
+    description: B2B2C 多租户电商 API（I1–I8）
+
 # JWT（生产务必用环境变量覆盖 secret）
 meiyue:
   security:
@@ -46,6 +71,15 @@ meiyue:
       secret: "meiyue-mall-dev-jwt-secret-change-me-32b!"
       issuer: meiyue-mall
       expire-seconds: 86400
+  # I7：关键接口限流（内存窗口；生产可换 Redis）
+  rate-limit:
+    enabled: true
+    login-per-minute: 30
+    notify-per-minute: 60
+    api-per-minute: 300
+  # I7：审计开关
+  audit:
+    enabled: true
   # 支付（I4）：密钥仅配置/环境变量，禁止入库明文
   payment:
     # 本地默认 MOCK；生产改为 WECHAT 或 ALIPAY
@@ -62,27 +96,16 @@ meiyue:
       private-key: ${MEIYUE_ALIPAY_PRIVATE_KEY:}
       alipay-public-key: ${MEIYUE_ALIPAY_PUBLIC_KEY:}
       notify-url: ${MEIYUE_ALIPAY_NOTIFY_URL:http://localhost:8080/api/v1/payments/notify/alipay}
+  # I8：AI 出图/详情；密钥走环境变量；本地默认 MOCK
+  ai:
+    provider: ${MEIYUE_AI_PROVIDER:MOCK}
+    openai:
+      api-key: ${MEIYUE_AI_API_KEY:}
+      base-url: ${MEIYUE_AI_BASE_URL:https://api.openai.com/v1}
+      model: ${MEIYUE_AI_MODEL:gpt-4o-mini}
+
 server:
   port: 8080
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info
-  endpoint:
-    health:
-      show-details: always
-  info:
-    env:
-      enabled: true
-
-info:
-  app:
-    name: 美月商城
-    code: meiyue-mall
-    module: boot
-    description: B2B2C 多租户电商 API（I1）
 
 logging:
   level:

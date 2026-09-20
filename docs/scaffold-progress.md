@@ -1,6 +1,6 @@
 # 美月商城 · 脚手架 / 迭代进度说明（用户可读）
 
-> 状态：**I1 → I6 已完成**（用户授权持续开发，见 project-context **C19**）  
+> 状态：**I1 → I8 已完成**（用户授权持续开发，见 project-context **C19**）  
 > 详细验证步骤见同目录 `dev-progress.md`  
 > 仓库：`mayacger/meiyue` · PR #1
 
@@ -11,7 +11,7 @@
 | 入口 | 路径 / 命令 | 说明 |
 |------|-------------|------|
 | 根说明 | 仓库 `README.md` | 启动方式 |
-| 进度（详） | `docs/dev-progress.md` | I1–I6 验证 |
+| 进度（详） | `docs/dev-progress.md` | I1–I8 验证 |
 | API | `meiyue-boot` :8080 | JWT + 业务 API |
 | 商家端 | `web-seller` :5174 | 入驻 / 商品 / 装修 |
 | 平台端 | `web-admin` :5175 | 入驻审核 |
@@ -45,11 +45,19 @@
 
 仅退款/退货退款、逆向运单、48h 自动同意、账本 REFUND；Flyway V6。
 
+### I7 — 可观测与安全基线
+
+Micrometer/Actuator、traceId 日志、限流、审计、串租 IT、备份演练文档；Flyway V7。
+
+### I8 — AI 图/详情
+
+可插拔 MOCK/OPENAI_COMPAT、素材库+审核占位、挂接商品、失败降级人工；Flyway V8。无视频/直播。
+
 ---
 
 ## 3. 下一步
 
-**I7+** Redis / 通知 / 前端发货售后页 / 真实通道证书联调；官方分账二期。
+Redis / 通知 / 前端发货售后与 AI 表单 / 真实通道与 AI 外呼联调；官方分账与 AI 视频二期。
 
 ---
 

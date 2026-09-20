@@ -19,4 +19,10 @@ public record ErrorCode(String code, String message) {
     public static final ErrorCode INVALID_CREDENTIALS = new ErrorCode("INVALID_CREDENTIALS", "用户名或密码错误");
     public static final ErrorCode APPLICATION_EXISTS = new ErrorCode("APPLICATION_EXISTS", "已有进行中的入驻申请或店铺");
     public static final ErrorCode APPLICATION_NOT_PENDING = new ErrorCode("APPLICATION_NOT_PENDING", "申请不在待审核状态");
+    /** I7：接口限流 */
+    public static final ErrorCode RATE_LIMITED = new ErrorCode("RATE_LIMITED", "请求过于频繁，请稍后再试");
+    /** I8：AI 失败，应降级人工上传 */
+    public static final ErrorCode AI_DEGRADED = new ErrorCode("AI_DEGRADED", "AI 生成失败，请改用人工上传");
+    /** I8：素材未过审不可挂接 */
+    public static final ErrorCode MEDIA_NOT_APPROVED = new ErrorCode("MEDIA_NOT_APPROVED", "素材未通过内容安全审核");
 }

@@ -1,6 +1,6 @@
 # 美月商城 · 开发进度（用户可读）
 
-> 状态：**I1 → I6 已完成**（持续开发授权 C19，无需逐步确认）  
+> 状态：**I1 → I8 已完成**（持续开发授权 C19，无需逐步确认）  
 > 仓库：`mayacger/meiyue` · 分支：`cursor/meiyue-mall-scaffold-9727` · PR #1  
 > 规划：`ecommerce-platform-plan.md` / `project-context.md` **v1.2 + C19**
 
@@ -128,18 +128,58 @@ POST /api/v1/seller/aftersales/{id}/confirm-return
 
 ---
 
+## I7 已交付
+
+- Micrometer + Actuator：`/actuator/metrics`、`/actuator/prometheus`（需登录；health/info 公开）
+- 结构化日志：`logback-spring.xml` 含 `traceId` / `tenantId`；响应头 `X-Trace-Id`
+- 关键接口内存限流（登录 / 支付回调 / API）；配置 `meiyue.rate-limit.*`
+- 审计日志骨架：`audit_logs` + `@Audited` 切面（Flyway V7）
+- 串租集成测试：`TenantIsolationIT`（跨租户更新商品 / AI 挂封面 → 404）
+- 备份演练文档：`docs/backup-restore.md`
+
+### I7 验证
+
+```bash
+curl -D- http://localhost:8080/api/v1/ping   # 看 X-Trace-Id
+# 带 JWT：
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8080/actuator/prometheus | head
+cd backend && mvn -pl meiyue-boot -am test -Dtest=TenantIsolationIT -Dsurefire.failIfNoSpecifiedTests=false
+```
+
+---
+
+## I8 已交付
+
+- 可插拔 Provider：`MOCK`（默认）/ `OPENAI_COMPAT`（密钥 `MEIYUE_AI_API_KEY`，无密钥失败降级）
+- 素材库 `media_assets` + 内容安全占位；商品 `cover_image_url` / `cover_asset_id`
+- 挂接：`POST /seller/ai/products/{id}/cover|detail`；人工：`POST /seller/ai/manual-images`
+- **不做**推广视频、**不做**直播；主路径无 AI 仍可上架
+- Flyway `V8__i8_ai_media_assets.sql`；模块 `backend/meiyue-ai-assist/README.md`
+
+### I8 验证
+
+```bash
+POST /api/v1/seller/ai/images  {"prompt":"红玫瑰"}
+POST /api/v1/seller/ai/details {"title":"红玫瑰","hints":"送礼"}
+POST /api/v1/seller/ai/products/{id}/cover
+POST /api/v1/seller/ai/manual-images {"url":"https://..."}
+# provider=OPENAI_COMPAT 且无密钥 → AI_DEGRADED，改人工上传
+```
+
+---
+
 ## 下一步
 
-- **I7+**：库存增强 / 消息通知 / Redis 接入 / 前端发货与售后页 / 真实微信支付宝证书联调
-- 官方分账与周期打款仍属二期
+- **后续**：Redis 接入 / 消息通知 / 前端发货售后与 AI 表单 / 真实微信支付宝与 AI 外呼联调
+- 官方分账、AI 推广视频仍属二期
 
 ---
 
 ## 已知限制
 
-- Redis 仍 exclude（超时关单 / 售后扫描用 DB）
+- Redis 仍 exclude（超时关单 / 售后扫描 / 限流均为进程内或 DB）
 - 装修为 JSON 编辑非拖拽
 - JWT secret / MOCK 支付仅开发用途
-- 微信/支付宝为对接骨架（验签/查单/对账可切换通道，生产密钥需环境变量）
-- 轨迹查询为占位实现，未接真实快递公司 API
-- 售后退款为账本记账，非通道原路退款
+- 微信/支付宝为对接骨架；AI OpenAI 兼容为骨架（未默认外呼）
+- 轨迹查询为占位；售后退款为账本记账
+- 内容安全为违禁词占位，非云审核

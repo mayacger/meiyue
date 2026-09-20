@@ -62,7 +62,8 @@ public class GlobalExceptionHandler {
             case "FORBIDDEN", "TENANT_MISMATCH", "TENANT_REQUIRED" -> HttpStatus.FORBIDDEN;
             case "NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "CONFLICT", "USER_EXISTS", "APPLICATION_EXISTS" -> HttpStatus.CONFLICT;
-            case "BAD_REQUEST", "APPLICATION_NOT_PENDING" -> HttpStatus.BAD_REQUEST;
+            case "RATE_LIMITED" -> HttpStatus.TOO_MANY_REQUESTS;
+            case "AI_DEGRADED", "MEDIA_NOT_APPROVED", "BAD_REQUEST", "APPLICATION_NOT_PENDING" -> HttpStatus.BAD_REQUEST;
             default -> HttpStatus.BAD_REQUEST;
         };
     }

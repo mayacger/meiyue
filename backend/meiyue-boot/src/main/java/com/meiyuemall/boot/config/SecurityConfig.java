@@ -51,6 +51,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(SecurityConstants.PUBLIC_PATHS).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // I7：Actuator 除健康/信息外需认证（防指标与内部端点裸奔）
+                        .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                        .requestMatchers("/actuator/**").authenticated()
                         // I2 买家公开浏览
                         .requestMatchers(HttpMethod.GET,
                                 SecurityConstants.API_PREFIX + "/categories",
@@ -80,7 +83,9 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/seller/shipments",
                                 SecurityConstants.API_PREFIX + "/seller/shipments/**",
                                 SecurityConstants.API_PREFIX + "/seller/aftersales",
-                                SecurityConstants.API_PREFIX + "/seller/aftersales/**"
+                                SecurityConstants.API_PREFIX + "/seller/aftersales/**",
+                                SecurityConstants.API_PREFIX + "/seller/ai",
+                                SecurityConstants.API_PREFIX + "/seller/ai/**"
                         ).hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
                         .requestMatchers(SecurityConstants.API_PREFIX + "/seller/onboarding/**")
                         .authenticated()

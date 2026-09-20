@@ -11,6 +11,7 @@ import com.meiyuemall.catalog.dto.ProductUpsertRequest;
 import com.meiyuemall.catalog.dto.SkuResponse;
 import com.meiyuemall.catalog.repo.CategoryRepository;
 import com.meiyuemall.catalog.repo.ProductRepository;
+import com.meiyuemall.common.audit.Audited;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
 import com.meiyuemall.common.security.MeiyuePrincipal;
@@ -43,6 +44,7 @@ public class CatalogService {
     }
 
     @Transactional
+    @Audited(action = "PRODUCT_CREATE", resourceType = "Product")
     public ProductResponse create(ProductUpsertRequest request) {
         Long tenantId = requireSellerTenant();
         Product product = new Product();
@@ -53,6 +55,7 @@ public class CatalogService {
     }
 
     @Transactional
+    @Audited(action = "PRODUCT_UPDATE", resourceType = "Product")
     public ProductResponse update(Long productId, ProductUpsertRequest request) {
         Long tenantId = requireSellerTenant();
         Product product = productRepository.findByIdAndTenantId(productId, tenantId)
@@ -64,6 +67,7 @@ public class CatalogService {
     }
 
     @Transactional
+    @Audited(action = "PRODUCT_STATUS", resourceType = "Product")
     public ProductResponse changeStatus(Long productId, ProductStatus status) {
         Long tenantId = requireSellerTenant();
         Product product = productRepository.findByIdAndTenantId(productId, tenantId)
@@ -72,6 +76,33 @@ public class CatalogService {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "无 SKU 不可上架");
         }
         product.setStatus(status);
+        return toResponse(product);
+    }
+
+    /**
+     * I8：将已审核素材挂到商品封面（AI 或人工流程共用）。
+     */
+    @Transactional
+    @Audited(action = "PRODUCT_ATTACH_COVER", resourceType = "Product")
+    public ProductResponse attachCover(Long productId, Long assetId, String coverUrl) {
+        Long tenantId = requireSellerTenant();
+        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        product.setCoverAssetId(assetId);
+        product.setCoverImageUrl(coverUrl);
+        return toResponse(product);
+    }
+
+    /**
+     * I8：写入 AI/人工详情 HTML。
+     */
+    @Transactional
+    @Audited(action = "PRODUCT_APPLY_DETAIL", resourceType = "Product")
+    public ProductResponse applyDetailHtml(Long productId, String detailHtml) {
+        Long tenantId = requireSellerTenant();
+        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        product.setDetailHtml(detailHtml);
         return toResponse(product);
     }
 
@@ -111,6 +142,10 @@ public class CatalogService {
         product.setTitle(request.title().trim());
         product.setSubtitle(request.subtitle());
         product.setDetailHtml(request.detailHtml());
+        // I8：封面可人工 URL，或由 AI 挂接写入 coverAssetId + coverImageUrl
+        if (request.coverImageUrl() != null) {
+            product.setCoverImageUrl(request.coverImageUrl().isBlank() ? null : request.coverImageUrl().trim());
+        }
         for (ProductUpsertRequest.SkuRequest skuReq : request.skus()) {
             ProductSku sku = new ProductSku();
             sku.setTenantId(tenantId);
@@ -142,6 +177,8 @@ public class CatalogService {
                 product.getTitle(),
                 product.getSubtitle(),
                 product.getDetailHtml(),
+                product.getCoverImageUrl(),
+                product.getCoverAssetId(),
                 product.getStatus().name(),
                 skus,
                 product.getUpdatedAt()

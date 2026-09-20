@@ -7,12 +7,16 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.Size;
 import java.util.List;
 
-/** 创建/更新商品请求 */
+/**
+ * 创建/更新商品请求。
+ * <p>{@code coverImageUrl} — I8 人工上传或 AI 通过后的封面；可空，AI 失败时仍可仅填标题上架。</p>
+ */
 public record ProductUpsertRequest(
         Long categoryId,
         @NotBlank @Size(max = 256) String title,
         @Size(max = 512) String subtitle,
         String detailHtml,
+        @Size(max = 1024) String coverImageUrl,
         @NotEmpty @Valid List<SkuRequest> skus
 ) {
     public record SkuRequest(

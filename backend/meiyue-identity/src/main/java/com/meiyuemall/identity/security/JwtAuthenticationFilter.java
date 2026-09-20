@@ -1,5 +1,6 @@
 package com.meiyuemall.identity.security;
 
+import com.meiyuemall.common.observability.TraceIdFilter;
 import com.meiyuemall.common.security.SecurityConstants;
 import com.meiyuemall.common.tenant.TenantContextFilter;
 import com.meiyuemall.identity.domain.UserAccount;
@@ -10,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -58,6 +60,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                             principal, null, principal.getAuthorities());
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                     TenantContextFilter.applyFromPrincipal(principal);
+                    if (principal.getTenantId() != null) {
+                        MDC.put(TraceIdFilter.MDC_TENANT, String.valueOf(principal.getTenantId()));
+                    }
                 }
             } catch (Exception ex) {
                 log.debug("JWT 无效，按匿名继续: {}", ex.getMessage());
