@@ -61,6 +61,7 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/products/**",
                                 SecurityConstants.API_PREFIX + "/stores/*/products",
                                 SecurityConstants.API_PREFIX + "/stores/*/page",
+                                SecurityConstants.API_PREFIX + "/stores/*/coupons",
                                 SecurityConstants.API_PREFIX + "/decoration/templates"
                         ).permitAll()
                         // I4 支付通道回调（验签在业务内完成）
@@ -85,7 +86,13 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/seller/aftersales",
                                 SecurityConstants.API_PREFIX + "/seller/aftersales/**",
                                 SecurityConstants.API_PREFIX + "/seller/ai",
-                                SecurityConstants.API_PREFIX + "/seller/ai/**"
+                                SecurityConstants.API_PREFIX + "/seller/ai/**",
+                                SecurityConstants.API_PREFIX + "/seller/orders",
+                                SecurityConstants.API_PREFIX + "/seller/orders/**",
+                                SecurityConstants.API_PREFIX + "/seller/settlements",
+                                SecurityConstants.API_PREFIX + "/seller/settlements/**",
+                                SecurityConstants.API_PREFIX + "/seller/coupons",
+                                SecurityConstants.API_PREFIX + "/seller/coupons/**"
                         ).hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
                         .requestMatchers(SecurityConstants.API_PREFIX + "/seller/onboarding/**")
                         .authenticated()

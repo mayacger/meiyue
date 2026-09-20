@@ -17,6 +17,7 @@ import com.meiyuemall.catalog.service.CatalogService;
 import com.meiyuemall.common.audit.Audited;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
+import com.meiyuemall.common.redis.RedisAiTaskQueue;
 import com.meiyuemall.common.security.MeiyuePrincipal;
 import com.meiyuemall.common.security.SecurityUtils;
 import org.springframework.stereotype.Service;
@@ -34,17 +35,20 @@ public class AiAssistService {
     private final MediaAssetRepository mediaAssetRepository;
     private final ContentSafetyPort contentSafetyPort;
     private final CatalogService catalogService;
+    private final RedisAiTaskQueue aiTaskQueue;
 
     public AiAssistService(
             AiProviderRegistry registry,
             MediaAssetRepository mediaAssetRepository,
             ContentSafetyPort contentSafetyPort,
-            CatalogService catalogService
+            CatalogService catalogService,
+            RedisAiTaskQueue aiTaskQueue
     ) {
         this.registry = registry;
         this.mediaAssetRepository = mediaAssetRepository;
         this.contentSafetyPort = contentSafetyPort;
         this.catalogService = catalogService;
+        this.aiTaskQueue = aiTaskQueue;
     }
 
     @Transactional
@@ -82,6 +86,7 @@ public class AiAssistService {
             asset.setModerationNote(safety.note());
         }
         mediaAssetRepository.save(asset);
+        aiTaskQueue.enqueue("{\"type\":\"IMAGE\",\"assetId\":" + asset.getId() + ",\"tenantId\":" + asset.getTenantId() + "}");
         return toAssetResponse(asset, asset.getModerationStatus() != ModerationStatus.APPROVED);
     }
 

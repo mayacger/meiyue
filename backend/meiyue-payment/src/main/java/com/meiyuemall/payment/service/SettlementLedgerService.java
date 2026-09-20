@@ -1,6 +1,8 @@
 package com.meiyuemall.payment.service;
 
 import com.meiyuemall.payment.domain.SettlementLedger;
+import com.meiyuemall.payment.dto.SettlementLedgerResponse;
+import com.meiyuemall.payment.dto.SettlementPeriodSummary;
 import com.meiyuemall.payment.repo.SettlementLedgerRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -75,7 +77,34 @@ public class SettlementLedgerService {
         return ledgerRepository.findByTenantIdAndStatusOrderByCreatedAtDesc(tenantId, "PENDING");
     }
 
-    /** 账期：yyyy-MM-Wn */
+    @Transactional(readOnly = true)
+    public List<SettlementLedgerResponse> listBills(Long tenantId, String periodKey) {
+        List<SettlementLedger> rows = (periodKey == null || periodKey.isBlank())
+                ? ledgerRepository.findByTenantIdOrderByCreatedAtDesc(tenantId)
+                : ledgerRepository.findByTenantIdAndPeriodKeyOrderByCreatedAtDesc(tenantId, periodKey.trim());
+        return rows.stream().map(this::toResponse).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<SettlementPeriodSummary> periodSummaries(Long tenantId) {
+        return ledgerRepository.summarizeByPeriod(tenantId).stream()
+                .map(r -> new SettlementPeriodSummary(
+                        (String) r[0],
+                        (String) r[1],
+                        ((Number) r[2]).longValue(),
+                        ((Number) r[3]).longValue()
+                )).toList();
+    }
+
+    private SettlementLedgerResponse toResponse(SettlementLedger s) {
+        return new SettlementLedgerResponse(
+                s.getId(), s.getOrderId(), s.getOrderItemId(), s.getEntryType(),
+                s.getAmountCents(), s.getStatus(), s.getPeriodKey(), s.getRemark(),
+                s.getCreatedAt() == null ? null : s.getCreatedAt().toString()
+        );
+    }
+
+    /** 账期：yyyy-Wnn */
     public static String currentPeriodKey() {
         LocalDate today = LocalDate.now();
         WeekFields wf = WeekFields.of(Locale.CHINA);

@@ -70,8 +70,8 @@
 | Node.js | **≥ 20** |
 | pnpm | **≥ 9**（仓库约定） |
 
-PostgreSQL：本地或 `docker compose -f docker/docker-compose.yml up -d postgres`。  
-Redis：配置占位；**I3 前 API 仍 exclude Redis 自动配置**。
+PostgreSQL：本地或 `docker compose -f docker/docker-compose.yml up -d`。  
+Redis：I9 已接入（关单/售后延迟、限流、可选 AI 队列）；`docker compose` 默认含 Redis，或系统 `redis-server`。DB 扫描兜底见 `meiyue.jobs.db-fallback-enabled`。
 
 ---
 

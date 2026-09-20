@@ -40,11 +40,18 @@ public class SettlementLedger {
     public Long getOrderId() { return orderId; }
     public void setOrderId(Long orderId) { this.orderId = orderId; }
     public void setOrderItemId(Long orderItemId) { this.orderItemId = orderItemId; }
+    public Long getOrderItemId() { return orderItemId; }
+    public String getEntryType() { return entryType; }
     public void setEntryType(String entryType) { this.entryType = entryType; }
+    public long getAmountCents() { return amountCents; }
     public void setAmountCents(long amountCents) { this.amountCents = amountCents; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getPeriodKey() { return periodKey; }
     public void setPeriodKey(String periodKey) { this.periodKey = periodKey; }
+    public String getRemark() { return remark; }
     public void setRemark(String remark) { this.remark = remark; }
+    public Instant getCreatedAt() { return createdAt; }
+    public Instant getSettledAt() { return settledAt; }
     public void setSettledAt(Instant settledAt) { this.settledAt = settledAt; }
 }

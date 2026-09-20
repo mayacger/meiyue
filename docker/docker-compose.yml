@@ -1,5 +1,5 @@
-# 美月商城本地依赖（PostgreSQL；Redis 可选，I3 前可不启）
-# 本环境若无 Docker，可用系统包安装的 PostgreSQL（见根 README）
+# 美月商城本地依赖（PostgreSQL + Redis）
+# 无 Docker 时可用系统包：postgresql / redis-server（见根 README）
 services:
   postgres:
     image: postgres:16-alpine
@@ -18,13 +18,17 @@ services:
       timeout: 5s
       retries: 10
 
-  # I3 起建议启用；当前 API 仍 exclude Redis 自动配置
+  # I9：关单/售后超时/限流/可选 AI 队列依赖 Redis
   redis:
     image: redis:7-alpine
     container_name: meiyue-redis
     ports:
       - "6379:6379"
-    profiles: ["full"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
   meiyue_pg_data:

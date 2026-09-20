@@ -10,6 +10,7 @@ import com.meiyuemall.aftersale.dto.ReviewAftersaleRequest;
 import com.meiyuemall.aftersale.repo.AftersaleRepository;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
+import com.meiyuemall.common.redis.DelayTaskPort;
 import com.meiyuemall.common.security.MeiyuePrincipal;
 import com.meiyuemall.common.security.SecurityUtils;
 import com.meiyuemall.logistics.domain.Shipment;
@@ -39,17 +40,20 @@ public class AftersaleService {
     private final OrderRepository orderRepository;
     private final LogisticsService logisticsService;
     private final SettlementLedgerService settlementLedgerService;
+    private final DelayTaskPort delayTaskPort;
 
     public AftersaleService(
             AftersaleRepository aftersaleRepository,
             OrderRepository orderRepository,
             LogisticsService logisticsService,
-            SettlementLedgerService settlementLedgerService
+            SettlementLedgerService settlementLedgerService,
+            DelayTaskPort delayTaskPort
     ) {
         this.aftersaleRepository = aftersaleRepository;
         this.orderRepository = orderRepository;
         this.logisticsService = logisticsService;
         this.settlementLedgerService = settlementLedgerService;
+        this.delayTaskPort = delayTaskPort;
     }
 
     @Transactional
@@ -79,6 +83,12 @@ public class AftersaleService {
         as.setRefundCents(request.refundCents());
         as.setSellerDeadlineAt(Instant.now().plus(SELLER_REVIEW_HOURS, ChronoUnit.HOURS));
         aftersaleRepository.save(as);
+        // I9：Redis 延迟 48h 自动同意
+        delayTaskPort.schedule(
+                DelayTaskPort.TYPE_AFTERSALE_AUTO,
+                String.valueOf(as.getId()),
+                as.getSellerDeadlineAt()
+        );
         return toResponse(as);
     }
 
@@ -162,6 +172,23 @@ public class AftersaleService {
             approve(as.getId(), new ReviewAftersaleRequest("48h 超时自动同意"), true);
         }
         return list.size();
+    }
+
+    /** Redis 延迟任务：按 ID 自动同意（幂等） */
+    @Transactional
+    public boolean autoApproveById(Long id) {
+        Aftersale as = aftersaleRepository.findById(id).orElse(null);
+        if (as == null) {
+            return false;
+        }
+        if (as.getStatus() != AftersaleStatus.REVIEWING && as.getStatus() != AftersaleStatus.APPLIED) {
+            return false;
+        }
+        if (as.getSellerDeadlineAt().isAfter(Instant.now())) {
+            return false;
+        }
+        approve(id, new ReviewAftersaleRequest("48h 超时自动同意"), true);
+        return true;
     }
 
     @Transactional(readOnly = true)

@@ -7,6 +7,10 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { ProductsPage } from "./pages/ProductsPage";
 import { DecorationPage } from "./pages/DecorationPage";
+import { ShipmentsPage } from "./pages/ShipmentsPage";
+import { AftersalesPage } from "./pages/AftersalesPage";
+import { SettlementsPage } from "./pages/SettlementsPage";
+import { CouponsPage } from "./pages/CouponsPage";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   if (!getToken()) {
@@ -23,6 +27,10 @@ export function App() {
       <Route path="/onboarding" element={<RequireAuth><OnboardingPage /></RequireAuth>} />
       <Route path="/products" element={<RequireAuth><ProductsPage /></RequireAuth>} />
       <Route path="/decoration" element={<RequireAuth><DecorationPage /></RequireAuth>} />
+      <Route path="/shipments" element={<RequireAuth><ShipmentsPage /></RequireAuth>} />
+      <Route path="/aftersales" element={<RequireAuth><AftersalesPage /></RequireAuth>} />
+      <Route path="/settlements" element={<RequireAuth><SettlementsPage /></RequireAuth>} />
+      <Route path="/coupons" element={<RequireAuth><CouponsPage /></RequireAuth>} />
       <Route path="/" element={<RequireAuth><DashboardPage /></RequireAuth>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

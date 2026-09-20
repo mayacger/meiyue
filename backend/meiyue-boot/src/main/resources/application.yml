@@ -61,7 +61,7 @@ info:
     name: 美月商城
     code: meiyue-mall
     module: boot
-    description: B2B2C 多租户电商 API（I1–I8）
+    description: B2B2C 多租户电商 API（I1–I9）
 
 # JWT（生产务必用环境变量覆盖 secret）
 meiyue:
@@ -71,12 +71,23 @@ meiyue:
       secret: "meiyue-mall-dev-jwt-secret-change-me-32b!"
       issuer: meiyue-mall
       expire-seconds: 86400
-  # I7：关键接口限流（内存窗口；生产可换 Redis）
+  # I7/I9：关键接口限流（优先 Redis）
   rate-limit:
     enabled: true
     login-per-minute: 30
     notify-per-minute: 60
     api-per-minute: 300
+  # I9：Redis 能力开关
+  redis:
+    delay-queue-enabled: true
+    rate-limit-enabled: true
+    ai-queue-enabled: true
+  # I9：定时任务；db-fallback 为 true 时仍扫库兜底
+  jobs:
+    db-fallback-enabled: true
+    order-expire-delay-ms: 15000
+    aftersale-auto-delay-ms: 20000
+    ai-queue-delay-ms: 10000
   # I7：审计开关
   audit:
     enabled: true

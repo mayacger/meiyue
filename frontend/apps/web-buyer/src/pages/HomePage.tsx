@@ -100,7 +100,7 @@ export function HomePage() {
   }
 
   return (
-    <PageShell title="买家商城" subtitle="浏览 · 加购 · 下单 · 模拟支付（I3）">
+    <PageShell title="买家商城" subtitle="浏览 · 加购 · 下单 · 物流售后（I3–I9）">
       {!loggedIn ? (
         <form onSubmit={login} style={{ display: "grid", gap: 8, maxWidth: 320 }}>
           <label>用户名 <input value={username} onChange={(e) => setUsername(e.target.value)} /></label>
@@ -145,7 +145,7 @@ export function HomePage() {
           <ul>
             {orders.map((o) => (
               <li key={o.id}>
-                {o.orderNo} [{o.status}] ¥{(o.totalCents / 100).toFixed(2)}{" "}
+                <Link to={`/orders/${o.id}`}>{o.orderNo}</Link> [{o.status}] ¥{(o.totalCents / 100).toFixed(2)}{" "}
                 {o.status === "PENDING_PAYMENT" ? (
                   <button type="button" onClick={() => mockPay(o.id)}>模拟支付</button>
                 ) : null}

@@ -6,6 +6,8 @@ import com.meiyuemall.catalog.domain.ProductStatus;
 import com.meiyuemall.catalog.repo.ProductSkuRepository;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
+import com.meiyuemall.common.redis.DelayTaskPort;
+import com.meiyuemall.common.security.MeiyuePrincipal;
 import com.meiyuemall.common.security.SecurityUtils;
 import com.meiyuemall.payment.domain.PaymentChannel;
 import com.meiyuemall.payment.dto.PaymentResponse;
@@ -25,12 +27,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * 下单：校验 → 预占库存（扣减 stock_qty）→ 创建待支付订单 + 支付单。
- * 超时 30 分钟由 {@link OrderExpireJob} 关单并回滚库存。
+ * 超时 30 分钟由 Redis 延迟队列 + OrderExpireJob（DB 兜底）关单并回滚库存。
  */
 @Service
 public class OrderService {
@@ -41,17 +44,23 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final ProductSkuRepository productSkuRepository;
     private final PaymentService paymentService;
+    private final DelayTaskPort delayTaskPort;
+    private final CouponService couponService;
 
     public OrderService(
             CartItemRepository cartItemRepository,
             OrderRepository orderRepository,
             ProductSkuRepository productSkuRepository,
-            PaymentService paymentService
+            PaymentService paymentService,
+            DelayTaskPort delayTaskPort,
+            CouponService couponService
     ) {
         this.cartItemRepository = cartItemRepository;
         this.orderRepository = orderRepository;
         this.productSkuRepository = productSkuRepository;
         this.paymentService = paymentService;
+        this.delayTaskPort = delayTaskPort;
+        this.couponService = couponService;
     }
 
     @Transactional
@@ -105,6 +114,33 @@ public class OrderService {
         }
         order.setTotalCents(total);
         orderRepository.save(order);
+
+        // 店券抵扣（单店订单；多店有券时要求券租户匹配订单行中的某一店，并按该店行小计校验门槛）
+        if (request != null && request.couponClaimId() != null) {
+            Long couponTenant = null;
+            long tenantSubtotal = 0;
+            for (OrderItem line : order.getItems()) {
+                if (couponTenant == null) {
+                    couponTenant = line.getTenantId();
+                }
+                if (couponTenant.equals(line.getTenantId())) {
+                    tenantSubtotal += line.getLineTotalCents();
+                }
+            }
+            // 简化：仅当订单全部行为同一租户时可用店券
+            boolean singleTenant = order.getItems().stream().map(OrderItem::getTenantId).distinct().count() == 1;
+            if (!singleTenant) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "跨店订单暂不支持店券，请分店结算");
+            }
+            long discount = couponService.applyClaimToOrder(
+                    request.couponClaimId(), buyerId, couponTenant, tenantSubtotal, order.getId());
+            total = Math.max(1, total - discount); // 至少 1 分，避免零元支付边缘
+            order.setTotalCents(total);
+            orderRepository.save(order);
+        }
+
+        // I9：Redis 延迟关单（DB 扫描仍作兜底）
+        delayTaskPort.schedule(DelayTaskPort.TYPE_ORDER_EXPIRE, String.valueOf(order.getId()), order.getPayExpireAt());
 
         cartItemRepository.deleteByBuyerUserIdAndSkuIdIn(buyerId, skuIdsToClear);
 
@@ -195,6 +231,43 @@ public class OrderService {
             cancelOrder(order, "支付超时自动关单");
         }
         return expired.size();
+    }
+
+    /** 按订单 ID 关单（Redis 延迟任务消费；幂等） */
+    @Transactional
+    public boolean cancelExpiredById(Long orderId) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null) {
+            return false;
+        }
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            return false;
+        }
+        if (order.getPayExpireAt().isAfter(Instant.now())) {
+            return false;
+        }
+        cancelOrder(order, "支付超时自动关单");
+        return true;
+    }
+
+    /**
+     * 商家视角：本店有行的履约相关订单。
+     */
+    @Transactional(readOnly = true)
+    public List<OrderResponse> listForSeller() {
+        Long tenantId = requireSellerTenant();
+        return orderRepository.findDistinctForSeller(
+                tenantId,
+                EnumSet.of(OrderStatus.PAID, OrderStatus.FULFILLING, OrderStatus.COMPLETED, OrderStatus.PENDING_PAYMENT)
+        ).stream().map(o -> toResponse(o, null)).toList();
+    }
+
+    private Long requireSellerTenant() {
+        MeiyuePrincipal p = SecurityUtils.requirePrincipal();
+        if (p.getTenantId() == null) {
+            throw new BusinessException(ErrorCode.TENANT_REQUIRED);
+        }
+        return p.getTenantId();
     }
 
     private OrderResponse toResponse(Order order, String paymentNo) {
