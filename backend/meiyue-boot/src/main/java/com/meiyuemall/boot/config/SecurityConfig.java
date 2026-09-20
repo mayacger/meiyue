@@ -60,6 +60,10 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/stores/*/page",
                                 SecurityConstants.API_PREFIX + "/decoration/templates"
                         ).permitAll()
+                        // I4 支付通道回调（验签在业务内完成）
+                        .requestMatchers(HttpMethod.POST,
+                                SecurityConstants.API_PREFIX + "/payments/notify/**"
+                        ).permitAll()
                         .requestMatchers(SecurityConstants.API_PREFIX + "/admin/**")
                         .hasRole("PLATFORM_ADMIN")
                         .requestMatchers(SecurityConstants.API_PREFIX + "/seller/store")

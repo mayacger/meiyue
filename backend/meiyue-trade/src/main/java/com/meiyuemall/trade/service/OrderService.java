@@ -149,7 +149,7 @@ public class OrderService {
         String paymentNo = existing != null
                 ? existing.paymentNo()
                 : paymentService.createPending(order.getId(), order.getTotalCents(), PaymentChannel.MOCK).paymentNo();
-        PaymentResponse paid = paymentService.mockPaySuccess(paymentNo, p -> markPaid(order));
+        PaymentResponse paid = paymentService.mockPaySuccess(paymentNo);
         return toResponse(order, paid.paymentNo());
     }
 

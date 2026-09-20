@@ -42,11 +42,26 @@ spring:
 meiyue:
   security:
     jwt:
-      # 至少 32 字节；可用环境变量 MEIYUE_SECURITY_JWT_SECRET 覆盖（需额外绑定，此处先写死开发密钥）
+      # 至少 32 字节；生产用环境变量覆盖
       secret: "meiyue-mall-dev-jwt-secret-change-me-32b!"
       issuer: meiyue-mall
       expire-seconds: 86400
-
+  # 支付（I4）：密钥仅配置/环境变量，禁止入库明文
+  payment:
+    # 本地默认 MOCK；生产改为 WECHAT 或 ALIPAY
+    default-channel: MOCK
+    mock-enabled: true
+    wechat:
+      app-id: ${MEIYUE_WECHAT_APP_ID:}
+      mch-id: ${MEIYUE_WECHAT_MCH_ID:}
+      api-v3-key: ${MEIYUE_WECHAT_API_V3_KEY:}
+      private-key-pem: ${MEIYUE_WECHAT_PRIVATE_KEY_PEM:}
+      notify-url: ${MEIYUE_WECHAT_NOTIFY_URL:http://localhost:8080/api/v1/payments/notify/wechat}
+    alipay:
+      app-id: ${MEIYUE_ALIPAY_APP_ID:}
+      private-key: ${MEIYUE_ALIPAY_PRIVATE_KEY:}
+      alipay-public-key: ${MEIYUE_ALIPAY_PUBLIC_KEY:}
+      notify-url: ${MEIYUE_ALIPAY_NOTIFY_URL:http://localhost:8080/api/v1/payments/notify/alipay}
 server:
   port: 8080
 
