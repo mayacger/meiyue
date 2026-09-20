@@ -133,16 +133,14 @@ public class OrderService {
         Long platformClaimId = request == null ? null : request.platformCouponClaimId();
         CouponStackingRules.assertExclusive(storeClaimId, platformClaimId, couponStackingMode);
 
-        // 店券抵扣（单店订单）
+        // 店券抵扣：仅单店订单（I12 跨店规则）
         if (storeClaimId != null) {
             Long couponTenant = order.getItems().get(0).getTenantId();
             long tenantSubtotal = order.getItems().stream()
                     .filter(i -> couponTenant.equals(i.getTenantId()))
                     .mapToLong(OrderItem::getLineTotalCents).sum();
             boolean singleTenant = order.getItems().stream().map(OrderItem::getTenantId).distinct().count() == 1;
-            if (!singleTenant) {
-                throw new BusinessException(ErrorCode.BAD_REQUEST, "跨店订单暂不支持店券，请分店结算");
-            }
+            CouponStackingRules.assertStoreCouponSingleShop(singleTenant);
             long discount = couponService.applyClaimToOrder(
                     storeClaimId, buyerId, couponTenant, tenantSubtotal, order.getId());
             total = Math.max(1, total - discount);
@@ -150,7 +148,7 @@ public class OrderService {
             orderRepository.save(order);
         }
 
-        // 平台券抵扣（整单门槛；与店券互斥）
+        // 平台券抵扣：整单门槛；跨店可用；与店券互斥
         if (platformClaimId != null) {
             long discount = platformCouponService.applyClaimToOrder(
                     platformClaimId, buyerId, total, order.getId());

@@ -52,6 +52,15 @@ public class AlipayPaymentChannelClient implements PaymentChannelClient {
         return new ChannelQueryResult(false, false, null, null, "ALIPAY_QUERY_NOT_IMPLEMENTED");
     }
 
+    @Override
+    public ChannelRefundResult refund(Payment payment, String refundRequestNo, long amountCents) {
+        ensureConfigured();
+        // TODO：alipay.trade.refund
+        log.info("ALIPAY refund 占位 paymentNo={} refundRequestNo={} amount={}",
+                payment.getPaymentNo(), refundRequestNo, amountCents);
+        return ChannelRefundResult.fail("ALIPAY_REFUND_NOT_IMPLEMENTED");
+    }
+
     private void ensureConfigured() {
         PaymentProperties.Alipay a = properties.alipay();
         if (a == null || isBlank(a.appId()) || isBlank(a.privateKey()) || isBlank(a.alipayPublicKey())) {

@@ -42,6 +42,13 @@ public class MockPaymentChannelClient implements PaymentChannelClient {
         return new ChannelQueryResult(true, false, null, payment.getAmountCents(), "MOCK_QUERY_PENDING");
     }
 
+    @Override
+    public ChannelRefundResult refund(Payment payment, String refundRequestNo, long amountCents) {
+        // MOCK：本地成功；流水含请求号便于幂等联调
+        String no = "mock_rf_" + (refundRequestNo == null ? payment.getPaymentNo() : refundRequestNo);
+        return ChannelRefundResult.ok(no);
+    }
+
     private static String extract(String raw, String key) {
         if (raw == null) return null;
         for (String part : raw.split("&")) {

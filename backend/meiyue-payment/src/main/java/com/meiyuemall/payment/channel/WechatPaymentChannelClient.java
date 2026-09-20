@@ -56,6 +56,15 @@ public class WechatPaymentChannelClient implements PaymentChannelClient {
         return new ChannelQueryResult(false, false, null, null, "WECHAT_QUERY_NOT_IMPLEMENTED");
     }
 
+    @Override
+    public ChannelRefundResult refund(Payment payment, String refundRequestNo, long amountCents) {
+        ensureConfigured();
+        // TODO：POST /v3/refund/domestic/refunds
+        log.info("WECHAT refund 占位 paymentNo={} refundRequestNo={} amount={}",
+                payment.getPaymentNo(), refundRequestNo, amountCents);
+        return ChannelRefundResult.fail("WECHAT_REFUND_NOT_IMPLEMENTED");
+    }
+
     private void ensureConfigured() {
         PaymentProperties.Wechat w = properties.wechat();
         if (w == null || isBlank(w.mchId()) || isBlank(w.apiV3Key())) {

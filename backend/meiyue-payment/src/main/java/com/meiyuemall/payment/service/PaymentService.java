@@ -4,6 +4,7 @@ import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
 import com.meiyuemall.payment.channel.ChannelNotifyResult;
 import com.meiyuemall.payment.channel.ChannelQueryResult;
+import com.meiyuemall.payment.channel.ChannelRefundResult;
 import com.meiyuemall.payment.channel.PaymentChannelClient;
 import com.meiyuemall.payment.channel.PaymentChannelRegistry;
 import com.meiyuemall.payment.config.PaymentProperties;
@@ -11,10 +12,13 @@ import com.meiyuemall.payment.domain.Payment;
 import com.meiyuemall.payment.domain.PaymentChannel;
 import com.meiyuemall.payment.domain.PaymentNotifyLog;
 import com.meiyuemall.payment.domain.PaymentQueryLog;
+import com.meiyuemall.payment.domain.PaymentRefund;
 import com.meiyuemall.payment.domain.PaymentStatus;
 import com.meiyuemall.payment.dto.PaymentResponse;
+import com.meiyuemall.payment.dto.RefundResponse;
 import com.meiyuemall.payment.repo.PaymentNotifyLogRepository;
 import com.meiyuemall.payment.repo.PaymentQueryLogRepository;
+import com.meiyuemall.payment.repo.PaymentRefundRepository;
 import com.meiyuemall.payment.repo.PaymentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +46,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentNotifyLogRepository notifyLogRepository;
     private final PaymentQueryLogRepository queryLogRepository;
+    private final PaymentRefundRepository refundRepository;
     private final PaymentChannelRegistry channelRegistry;
     private final PaymentProperties paymentProperties;
     private final ObjectProvider<PaymentSuccessHandler> successHandler;
@@ -50,6 +55,7 @@ public class PaymentService {
             PaymentRepository paymentRepository,
             PaymentNotifyLogRepository notifyLogRepository,
             PaymentQueryLogRepository queryLogRepository,
+            PaymentRefundRepository refundRepository,
             PaymentChannelRegistry channelRegistry,
             PaymentProperties paymentProperties,
             ObjectProvider<PaymentSuccessHandler> successHandler
@@ -57,6 +63,7 @@ public class PaymentService {
         this.paymentRepository = paymentRepository;
         this.notifyLogRepository = notifyLogRepository;
         this.queryLogRepository = queryLogRepository;
+        this.refundRepository = refundRepository;
         this.channelRegistry = channelRegistry;
         this.paymentProperties = paymentProperties;
         this.successHandler = successHandler;
@@ -213,6 +220,74 @@ public class PaymentService {
         return paymentRepository.findFirstByOrderIdOrderByCreatedAtDesc(orderId)
                 .map(this::toResponse)
                 .orElse(null);
+    }
+
+    /**
+     * I12：售后触发通道退款（幂等：同一 aftersaleId 只处理一次）。
+     * <p>MOCK 立即成功；WECHAT/ALIPAY 接口已留，未对接时记 FAILED 并抛错。</p>
+     * <p>不做官方分账打款。</p>
+     */
+    @Transactional
+    public RefundResponse refundByAftersale(Long orderId, Long aftersaleId, long amountCents) {
+        if (aftersaleId == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "aftersaleId 不能为空");
+        }
+        if (amountCents <= 0) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "退款金额须大于 0");
+        }
+        var existing = refundRepository.findByAftersaleId(aftersaleId);
+        if (existing.isPresent()) {
+            PaymentRefund r = existing.get();
+            return new RefundResponse(
+                    r.getPaymentNo(), r.getAftersaleId(), r.getAmountCents(),
+                    r.getChannel(), r.getChannelRefundNo(), r.getStatus(), true
+            );
+        }
+
+        Payment payment = paymentRepository.findFirstByOrderIdOrderByCreatedAtDesc(orderId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "订单无支付单，无法退款"));
+        if (payment.getStatus() != PaymentStatus.SUCCESS) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "支付单未成功，无法退款");
+        }
+        if (amountCents > payment.getAmountCents()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "退款金额不可超过支付金额");
+        }
+
+        PaymentChannelClient client = channelRegistry.get(payment.getChannel());
+        String requestNo = "AS" + aftersaleId;
+        ChannelRefundResult result = client.refund(payment, requestNo, amountCents);
+
+        PaymentRefund row = new PaymentRefund();
+        row.setPaymentNo(payment.getPaymentNo());
+        row.setOrderId(orderId);
+        row.setAftersaleId(aftersaleId);
+        row.setAmountCents(amountCents);
+        row.setChannel(payment.getChannel().name());
+        row.setChannelRefundNo(result.channelRefundNo());
+        row.setStatus(result.success() ? "SUCCESS" : "FAILED");
+        row.setMessage(result.message());
+        try {
+            refundRepository.save(row);
+        } catch (DataIntegrityViolationException dup) {
+            // 并发幂等
+            PaymentRefund again = refundRepository.findByAftersaleId(aftersaleId)
+                    .orElseThrow(() -> dup);
+            return new RefundResponse(
+                    again.getPaymentNo(), again.getAftersaleId(), again.getAmountCents(),
+                    again.getChannel(), again.getChannelRefundNo(), again.getStatus(), true
+            );
+        }
+
+        if (!result.success()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST,
+                    "通道退款失败: " + result.message() + "（可改用 MOCK 或完成真实通道对接）");
+        }
+        log.info("通道退款成功 paymentNo={} aftersaleId={} channelRefundNo={}",
+                payment.getPaymentNo(), aftersaleId, result.channelRefundNo());
+        return new RefundResponse(
+                payment.getPaymentNo(), aftersaleId, amountCents,
+                payment.getChannel().name(), result.channelRefundNo(), "SUCCESS", false
+        );
     }
 
     private void markSuccess(Payment payment, String channelTradeNo) {

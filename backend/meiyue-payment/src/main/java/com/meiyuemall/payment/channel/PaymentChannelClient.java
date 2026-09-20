@@ -25,4 +25,14 @@ public interface PaymentChannelClient {
      * 主动查单（回调丢失时的补偿）。
      */
     ChannelQueryResult queryOrder(Payment payment);
+
+    /**
+     * I12：通道退款占位。
+     * <p>MOCK 立即成功；WECHAT/ALIPAY 保留接口，未对接前返回失败或抛错。</p>
+     *
+     * @param payment         原支付单（须已 SUCCESS）
+     * @param refundRequestNo 商户退款请求号（幂等，建议 aftersaleNo / aftersaleId）
+     * @param amountCents     退款金额（分）
+     */
+    ChannelRefundResult refund(Payment payment, String refundRequestNo, long amountCents);
 }

@@ -17,6 +17,7 @@ import com.meiyuemall.common.security.SecurityUtils;
 import com.meiyuemall.common.tenant.SellerOwnerLookup;
 import com.meiyuemall.logistics.domain.Shipment;
 import com.meiyuemall.logistics.service.LogisticsService;
+import com.meiyuemall.payment.service.PaymentService;
 import com.meiyuemall.payment.service.SettlementLedgerService;
 import com.meiyuemall.trade.domain.Order;
 import com.meiyuemall.trade.domain.OrderItem;
@@ -42,6 +43,7 @@ public class AftersaleService {
     private final OrderRepository orderRepository;
     private final LogisticsService logisticsService;
     private final SettlementLedgerService settlementLedgerService;
+    private final PaymentService paymentService;
     private final DelayTaskPort delayTaskPort;
     private final NotificationPublisher notificationPublisher;
     private final SellerOwnerLookup sellerOwnerLookup;
@@ -51,6 +53,7 @@ public class AftersaleService {
             OrderRepository orderRepository,
             LogisticsService logisticsService,
             SettlementLedgerService settlementLedgerService,
+            PaymentService paymentService,
             DelayTaskPort delayTaskPort,
             NotificationPublisher notificationPublisher,
             SellerOwnerLookup sellerOwnerLookup
@@ -59,6 +62,7 @@ public class AftersaleService {
         this.orderRepository = orderRepository;
         this.logisticsService = logisticsService;
         this.settlementLedgerService = settlementLedgerService;
+        this.paymentService = paymentService;
         this.delayTaskPort = delayTaskPort;
         this.notificationPublisher = notificationPublisher;
         this.sellerOwnerLookup = sellerOwnerLookup;
@@ -237,7 +241,8 @@ public class AftersaleService {
 
     private void doRefundAndClose(Aftersale as) {
         as.setStatus(AftersaleStatus.REFUNDING);
-        // MVP：记账退款（原路退真实通道 I4+ 再接）；库存回滚可后续增强
+        // I12：先走通道退款（MOCK 幂等），再记结算账本；不做官方分账打款
+        paymentService.refundByAftersale(as.getOrderId(), as.getId(), as.getRefundCents());
         settlementLedgerService.recordRefund(
                 as.getTenantId(), as.getOrderId(), as.getOrderItemId(), as.getRefundCents(),
                 "售后退款 " + as.getAftersaleNo()
