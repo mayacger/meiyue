@@ -1,0 +1,73 @@
+package com.meiyuemall.trade.web;
+
+import com.meiyuemall.common.security.SecurityConstants;
+import com.meiyuemall.common.web.ApiResponse;
+import com.meiyuemall.trade.dto.CartAddRequest;
+import com.meiyuemall.trade.dto.CartItemResponse;
+import com.meiyuemall.trade.dto.CheckoutRequest;
+import com.meiyuemall.trade.dto.OrderResponse;
+import com.meiyuemall.trade.service.CartService;
+import com.meiyuemall.trade.service.OrderService;
+import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+/**
+ * 买家交易 API（I3）。
+ * <ul>
+ *   <li>购物车：/api/v1/buyer/cart</li>
+ *   <li>下单：POST /api/v1/buyer/orders/checkout</li>
+ *   <li>模拟支付：POST /api/v1/buyer/orders/{id}/mock-pay</li>
+ * </ul>
+ */
+@RestController
+@RequestMapping(SecurityConstants.API_PREFIX + "/buyer")
+@PreAuthorize("isAuthenticated()")
+public class BuyerTradeController {
+
+    private final CartService cartService;
+    private final OrderService orderService;
+
+    public BuyerTradeController(CartService cartService, OrderService orderService) {
+        this.cartService = cartService;
+        this.orderService = orderService;
+    }
+
+    @GetMapping("/cart")
+    public ApiResponse<List<CartItemResponse>> cart() {
+        return ApiResponse.ok(cartService.listMine());
+    }
+
+    @PostMapping("/cart/items")
+    public ApiResponse<CartItemResponse> addCart(@Valid @RequestBody CartAddRequest request) {
+        return ApiResponse.ok(cartService.add(request));
+    }
+
+    @DeleteMapping("/cart/items/{id}")
+    public ApiResponse<Void> removeCart(@PathVariable Long id) {
+        cartService.remove(id);
+        return ApiResponse.ok(null);
+    }
+
+    @PostMapping("/orders/checkout")
+    public ApiResponse<OrderResponse> checkout(@RequestBody(required = false) CheckoutRequest request) {
+        return ApiResponse.ok(orderService.checkout(request));
+    }
+
+    @GetMapping("/orders")
+    public ApiResponse<List<OrderResponse>> orders() {
+        return ApiResponse.ok(orderService.listMine());
+    }
+
+    @GetMapping("/orders/{id}")
+    public ApiResponse<OrderResponse> order(@PathVariable Long id) {
+        return ApiResponse.ok(orderService.getMine(id));
+    }
+
+    @PostMapping("/orders/{id}/mock-pay")
+    public ApiResponse<OrderResponse> mockPay(@PathVariable Long id) {
+        return ApiResponse.ok(orderService.mockPay(id));
+    }
+}
