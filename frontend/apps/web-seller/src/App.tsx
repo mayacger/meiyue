@@ -11,6 +11,7 @@ import { ShipmentsPage } from "./pages/ShipmentsPage";
 import { AftersalesPage } from "./pages/AftersalesPage";
 import { SettlementsPage } from "./pages/SettlementsPage";
 import { CouponsPage } from "./pages/CouponsPage";
+import { ReviewsPage } from "./pages/ReviewsPage";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   if (!getToken()) {
@@ -31,6 +32,7 @@ export function App() {
       <Route path="/aftersales" element={<RequireAuth><AftersalesPage /></RequireAuth>} />
       <Route path="/settlements" element={<RequireAuth><SettlementsPage /></RequireAuth>} />
       <Route path="/coupons" element={<RequireAuth><CouponsPage /></RequireAuth>} />
+      <Route path="/reviews" element={<RequireAuth><ReviewsPage /></RequireAuth>} />
       <Route path="/" element={<RequireAuth><DashboardPage /></RequireAuth>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

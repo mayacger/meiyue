@@ -70,4 +70,9 @@ public class BuyerTradeController {
     public ApiResponse<OrderResponse> mockPay(@PathVariable Long id) {
         return ApiResponse.ok(orderService.mockPay(id));
     }
+
+    @PostMapping("/orders/{id}/confirm-receipt")
+    public ApiResponse<OrderResponse> confirmReceipt(@PathVariable Long id) {
+        return ApiResponse.ok(orderService.confirmReceipt(id));
+    }
 }

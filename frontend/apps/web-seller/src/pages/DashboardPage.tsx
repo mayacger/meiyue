@@ -28,12 +28,13 @@ export function DashboardPage() {
   }, [nav]);
 
   return (
-    <PageShell title="商家后台" subtitle="店铺概览（I1–I9）">
+    <PageShell title="商家后台" subtitle="店铺概览（I1–I10）">
       <p>
         <button type="button" onClick={() => { setToken(null); nav("/login"); }}>退出</button>{" "}
         <Link to="/onboarding">入驻</Link> · <Link to="/products">商品</Link> · <Link to="/decoration">装修</Link>
         {" · "}<Link to="/shipments">发货</Link> · <Link to="/aftersales">售后</Link>
         {" · "}<Link to="/settlements">结算</Link> · <Link to="/coupons">店券</Link>
+        {" · "}<Link to="/reviews">评价</Link>
       </p>
       {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
       {me ? <section><h2>当前用户</h2><pre>{JSON.stringify(me, null, 2)}</pre></section> : null}

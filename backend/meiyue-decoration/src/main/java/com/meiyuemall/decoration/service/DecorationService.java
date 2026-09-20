@@ -12,10 +12,16 @@ import com.meiyuemall.decoration.dto.StorePageResponse;
 import com.meiyuemall.decoration.dto.TemplateResponse;
 import com.meiyuemall.decoration.repo.DecorationTemplateRepository;
 import com.meiyuemall.decoration.repo.StorePageRepository;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 
@@ -28,13 +34,16 @@ public class DecorationService {
 
     private final DecorationTemplateRepository templateRepository;
     private final StorePageRepository storePageRepository;
+    private final ObjectMapper objectMapper;
 
     public DecorationService(
             DecorationTemplateRepository templateRepository,
-            StorePageRepository storePageRepository
+            StorePageRepository storePageRepository,
+            ObjectMapper objectMapper
     ) {
         this.templateRepository = templateRepository;
         this.storePageRepository = storePageRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Transactional(readOnly = true)
@@ -47,7 +56,7 @@ public class DecorationService {
     @Transactional
     public StorePageResponse saveDraft(SaveDraftRequest request) {
         MeiyuePrincipal principal = requireSeller();
-        assertNoLive(request.floorsJson());
+        String normalized = normalizeAndValidateFloors(request.floorsJson());
         DecorationTemplate template = templateRepository.findByCode(request.templateCode())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "模板不存在"));
 
@@ -66,7 +75,7 @@ public class DecorationService {
         }
         draft.setTemplateCode(template.getCode());
         draft.setThemeColor(request.themeColor());
-        draft.setFloorsJson(request.floorsJson());
+        draft.setFloorsJson(normalized);
         storePageRepository.save(draft);
         return toResponse(draft);
     }
@@ -86,6 +95,8 @@ public class DecorationService {
                 .findByTenantIdAndStatus(principal.getTenantId(), StorePageStatus.DRAFT)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "无草稿可发布"));
         assertNoLive(draft.getFloorsJson());
+        // 发布前再规范化一次，保证 sortOrder
+        draft.setFloorsJson(normalizeAndValidateFloors(draft.getFloorsJson()));
 
         StorePage published = storePageRepository
                 .findByTenantIdAndStatus(principal.getTenantId(), StorePageStatus.PUBLISHED)
@@ -129,6 +140,49 @@ public class DecorationService {
                 || upper.contains("\"TYPE\":\"LIVE\"")
                 || floorsJson.contains("直播")) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "不允许直播类楼层组件");
+        }
+    }
+
+    /**
+     * I10：校验楼层类型白名单，并按 sortOrder 排序写回 JSON。
+     */
+    private String normalizeAndValidateFloors(String floorsJson) {
+        assertNoLive(floorsJson);
+        try {
+            JsonNode root = objectMapper.readTree(floorsJson == null || floorsJson.isBlank() ? "[]" : floorsJson);
+            if (!root.isArray()) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "floorsJson 必须是数组");
+            }
+            List<ObjectNode> floors = new ArrayList<>();
+            int auto = 10;
+            for (JsonNode n : root) {
+                if (!n.isObject()) {
+                    throw new BusinessException(ErrorCode.BAD_REQUEST, "楼层项必须是对象");
+                }
+                ObjectNode obj = (ObjectNode) n.deepCopy();
+                String type = obj.path("type").asText("").trim().toUpperCase(Locale.ROOT);
+                if (type.isEmpty()) {
+                    throw new BusinessException(ErrorCode.BAD_REQUEST, "楼层缺少 type");
+                }
+                if (!AllowedFloorTypes.ALLOWED.contains(type)) {
+                    throw new BusinessException(ErrorCode.BAD_REQUEST,
+                            "不支持的楼层类型: " + type + "（允许: " + AllowedFloorTypes.ALLOWED + "）");
+                }
+                obj.put("type", type);
+                if (!obj.has("sortOrder") || !obj.get("sortOrder").isNumber()) {
+                    obj.put("sortOrder", auto);
+                    auto += 10;
+                }
+                floors.add(obj);
+            }
+            floors.sort(Comparator.comparingInt(o -> o.get("sortOrder").asInt()));
+            ArrayNode out = objectMapper.createArrayNode();
+            floors.forEach(out::add);
+            return objectMapper.writeValueAsString(out);
+        } catch (BusinessException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "floorsJson 解析失败: " + ex.getMessage());
         }
     }
 

@@ -39,7 +39,13 @@ public class CatalogController {
     }
 
     @GetMapping(SecurityConstants.API_PREFIX + "/products")
-    public ApiResponse<List<ProductResponse>> onSaleProducts() {
+    public ApiResponse<List<ProductResponse>> onSaleProducts(
+            @RequestParam(required = false) String q,
+            @RequestParam(required = false) Long categoryId
+    ) {
+        if ((q != null && !q.isBlank()) || categoryId != null) {
+            return ApiResponse.ok(catalogService.searchOnSale(q, categoryId));
+        }
         return ApiResponse.ok(catalogService.listOnSale());
     }
 

@@ -53,7 +53,7 @@ export function CouponsPage() {
   }
 
   return (
-    <PageShell title="店券" subtitle="发券（平台券后置）">
+    <PageShell title="店券" subtitle="店铺发券；与平台券默认互斥（MUTUAL_EXCLUSIVE）">
       <p><Link to="/">返回概览</Link></p>
       {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
       <form onSubmit={onCreate}>

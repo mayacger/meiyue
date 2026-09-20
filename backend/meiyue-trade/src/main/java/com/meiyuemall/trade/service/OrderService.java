@@ -46,6 +46,8 @@ public class OrderService {
     private final PaymentService paymentService;
     private final DelayTaskPort delayTaskPort;
     private final CouponService couponService;
+    private final PlatformCouponService platformCouponService;
+    private final String couponStackingMode;
 
     public OrderService(
             CartItemRepository cartItemRepository,
@@ -53,7 +55,9 @@ public class OrderService {
             ProductSkuRepository productSkuRepository,
             PaymentService paymentService,
             DelayTaskPort delayTaskPort,
-            CouponService couponService
+            CouponService couponService,
+            PlatformCouponService platformCouponService,
+            @org.springframework.beans.factory.annotation.Value("${meiyue.coupon.stacking:MUTUAL_EXCLUSIVE}") String couponStackingMode
     ) {
         this.cartItemRepository = cartItemRepository;
         this.orderRepository = orderRepository;
@@ -61,6 +65,8 @@ public class OrderService {
         this.paymentService = paymentService;
         this.delayTaskPort = delayTaskPort;
         this.couponService = couponService;
+        this.platformCouponService = platformCouponService;
+        this.couponStackingMode = couponStackingMode;
     }
 
     @Transactional
@@ -115,26 +121,32 @@ public class OrderService {
         order.setTotalCents(total);
         orderRepository.save(order);
 
-        // 店券抵扣（单店订单；多店有券时要求券租户匹配订单行中的某一店，并按该店行小计校验门槛）
-        if (request != null && request.couponClaimId() != null) {
-            Long couponTenant = null;
-            long tenantSubtotal = 0;
-            for (OrderItem line : order.getItems()) {
-                if (couponTenant == null) {
-                    couponTenant = line.getTenantId();
-                }
-                if (couponTenant.equals(line.getTenantId())) {
-                    tenantSubtotal += line.getLineTotalCents();
-                }
-            }
-            // 简化：仅当订单全部行为同一租户时可用店券
+        Long storeClaimId = request == null ? null : request.resolvedStoreClaimId();
+        Long platformClaimId = request == null ? null : request.platformCouponClaimId();
+        CouponStackingRules.assertExclusive(storeClaimId, platformClaimId, couponStackingMode);
+
+        // 店券抵扣（单店订单）
+        if (storeClaimId != null) {
+            Long couponTenant = order.getItems().get(0).getTenantId();
+            long tenantSubtotal = order.getItems().stream()
+                    .filter(i -> couponTenant.equals(i.getTenantId()))
+                    .mapToLong(OrderItem::getLineTotalCents).sum();
             boolean singleTenant = order.getItems().stream().map(OrderItem::getTenantId).distinct().count() == 1;
             if (!singleTenant) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "跨店订单暂不支持店券，请分店结算");
             }
             long discount = couponService.applyClaimToOrder(
-                    request.couponClaimId(), buyerId, couponTenant, tenantSubtotal, order.getId());
-            total = Math.max(1, total - discount); // 至少 1 分，避免零元支付边缘
+                    storeClaimId, buyerId, couponTenant, tenantSubtotal, order.getId());
+            total = Math.max(1, total - discount);
+            order.setTotalCents(total);
+            orderRepository.save(order);
+        }
+
+        // 平台券抵扣（整单门槛；与店券互斥）
+        if (platformClaimId != null) {
+            long discount = platformCouponService.applyClaimToOrder(
+                    platformClaimId, buyerId, total, order.getId());
+            total = Math.max(1, total - discount);
             order.setTotalCents(total);
             orderRepository.save(order);
         }
@@ -161,6 +173,25 @@ public class OrderService {
         Long buyerId = SecurityUtils.requirePrincipal().getUserId();
         Order order = orderRepository.findByIdAndBuyerUserId(orderId, buyerId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "订单不存在"));
+        return toResponse(order, null);
+    }
+
+    /**
+     * 买家确认收货 → COMPLETED（评价前置条件）。
+     * 允许从 PAID / FULFILLING 确认（物流未全闭环时的人工确认）。
+     */
+    @Transactional
+    public OrderResponse confirmReceipt(Long orderId) {
+        Long buyerId = SecurityUtils.requirePrincipal().getUserId();
+        Order order = orderRepository.findByIdAndBuyerUserId(orderId, buyerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "订单不存在"));
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            return toResponse(order, null);
+        }
+        if (order.getStatus() != OrderStatus.PAID && order.getStatus() != OrderStatus.FULFILLING) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "当前状态不可确认收货");
+        }
+        order.setStatus(OrderStatus.COMPLETED);
         return toResponse(order, null);
     }
 

@@ -77,9 +77,13 @@ export function DecorationPage() {
   }
 
   return (
-    <PageShell title="店铺装修" subtitle="模板 + 楼层配置 + 主题色；无直播组件（I2）">
+    <PageShell title="店铺装修" subtitle="模板 + 楼层排序/类型白名单；禁止直播（I2/I10）">
       <p>
         <Link to="/">返回概览</Link> · <Link to="/products">商品管理</Link>
+      </p>
+      <p style={{ fontSize: 13, color: "#555" }}>
+        允许类型：BANNER / CATEGORY_NAV / PRODUCT_RECOMMEND / PRODUCT_GROUP / IMAGE_TEXT / IMAGE_STRIP / RICH_TEXT / COUPON_ENTRY。
+        每项需 sortOrder；保存时后端按 sortOrder 排序写回。禁止 LIVE / LIVE_STREAM。
       </p>
       <form onSubmit={save} style={{ display: "grid", gap: 8, maxWidth: 640 }}>
         <label>
@@ -97,8 +101,8 @@ export function DecorationPage() {
           <input value={themeColor} onChange={(e) => setThemeColor(e.target.value)} />
         </label>
         <label>
-          楼层 JSON（BANNER / PRODUCT_RECOMMEND / IMAGE_TEXT / PRODUCT_GROUP）
-          <textarea rows={10} value={floorsJson} onChange={(e) => setFloorsJson(e.target.value)} style={{ width: "100%", fontFamily: "monospace" }} />
+          楼层 JSON（含 sortOrder）
+          <textarea rows={12} value={floorsJson} onChange={(e) => setFloorsJson(e.target.value)} style={{ width: "100%", fontFamily: "monospace" }} />
         </label>
         {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
         {msg ? <p>{msg}</p> : null}

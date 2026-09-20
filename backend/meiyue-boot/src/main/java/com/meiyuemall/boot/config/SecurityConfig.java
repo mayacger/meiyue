@@ -54,7 +54,7 @@ public class SecurityConfig {
                         // I7：Actuator 除健康/信息外需认证（防指标与内部端点裸奔）
                         .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/actuator/**").authenticated()
-                        // I2 买家公开浏览
+                        // I2/I10 买家公开浏览（含评价、平台券列表、搜索走 /products?q=）
                         .requestMatchers(HttpMethod.GET,
                                 SecurityConstants.API_PREFIX + "/categories",
                                 SecurityConstants.API_PREFIX + "/products",
@@ -62,6 +62,7 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/stores/*/products",
                                 SecurityConstants.API_PREFIX + "/stores/*/page",
                                 SecurityConstants.API_PREFIX + "/stores/*/coupons",
+                                SecurityConstants.API_PREFIX + "/platform-coupons",
                                 SecurityConstants.API_PREFIX + "/decoration/templates"
                         ).permitAll()
                         // I4 支付通道回调（验签在业务内完成）
@@ -92,7 +93,9 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/seller/settlements",
                                 SecurityConstants.API_PREFIX + "/seller/settlements/**",
                                 SecurityConstants.API_PREFIX + "/seller/coupons",
-                                SecurityConstants.API_PREFIX + "/seller/coupons/**"
+                                SecurityConstants.API_PREFIX + "/seller/coupons/**",
+                                SecurityConstants.API_PREFIX + "/seller/reviews",
+                                SecurityConstants.API_PREFIX + "/seller/reviews/**"
                         ).hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
                         .requestMatchers(SecurityConstants.API_PREFIX + "/seller/onboarding/**")
                         .authenticated()

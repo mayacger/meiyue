@@ -1,8 +1,9 @@
 # 美月商城 · 开发进度（用户可读）
 
-> 状态：**I1 → I9 已完成**（持续开发授权 C19；含 Redis 加固、前端补齐、结算骨架、店券最小闭环）  
+> 状态：**I1 → I10 已完成**（持续开发授权 C19；二期能力包：平台券/评价/搜索/装修增强/站内通知骨架）  
 > 仓库：`mayacger/meiyue` · 分支：`cursor/meiyue-mall-scaffold-9727` · PR #1  
-> 规划：`ecommerce-platform-plan.md` / `project-context.md` **v1.2 + C19**
+> 规划：`ecommerce-platform-plan.md` / `project-context.md` **v1.2 + C19**  
+> I10 详档：`docs/i10-phase2-capabilities.md`
 
 ---
 
@@ -20,53 +21,54 @@
 
 ---
 
-## I1–I8（摘要）
+## I1–I9（摘要）
 
-- I1 入驻鉴权 · I2 商品装修 · I3 购物车下单 · I4 支付安全 · I5 正向物流 · I6 售后48h · I7 可观测串租 · I8 AI 图/详情  
+- I1 入驻鉴权 · I2 商品装修 · I3 购物车下单 · I4 支付安全 · I5 正向物流 · I6 售后48h · I7 可观测串租 · I8 AI 图/详情 · I9 Redis/店券/结算骨架  
 - 详阅历史章节与模块 README
 
 ---
 
-## I9 已交付（本轮加固 + 二期启动）
+## I10 已交付（二期能力包）
 
-### Redis 接入
+### 平台券
 
-- `docker-compose` 默认启动 Redis；应用启用 `RedisAutoConfiguration`
-- 延迟队列 ZSET：关单 `ORDER_EXPIRE`、售后自动同意 `AFTERSALE_AUTO`
-- 限流优先 Redis INCR，失败降级内存
-- 可选 AI 任务 List 队列 + 消费 Job
-- **DB 扫描兜底**：`meiyue.jobs.db-fallback-enabled=true`（默认开）
+- Flyway `V10`：`platform_coupons` / `platform_coupon_claims`
+- Admin 发放 · 买家领取 · 下单 `platformCouponClaimId` 抵扣
+- **与店券默认互斥** `meiyue.coupon.stacking=MUTUAL_EXCLUSIVE`（`CouponStackingRules` + 单测）
 
-### 前端补齐
+### 商品评价
 
-- Seller：`/shipments` 发货与状态推进；`/aftersales` 审核；`/settlements` 账本；`/coupons` 发券
-- Buyer：`/orders/:id` 物流轨迹 + 申请售后 + 填逆向运单
-- Admin：入驻审核已有，本轮未另做审计页
+- 买家 `confirm-receipt` → `COMPLETED` 后方可评
+- 商品详情公开评价；商家列表与回复（trade 模块）
 
-### 结算增强骨架
+### 基础搜索
 
-- `GET /api/v1/seller/settlements/bills`、`/periods`（周期汇总）
-- 仍为 MVP 记账，**不接官方分账打款**
+- `GET /products?q=&categoryId=`：标题/副标题/类目名 LIKE
 
-### 店券（二期最小）
+### 装修增强
 
-- Flyway `V9__i9_store_coupons.sql`
-- 商家发券 / 买家领券 / 下单 `couponClaimId` 抵扣（单店订单）
-- 平台券后置；不做直播 / 不做 AI 视频
+- 更多楼层类型 + `sortOrder` 规范化；仍模板+配置；禁止直播
 
-### I9 验证
+### 站内通知骨架
+
+- `notifications` 表 + `/notifications` / `/admin/notifications`
+
+### I10 验证
 
 ```bash
-redis-cli ping
+cd backend && mvn -q -pl meiyue-trade -am test -Dtest=CouponStackingRulesTest
 cd backend && mvn -q -DskipTests package
-# 结算
-GET /api/v1/seller/settlements/periods
-# 店券
-POST /api/v1/seller/coupons
-POST /api/v1/buyer/coupons/{id}/claim
-POST /api/v1/buyer/orders/checkout  {"couponClaimId":1}
-# Redis 键
-redis-cli keys 'meiyue:*'
+# 平台券
+POST /api/v1/admin/platform-coupons
+POST /api/v1/buyer/platform-coupons/{id}/claim
+POST /api/v1/buyer/orders/checkout  {"platformCouponClaimId":1}
+# 互斥应 400
+POST .../checkout  {"storeCouponClaimId":1,"platformCouponClaimId":1}
+# 搜索 / 评价 / 通知
+GET /api/v1/products?q=关键词
+POST /api/v1/buyer/orders/{id}/confirm-receipt
+POST /api/v1/buyer/reviews
+GET /api/v1/notifications
 ```
 
 ---
@@ -74,14 +76,14 @@ redis-cli keys 'meiyue:*'
 ## 下一步
 
 - 真实微信/支付宝与 AI 外呼联调；Redis 多实例分布式锁
-- 平台券 / 官方分账打款 / AI 推广视频（二期）
-- 前端体验与装修拖拽增强
+- 官方分账打款 / AI 推广视频（明确不做于本迭代）
+- 通知事件自动投递、装修可视化编辑（非自由拖拽）
 
 ---
 
 ## 已知限制
 
-- 跨店订单暂不支持店券
+- 跨店订单暂不支持店券；平台券与店券本迭代不叠加
 - Redis 宕机时依赖 DB 兜底与内存限流降级
 - 内容安全 / 轨迹查询仍为占位
-- 售后退款与结算仍为账本记账
+- 售后退款与结算仍为账本记账；站内通知无推送通道

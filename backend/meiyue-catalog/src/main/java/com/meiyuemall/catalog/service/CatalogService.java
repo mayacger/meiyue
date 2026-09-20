@@ -121,6 +121,15 @@ public class CatalogService {
                 .toList();
     }
 
+    /** I10：标题/副标题关键词 + 可选类目（DB LIKE） */
+    @Transactional(readOnly = true)
+    public List<ProductResponse> searchOnSale(String q, Long categoryId) {
+        String keyword = (q == null || q.isBlank()) ? null : q.trim();
+        return productRepository.searchOnSale(keyword, categoryId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
     @Transactional(readOnly = true)
     public List<ProductResponse> listOnSaleByTenant(Long tenantId) {
         return productRepository.findByTenantIdAndStatusOrderByUpdatedAtDesc(tenantId, ProductStatus.ON_SALE)
