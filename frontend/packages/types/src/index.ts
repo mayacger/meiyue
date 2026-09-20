@@ -1,33 +1,65 @@
 /**
- * 美月商城共享类型（脚手架最小集）
- * 后续可由 OpenAPI 生成补齐；本轮手写占位。
+ * 美月商城共享类型（I1 扩展）
  */
 
-/** 参与者类型，与后端 ActorType 对齐 */
 export type ActorType = "BUYER" | "SELLER" | "PLATFORM" | "ANONYMOUS";
 
-/** 统一 API 响应外壳，对应后端 ApiResponse */
 export interface ApiResponse<T> {
-  /** 是否成功 */
   success: boolean;
-  /** 业务码，成功一般为 OK */
   code: string;
-  /** 人类可读说明 */
   message: string;
-  /** 业务载荷 */
   data: T;
 }
 
-/** ping 接口载荷 */
 export interface PingPayload {
-  /** 对外品牌名 */
   brand: string;
-  /** 工程标识 */
   app: string;
-  /** 进程模块 */
   module: string;
-  /** 当前租户 ID，可为 null */
   tenantId: number | null;
-  /** 参与者类型 */
   actorType: ActorType;
+}
+
+/** 用户资料 */
+export interface UserProfile {
+  id: number;
+  username: string;
+  displayName: string;
+  phone: string | null;
+  roles: string[];
+  tenantId: number | null;
+  storeId: number | null;
+  actorType: ActorType;
+}
+
+/** 登录/注册响应 */
+export interface AuthResult {
+  accessToken: string;
+  tokenType: string;
+  expiresIn: number;
+  user: UserProfile;
+}
+
+/** 入驻申请 */
+export interface OnboardingApplication {
+  id: number;
+  applicantUserId: number;
+  shopName: string;
+  shopSlug: string;
+  contactName: string;
+  contactPhone: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  reviewNote: string | null;
+  tenantId: number | null;
+  createdAt: string;
+  reviewedAt: string | null;
+}
+
+/** 店铺 */
+export interface StoreInfo {
+  id: number;
+  tenantId: number;
+  name: string;
+  slug: string;
+  status: string;
+  createdAt: string;
 }

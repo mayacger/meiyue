@@ -1,57 +1,48 @@
-import { PageShell } from "@meiyue/ui";
-import type { PingPayload } from "@meiyue/types";
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+import { PageShell } from "@meiyue/ui";
+
+interface Product {
+  id: number;
+  tenantId: number;
+  title: string;
+  subtitle: string | null;
+  skus: { priceCents: number }[];
+}
 
 /**
- * 买家首页（最小可运行壳）
- * - 展示品牌与脚手架说明
- * - 可选探测后端 /api/v1/ping（后端未启动时显示提示，不阻塞页面）
+ * 买家首页：浏览已上架商品（I2）
  */
 export function HomePage() {
-  const [ping, setPing] = useState<PingPayload | null>(null);
-  const [pingError, setPingError] = useState<string | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
-    // 探测 API；失败仅提示，不影响壳页面渲染
-    fetch("/api/v1/ping")
+    fetch("/api/v1/products")
       .then(async (res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const body = (await res.json()) as { data: PingPayload };
-        if (!cancelled) {
-          setPing(body.data);
-        }
+        const body = await res.json();
+        if (!body.success) throw new Error(body.message);
+        setProducts(body.data);
       })
-      .catch((err: unknown) => {
-        if (!cancelled) {
-          setPingError(err instanceof Error ? err.message : "无法连接 API");
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
+      .catch((err) => setError(err instanceof Error ? err.message : "加载失败"));
   }, []);
 
   return (
-    <PageShell
-      title="买家商城"
-      subtitle="浏览、下单、物流跟踪与售后申请的入口壳。本轮仅脚手架。"
-    >
+    <PageShell title="买家商城" subtitle="浏览已上架商品。无直播带货。">
+      {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
       <ul>
-        <li>工程标识：meiyue-mall / @meiyue/web-buyer</li>
-        <li>下一迭代：I1 登录；I2 商品浏览与店铺装修只读</li>
-        <li>硬约束：不做直播带货</li>
+        {products.map((p) => (
+          <li key={p.id}>
+            <Link to={`/products/${p.id}`}>
+              {p.title}
+            </Link>{" "}
+            — ¥{((p.skus[0]?.priceCents ?? 0) / 100).toFixed(2)}
+            {" "}
+            <Link to={`/stores/${p.tenantId}`}>进店</Link>
+          </li>
+        ))}
       </ul>
-      <section>
-        <h2>API 探测</h2>
-        {ping ? (
-          <pre>{JSON.stringify(ping, null, 2)}</pre>
-        ) : (
-          <p>{pingError ? `后端未就绪：${pingError}` : "探测中…"}</p>
-        )}
-      </section>
+      {products.length === 0 && !error ? <p>暂无上架商品。</p> : null}
     </PageShell>
   );
 }

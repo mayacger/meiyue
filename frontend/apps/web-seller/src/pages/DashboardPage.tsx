@@ -1,20 +1,41 @@
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { apiFetch, setToken } from "@meiyue/api";
+import type { StoreInfo, UserProfile } from "@meiyue/types";
 import { PageShell } from "@meiyue/ui";
 
-/**
- * 商家后台首页占位
- * 后续：入驻状态、待发货、售后待审、装修草稿入口。
- */
 export function DashboardPage() {
+  const nav = useNavigate();
+  const [me, setMe] = useState<UserProfile | null>(null);
+  const [store, setStore] = useState<StoreInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const profile = await apiFetch<UserProfile>("/api/v1/auth/me");
+        setMe(profile);
+        if (!profile.tenantId) {
+          nav("/onboarding");
+          return;
+        }
+        const s = await apiFetch<StoreInfo>("/api/v1/seller/store");
+        setStore(s);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "加载失败");
+      }
+    })();
+  }, [nav]);
+
   return (
-    <PageShell
-      title="商家后台"
-      subtitle="装修、商品、履约、正逆向物流与售后。本轮仅脚手架。"
-    >
-      <ul>
-        <li>工程标识：@meiyue/web-seller</li>
-        <li>下一迭代：I1 开店；I2 商品发布与模板装修</li>
-        <li>支付：商家侧 MVP 无独立支付账户（平台代收）</li>
-      </ul>
+    <PageShell title="商家后台" subtitle="店铺概览（I1/I2）">
+      <p>
+        <button type="button" onClick={() => { setToken(null); nav("/login"); }}>退出</button>{" "}
+        <Link to="/onboarding">入驻状态</Link> · <Link to="/products">商品管理</Link> · <Link to="/decoration">店铺装修</Link>
+      </p>
+      {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
+      {me ? <section><h2>当前用户</h2><pre>{JSON.stringify(me, null, 2)}</pre></section> : null}
+      {store ? <section><h2>我的店铺</h2><pre>{JSON.stringify(store, null, 2)}</pre></section> : <p>加载中…</p>}
     </PageShell>
   );
 }

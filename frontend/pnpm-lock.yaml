@@ -10,6 +10,9 @@ importers:
 
   apps/web-admin:
     dependencies:
+      '@meiyue/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@meiyue/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -44,6 +47,9 @@ importers:
 
   apps/web-buyer:
     dependencies:
+      '@meiyue/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@meiyue/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -78,6 +84,9 @@ importers:
 
   apps/web-seller:
     dependencies:
+      '@meiyue/api':
+        specifier: workspace:*
+        version: link:../../packages/api
       '@meiyue/types':
         specifier: workspace:*
         version: link:../../packages/types
@@ -109,6 +118,12 @@ importers:
       vite:
         specifier: ^5.4.11
         version: 5.4.21
+
+  packages/api:
+    dependencies:
+      '@meiyue/types':
+        specifier: workspace:*
+        version: link:../types
 
   packages/types: {}
 

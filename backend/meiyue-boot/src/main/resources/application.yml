@@ -1,69 +1,62 @@
 # ============================================================
-# 美月商城 API（meiyue-boot）应用配置示例
-# ------------------------------------------------------------
-# 对应规划：PostgreSQL + Redis + Actuator
-# 脚手架阶段：DataSource / Redis 自动配置已在启动类 exclude，
-# 下列连接串仅为占位，I1 起启用真实连接。
+# 美月商城 API（meiyue-boot）I1 配置
 # ============================================================
 
 spring:
   application:
     name: meiyue-boot
 
-  # 脚手架无内存用户；关闭默认 UserDetailsService，避免启动打印随机密码
   autoconfigure:
     exclude:
       - org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
 
-  # ---------- PostgreSQL（占位，I1 启用） ----------
   datasource:
-    # 字段 url：JDBC 连接串，库名 meiyue_mall
     url: jdbc:postgresql://localhost:5432/meiyue_mall
-    # 字段 username：数据库用户
     username: meiyue
-    # 字段 password：数据库密码（本地示例，生产走密钥管理）
     password: meiyue
     driver-class-name: org.postgresql.Driver
 
-  # ---------- JPA（占位；定稿用 Spring Data JPA，不用 MyBatis-Plus） ----------
   jpa:
     open-in-view: false
     hibernate:
-      # 生产用 Flyway；本地脚手架可先 validate / none
       ddl-auto: validate
     properties:
       hibernate:
-        # 方言：PostgreSQL
         dialect: org.hibernate.dialect.PostgreSQLDialect
-        # 便于审计的 JDBC 时区
         jdbc:
           time_zone: Asia/Shanghai
 
-  # ---------- Redis（占位：预占库存 / 延迟关单 / 缓存） ----------
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
   data:
     redis:
-      # 字段 host：Redis 主机
       host: localhost
-      # 字段 port：Redis 端口
       port: 6379
-      # 字段 password：可空；生产必填
       password:
-      # 字段 database：逻辑库编号
       database: 0
 
+# JWT（生产务必用环境变量覆盖 secret）
+meiyue:
+  security:
+    jwt:
+      # 至少 32 字节；可用环境变量 MEIYUE_SECURITY_JWT_SECRET 覆盖（需额外绑定，此处先写死开发密钥）
+      secret: "meiyue-mall-dev-jwt-secret-change-me-32b!"
+      issuer: meiyue-mall
+      expire-seconds: 86400
+
 server:
-  # API 默认端口
   port: 8080
 
 management:
   endpoints:
     web:
       exposure:
-        # 脚手架仅暴露健康与基础信息；指标/追踪 I7 再放开
         include: health,info
   endpoint:
     health:
-      # 展示细节便于本地排障；生产改为 when_authorized
       show-details: always
   info:
     env:
@@ -74,10 +67,9 @@ info:
     name: 美月商城
     code: meiyue-mall
     module: boot
-    description: B2B2C 多租户电商 API（脚手架）
+    description: B2B2C 多租户电商 API（I1）
 
 logging:
   level:
     root: INFO
-    # 租户过滤器调试时可改为 DEBUG
-    com.meiyuemall.common.tenant: INFO
+    com.meiyuemall: INFO

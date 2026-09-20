@@ -1,17 +1,29 @@
+import type { ReactNode } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
+import { getToken } from "@meiyue/api";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
 import { DashboardPage } from "./pages/DashboardPage";
+import { OnboardingPage } from "./pages/OnboardingPage";
+import { ProductsPage } from "./pages/ProductsPage";
+import { DecorationPage } from "./pages/DecorationPage";
 
-/**
- * 商家后台路由壳
- *
- * 入口：main.tsx → App
- * 规划生产路径：/seller（本地端口 5174）
- * 本轮仅仪表盘占位；装修/商品/履约在 I1+。
- */
+function RequireAuth({ children }: { children: ReactNode }) {
+  if (!getToken()) {
+    return <Navigate to="/login" replace />;
+  }
+  return <>{children}</>;
+}
+
 export function App() {
   return (
     <Routes>
-      <Route path="/" element={<DashboardPage />} />
+      <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/onboarding" element={<RequireAuth><OnboardingPage /></RequireAuth>} />
+      <Route path="/products" element={<RequireAuth><ProductsPage /></RequireAuth>} />
+      <Route path="/decoration" element={<RequireAuth><DecorationPage /></RequireAuth>} />
+      <Route path="/" element={<RequireAuth><DashboardPage /></RequireAuth>} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

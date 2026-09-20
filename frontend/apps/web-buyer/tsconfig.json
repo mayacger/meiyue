@@ -18,8 +18,9 @@
     "baseUrl": ".",
     "paths": {
       "@meiyue/ui": ["../../packages/ui/src/index.ts"],
-      "@meiyue/types": ["../../packages/types/src/index.ts"]
+      "@meiyue/types": ["../../packages/types/src/index.ts"],
+      "@meiyue/api": ["../../packages/api/src/index.ts"]
     }
   },
-  "include": ["src", "../../packages/ui/src", "../../packages/types/src"]
+  "include": ["src", "../../packages/ui/src", "../../packages/types/src", "../../packages/api/src"]
 }

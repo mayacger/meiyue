@@ -1,0 +1,30 @@
+# 美月商城本地依赖（PostgreSQL；Redis 可选，I3 前可不启）
+# 本环境若无 Docker，可用系统包安装的 PostgreSQL（见根 README）
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: meiyue-postgres
+    environment:
+      POSTGRES_DB: meiyue_mall
+      POSTGRES_USER: meiyue
+      POSTGRES_PASSWORD: meiyue
+    ports:
+      - "5432:5432"
+    volumes:
+      - meiyue_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meiyue -d meiyue_mall"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # I3 起建议启用；当前 API 仍 exclude Redis 自动配置
+  redis:
+    image: redis:7-alpine
+    container_name: meiyue-redis
+    ports:
+      - "6379:6379"
+    profiles: ["full"]
+
+volumes:
+  meiyue_pg_data:
