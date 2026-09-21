@@ -1,29 +1,33 @@
 import { View, Text, Input, Button } from "@tarojs/components";
 import { useState } from "react";
 import Taro, { useDidShow } from "@tarojs/taro";
-import type { AuthResult, UserProfile } from "@meiyue/types";
+import type { AuthResult, OrderSummary, UserProfile } from "@meiyue/types";
 import { apiFetch, getToken, setToken } from "../../services/api";
 import "./index.css";
 
 /**
- * 我的：登录 / 退出 / 展示资料
- * 演示：buyer1 / buyer123
+ * 我的：登录 / 订单列表 / 模拟支付（I15）
+ * 演示账号：buyer1 / buyer123
  */
 export default function MinePage() {
   const [username, setUsername] = useState("buyer1");
   const [password, setPassword] = useState("buyer123");
   const [me, setMe] = useState<UserProfile | null>(null);
+  const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [error, setError] = useState("");
 
   async function loadMe() {
     if (!getToken()) {
       setMe(null);
+      setOrders([]);
       return;
     }
     try {
       setMe(await apiFetch<UserProfile>("/api/v1/auth/me"));
+      setOrders(await apiFetch<OrderSummary[]>("/api/v1/buyer/orders"));
     } catch {
       setMe(null);
+      setOrders([]);
     }
   }
 
@@ -40,6 +44,7 @@ export default function MinePage() {
       });
       setToken(data.accessToken);
       setMe(data.user);
+      setOrders(await apiFetch<OrderSummary[]>("/api/v1/buyer/orders"));
       Taro.showToast({ title: "登录成功", icon: "success" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "登录失败");
@@ -49,6 +54,20 @@ export default function MinePage() {
   function logout() {
     setToken(null);
     setMe(null);
+    setOrders([]);
+  }
+
+  async function mockPay(id: number) {
+    try {
+      await apiFetch(`/api/v1/buyer/orders/${id}/mock-pay`, { method: "POST" });
+      Taro.showToast({ title: "支付成功", icon: "success" });
+      setOrders(await apiFetch<OrderSummary[]>("/api/v1/buyer/orders"));
+    } catch (e) {
+      Taro.showToast({
+        title: e instanceof Error ? e.message : "支付失败",
+        icon: "none"
+      });
+    }
   }
 
   return (
@@ -84,6 +103,28 @@ export default function MinePage() {
           </Button>
         </View>
       )}
+
+      {me ? (
+        <View className="orders">
+          <Text className="h2">我的订单</Text>
+          {orders.length === 0 ? <Text className="muted">暂无订单</Text> : null}
+          {orders.map((o) => (
+            <View key={o.id} className="order-row">
+              <View>
+                <Text className="order-no">{o.orderNo}</Text>
+                <Text className="muted">
+                  [{o.status}] ¥{(o.totalCents / 100).toFixed(2)}
+                </Text>
+              </View>
+              {o.status === "PENDING_PAYMENT" ? (
+                <Button size="mini" className="btn" onClick={() => mockPay(o.id)}>
+                  模拟支付
+                </Button>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

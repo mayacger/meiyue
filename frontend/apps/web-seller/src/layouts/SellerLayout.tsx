@@ -9,14 +9,15 @@ import {
   RobotOutlined,
   ShopOutlined,
   SkinOutlined,
-  AccountBookOutlined
+  AccountBookOutlined,
+  CommentOutlined
 } from "@ant-design/icons";
 import { Dropdown } from "antd";
 import { setToken } from "@meiyue/api";
 
 /**
  * 商家后台 ProLayout
- * 菜单：概览 / 商品 / 装修 / 发货 / 售后 / 结算 / 店券 / AI
+ * 菜单：概览 / 商品 / 装修 / 发货 / 售后 / 评价 / 结算 / 店券 / AI
  */
 export function SellerLayout() {
   const location = useLocation();
@@ -40,6 +41,7 @@ export function SellerLayout() {
             { path: "/decoration", name: "店铺装修", icon: <SkinOutlined /> },
             { path: "/shipments", name: "发货履约", icon: <CarOutlined /> },
             { path: "/aftersales", name: "售后审核", icon: <CustomerServiceOutlined /> },
+            { path: "/reviews", name: "评价管理", icon: <CommentOutlined /> },
             { path: "/settlements", name: "结算账本", icon: <AccountBookOutlined /> },
             { path: "/coupons", name: "店券", icon: <GiftOutlined /> },
             { path: "/ai", name: "AI 素材", icon: <RobotOutlined /> }

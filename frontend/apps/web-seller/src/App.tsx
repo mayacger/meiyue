@@ -13,6 +13,7 @@ import { AftersalesPage } from "./pages/AftersalesPage";
 import { SettlementsPage } from "./pages/SettlementsPage";
 import { CouponsPage } from "./pages/CouponsPage";
 import { AiAssistPage } from "./pages/AiAssistPage";
+import { ReviewsPage } from "./pages/ReviewsPage";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   if (!getToken()) return <Navigate to="/login" replace />;
@@ -51,6 +52,7 @@ export function App() {
         <Route path="aftersales" element={<AftersalesPage />} />
         <Route path="settlements" element={<SettlementsPage />} />
         <Route path="coupons" element={<CouponsPage />} />
+        <Route path="reviews" element={<ReviewsPage />} />
         <Route path="ai" element={<AiAssistPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

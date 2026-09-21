@@ -29,9 +29,17 @@ interface Shipment {
   ewaybillNo: string | null;
 }
 
+const FORWARD_FLOW = [
+  "PENDING_PICKUP",
+  "PICKED_UP",
+  "IN_TRANSIT",
+  "OUT_FOR_DELIVERY",
+  "DELIVERED"
+];
+
 /**
- * 发货履约
- * API：GET /seller/orders · GET/POST /seller/shipments
+ * 发货履约（I15：状态推进 + 轨迹同步）
+ * API：GET/POST /seller/shipments · POST /:id/status · POST /:id/sync-tracks
  */
 export function ShipmentsPage() {
   const actionRef = useRef<ActionType>();
@@ -41,6 +49,25 @@ export function ShipmentsPage() {
   useEffect(() => {
     apiFetch<Order[]>("/api/v1/seller/orders").then(setOrders).catch(() => undefined);
   }, []);
+
+  async function advanceStatus(row: Shipment) {
+    const idx = FORWARD_FLOW.indexOf(row.status);
+    if (idx < 0 || idx >= FORWARD_FLOW.length - 1) {
+      message.info("已是终态或未知状态");
+      return;
+    }
+    const next = FORWARD_FLOW[idx + 1];
+    try {
+      await apiFetch(`/api/v1/seller/shipments/${row.id}/status`, {
+        method: "POST",
+        json: { status: next }
+      });
+      message.success(`状态 → ${next}`);
+      actionRef.current?.reload();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : "推进失败");
+    }
+  }
 
   const columns: ProColumns<Shipment>[] = [
     { title: "包裹 ID", dataIndex: "id", width: 80 },
@@ -53,6 +80,34 @@ export function ShipmentsPage() {
       title: "状态",
       dataIndex: "status",
       render: (_, r) => <Tag>{r.status}</Tag>
+    },
+    {
+      title: "操作",
+      valueType: "option",
+      width: 200,
+      render: (_, r) => (
+        <>
+          <Button type="link" onClick={() => advanceStatus(r)}>
+            推进状态
+          </Button>
+          <Button
+            type="link"
+            onClick={async () => {
+              try {
+                await apiFetch(`/api/v1/seller/shipments/${r.id}/sync-tracks`, {
+                  method: "POST"
+                });
+                message.success("已同步轨迹");
+                actionRef.current?.reload();
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "同步失败");
+              }
+            }}
+          >
+            同步轨迹
+          </Button>
+        </>
+      )
     }
   ];
 

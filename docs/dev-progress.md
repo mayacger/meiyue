@@ -1,6 +1,6 @@
 # 美月商城 · 开发进度（用户可读）
 
-> 状态：**I1 → I14 已完成**（C19；C20 前端四端硬约束）  
+> 状态：**I1 → I15 进行中**（I14 架构已完成；C19 自动续 Pro 深度 + Taro 下单）  
 > 仓库：`mayacger/meiyue` · 分支：`cursor/meiyue-mall-scaffold-9727` · PR #1  
 > 前端架构：Context `frontend-architecture.md`
 
@@ -31,4 +31,6 @@ cd frontend && pnpm install && pnpm build && pnpm build:taro:h5
 
 ## 下一步 I15（C19 自动）
 
-Pro 业务页深度 + Taro 下单链路。
+- [x] Taro：购物车结算下单 + 我的订单模拟支付  
+- [x] Pro：评价回复、发货状态推进/轨迹同步  
+- [ ] 更多 Pro 深度页与 Taro 券互斥结算（持续）
