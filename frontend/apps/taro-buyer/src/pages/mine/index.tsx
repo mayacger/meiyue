@@ -82,6 +82,20 @@ export default function MinePage() {
             <Button
               className="btn ghost"
               size="mini"
+              onClick={() => Taro.navigateTo({ url: "/pages/favorites/index" })}
+            >
+              我的收藏
+            </Button>
+            <Button
+              className="btn ghost"
+              size="mini"
+              onClick={() => Taro.navigateTo({ url: "/pages/coupons/index" })}
+            >
+              领券中心
+            </Button>
+            <Button
+              className="btn ghost"
+              size="mini"
               onClick={() => Taro.navigateTo({ url: "/pages/orders/index" })}
             >
               全部订单

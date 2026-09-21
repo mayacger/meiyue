@@ -317,6 +317,75 @@ public class OrderService {
         ).stream().map(o -> toResponse(o, null)).toList();
     }
 
+    /**
+     * I22：导出本店已支付订单 CSV（UTF-8 BOM，Excel 友好）。
+     * 列：orderNo,status,buyerUserId,totalCents,paidAt,itemTitles,itemQty
+     */
+    @Transactional(readOnly = true)
+    public String exportPaidCsvForSeller() {
+        Long tenantId = requireSellerTenant();
+        List<Order> orders = orderRepository.findPaidForSeller(tenantId);
+        return buildPaidOrdersCsv(orders, tenantId);
+    }
+
+    /**
+     * I22：平台导出全站已支付订单 CSV。
+     */
+    @Transactional(readOnly = true)
+    public String exportPaidCsvForAdmin() {
+        List<Order> orders = orderRepository.findByPaidAtIsNotNullOrderByPaidAtDesc();
+        return buildPaidOrdersCsv(orders, null);
+    }
+
+    /**
+     * 生成已支付订单 CSV。
+     * @param tenantId 非空时仅汇总该店订单行；Admin 传 null 汇总全部行
+     */
+    private String buildPaidOrdersCsv(List<Order> orders, Long tenantId) {
+        StringBuilder sb = new StringBuilder();
+        // BOM 便于 Excel 识别 UTF-8
+        sb.append('\uFEFF');
+        sb.append("orderNo,status,buyerUserId,totalCents,paidAt,itemTitles,itemQty\n");
+        for (Order o : orders) {
+            String titles;
+            int qty;
+            if (tenantId != null) {
+                var lines = o.getItems().stream().filter(i -> tenantId.equals(i.getTenantId())).toList();
+                titles = lines.stream()
+                        .map(i -> escapeCsv(i.getProductTitle()))
+                        .reduce((a, b) -> a + "|" + b)
+                        .orElse("");
+                qty = lines.stream().mapToInt(i -> i.getQuantity()).sum();
+            } else {
+                titles = o.getItems().stream()
+                        .map(i -> escapeCsv(i.getProductTitle()))
+                        .reduce((a, b) -> a + "|" + b)
+                        .orElse("");
+                qty = o.getItems().stream().mapToInt(i -> i.getQuantity()).sum();
+            }
+            sb.append(escapeCsv(o.getOrderNo())).append(',')
+                    .append(o.getStatus().name()).append(',')
+                    .append(o.getBuyerUserId()).append(',')
+                    .append(o.getTotalCents()).append(',')
+                    .append(o.getPaidAt() == null ? "" : o.getPaidAt().toString()).append(',')
+                    .append(titles).append(',')
+                    .append(qty)
+                    .append('\n');
+        }
+        return sb.toString();
+    }
+
+    private static String escapeCsv(String raw) {
+        if (raw == null) {
+            return "";
+        }
+        String v = raw.replace("\"", "\"\"");
+        if (v.contains(",") || v.contains("\"") || v.contains("\n") || v.contains("|")) {
+            return "\"" + v + "\"";
+        }
+        return v;
+    }
+
     private Long requireSellerTenant() {
         MeiyuePrincipal p = SecurityUtils.requirePrincipal();
         if (p.getTenantId() == null) {

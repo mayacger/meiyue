@@ -24,6 +24,7 @@ export function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [favorited, setFavorited] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -36,6 +37,11 @@ export function ProductDetailPage() {
         if (!prod.success) throw new Error(prod.message);
         setProduct(prod.data);
         if (rev.success) setReviews(rev.data);
+        if (getToken()) {
+          apiFetch<{ favorited: boolean }>(`/api/v1/buyer/favorites/${id}/status`)
+            .then((s) => setFavorited(s.favorited))
+            .catch(() => setFavorited(false));
+        }
       })
       .catch((err) => setError(err instanceof Error ? err.message : "加载失败"))
       .finally(() => setLoading(false));
@@ -57,6 +63,28 @@ export function ProductDetailPage() {
       setMsg("已加入购物车");
     } catch (err) {
       setError(err instanceof Error ? err.message : "加购失败");
+    }
+  }
+
+  async function toggleFavorite() {
+    if (!getToken()) {
+      navigate("/login");
+      return;
+    }
+    if (!id) return;
+    setError(null);
+    try {
+      if (favorited) {
+        await apiFetch(`/api/v1/buyer/favorites/${id}`, { method: "DELETE" });
+        setFavorited(false);
+        setMsg("已取消收藏");
+      } else {
+        await apiFetch(`/api/v1/buyer/favorites/${id}`, { method: "POST" });
+        setFavorited(true);
+        setMsg("已加入收藏");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "收藏失败");
     }
   }
 
@@ -97,6 +125,12 @@ export function ProductDetailPage() {
               <button type="button" className="my-btn my-btn--primary" onClick={addToCart}>
                 加入购物车
               </button>
+              <button type="button" className="my-btn my-btn--ghost" onClick={toggleFavorite}>
+                {favorited ? "已收藏" : "收藏"}
+              </button>
+              <Link to={`/stores/${product.tenantId}`} className="my-detail__cart-link">
+                进店逛逛
+              </Link>
               <Link to="/cart" className="my-detail__cart-link">
                 查看购物车
               </Link>

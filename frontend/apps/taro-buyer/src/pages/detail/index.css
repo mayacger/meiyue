@@ -37,6 +37,25 @@
   border-radius: 999px !important;
 }
 
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn.ghost {
+  background: transparent !important;
+  color: #1a4d45 !important;
+  border: 1px solid #1a4d45 !important;
+}
+
+.empty {
+  display: block;
+  text-align: center;
+  padding: 48px 0;
+}
+
 .err {
   color: #a33;
 }

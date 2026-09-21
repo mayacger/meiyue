@@ -13,14 +13,15 @@ interface Review {
 }
 
 /**
- * 商品详情（I19）：加购 + 评价列表
- * API：GET /products/:id · /products/:id/reviews · POST 加购
+ * 商品详情（I19 + I22 收藏/进店）
+ * API：GET /products/:id · favorites · 加购
  */
 export default function DetailPage() {
   const { params } = useRouter();
   const id = params.id;
   const [product, setProduct] = useState<ProductSummary | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [favorited, setFavorited] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -32,6 +33,11 @@ export default function DetailPage() {
       .then(([p, r]) => {
         setProduct(p);
         setReviews(r);
+        if (getToken()) {
+          apiFetch<{ favorited: boolean }>(`/api/v1/buyer/favorites/${id}/status`)
+            .then((s) => setFavorited(s.favorited))
+            .catch(() => setFavorited(false));
+        }
       })
       .catch((e) => setError(e instanceof Error ? e.message : "加载失败"));
   }, [id]);
@@ -58,9 +64,35 @@ export default function DetailPage() {
     }
   }
 
+  async function toggleFavorite() {
+    if (!getToken()) {
+      Taro.showToast({ title: "请先登录", icon: "none" });
+      Taro.switchTab({ url: "/pages/mine/index" });
+      return;
+    }
+    if (!id) return;
+    try {
+      if (favorited) {
+        await apiFetch(`/api/v1/buyer/favorites/${id}`, { method: "DELETE" });
+        setFavorited(false);
+        Taro.showToast({ title: "已取消收藏", icon: "success" });
+      } else {
+        await apiFetch(`/api/v1/buyer/favorites/${id}`, { method: "POST" });
+        setFavorited(true);
+        Taro.showToast({ title: "已收藏", icon: "success" });
+      }
+    } catch (e) {
+      Taro.showToast({
+        title: e instanceof Error ? e.message : "操作失败",
+        icon: "none"
+      });
+    }
+  }
+
   return (
     <View className="page">
       {error ? <Text className="err">{error}</Text> : null}
+      {!product && !error ? <Text className="muted empty">商品不存在或已下架</Text> : null}
       {product ? (
         <>
           <View className="hero">
@@ -68,9 +100,22 @@ export default function DetailPage() {
           </View>
           <Text className="title">{product.title}</Text>
           <Text className="price">¥{((product.skus[0]?.priceCents ?? 0) / 100).toFixed(2)}</Text>
-          <Button className="btn" onClick={addToCart}>
-            加入购物车
-          </Button>
+          <View className="actions">
+            <Button className="btn" onClick={addToCart}>
+              加入购物车
+            </Button>
+            <Button className="btn ghost" onClick={toggleFavorite}>
+              {favorited ? "已收藏" : "收藏"}
+            </Button>
+            <Button
+              className="btn ghost"
+              onClick={() =>
+                Taro.navigateTo({ url: `/pages/store/index?tenantId=${product.tenantId}` })
+              }
+            >
+              进店
+            </Button>
+          </View>
         </>
       ) : null}
 

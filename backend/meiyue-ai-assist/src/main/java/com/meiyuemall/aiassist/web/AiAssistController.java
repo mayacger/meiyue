@@ -86,4 +86,15 @@ public class AiAssistController {
     ) {
         return ApiResponse.ok(aiAssistService.attachPromoVideo(productId, body.get("assetId")));
     }
+
+    /**
+     * I22：从素材库选用 IMAGE 挂封面（配合 manual-images URL 登记）。
+     */
+    @PostMapping("/products/{productId}/cover-asset")
+    public ApiResponse<ProductResponse> attachCoverAsset(
+            @PathVariable Long productId,
+            @RequestBody Map<String, Long> body
+    ) {
+        return ApiResponse.ok(aiAssistService.attachCoverAsset(productId, body.get("assetId")));
+    }
 }

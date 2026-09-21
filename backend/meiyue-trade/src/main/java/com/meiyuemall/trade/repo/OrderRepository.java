@@ -58,4 +58,17 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
             @Param("from") Instant from,
             @Param("to") Instant to
     );
+
+    /**
+     * I22：本店已支付订单（paidAt 非空），用于 CSV 导出。
+     */
+    @Query("""
+            select distinct o from Order o join o.items i
+            where i.tenantId = :tenantId and o.paidAt is not null
+            order by o.paidAt desc
+            """)
+    List<Order> findPaidForSeller(@Param("tenantId") Long tenantId);
+
+    /** I22：全站已支付订单（Admin 导出） */
+    List<Order> findByPaidAtIsNotNullOrderByPaidAtDesc();
 }

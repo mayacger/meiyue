@@ -38,6 +38,14 @@ public class Store {
     @Column(nullable = false, length = 32)
     private StoreStatus status = StoreStatus.OPEN;
 
+    /** 店铺简介 */
+    @Column(length = 512)
+    private String description;
+
+    /** Logo URL（占位录入，非强制 OSS） */
+    @Column(name = "logo_url", length = 1024)
+    private String logoUrl;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -90,6 +98,22 @@ public class Store {
 
     public void setStatus(StoreStatus status) {
         this.status = status;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public String getLogoUrl() {
+        return logoUrl;
+    }
+
+    public void setLogoUrl(String logoUrl) {
+        this.logoUrl = logoUrl;
     }
 
     public Instant getCreatedAt() {

@@ -1,0 +1,66 @@
+.page {
+  padding: 24px;
+  min-height: 100vh;
+  background: #f7f6f3;
+}
+
+.brand {
+  display: block;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: #5a6b66;
+}
+
+.h1 {
+  display: block;
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f3d38;
+  margin: 4px 0 8px;
+}
+
+.lead {
+  display: block;
+  color: #5a6b66;
+  font-size: 13px;
+  margin-bottom: 20px;
+}
+
+.card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(15, 61, 56, 0.1);
+}
+
+.title {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f3d38;
+  margin-bottom: 4px;
+}
+
+.muted {
+  font-size: 13px;
+  color: #5a6b66;
+}
+
+.btn {
+  background: #1a4d45 !important;
+  color: #f7f6f3 !important;
+}
+
+.err {
+  color: #8b2e26;
+  display: block;
+  margin-bottom: 12px;
+}
+
+.empty {
+  display: block;
+  text-align: center;
+  padding: 48px 0;
+}

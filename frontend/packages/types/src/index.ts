@@ -56,12 +56,16 @@ export interface OnboardingApplication {
   reviewedAt: string | null;
 }
 
-/** 店铺：id / tenantId / name / slug / status */
+/** 店铺：id / tenantId / name / slug / description / logoUrl / status */
 export interface StoreInfo {
   id: number;
   tenantId: number;
   name: string;
   slug: string;
+  /** 店铺简介（I22） */
+  description?: string | null;
+  /** Logo URL（I22 占位） */
+  logoUrl?: string | null;
   status: string;
   createdAt: string;
 }
@@ -82,6 +86,8 @@ export interface ProductSummary {
   title: string;
   subtitle?: string;
   status?: string;
+  coverImageUrl?: string | null;
+  coverAssetId?: number | null;
   skus: SkuSummary[];
   promoVideoUrl?: string | null;
 }
@@ -117,6 +123,8 @@ export interface CouponSummary {
   totalQuota?: number;
   claimedCount?: number;
   status?: string;
+  /** 店券所属租户（平台券无） */
+  tenantId?: number;
 }
 
 /** 券领取记录 */
@@ -124,6 +132,24 @@ export interface CouponClaim {
   id: number;
   couponId: number;
   status: string;
+}
+
+/** 商品收藏项（I22） */
+export interface FavoriteItem {
+  id: number;
+  productId: number;
+  createdAt?: string;
+}
+
+/**
+ * 平台运营配置只读（I23）
+ * platformFeeRateBps：基点费率；settlementCycle：结算周期；minWithdrawCents：提现门槛（分）
+ */
+export interface PlatformConfigView {
+  items: { key: string; value: string; description?: string; updatedAt?: string }[];
+  platformFeeRateBps: string;
+  settlementCycle: string;
+  minWithdrawCents: string;
 }
 
 /** 站内通知（与后端 NotificationResponse 对齐） */

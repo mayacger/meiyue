@@ -59,11 +59,14 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/categories",
                                 SecurityConstants.API_PREFIX + "/products",
                                 SecurityConstants.API_PREFIX + "/products/**",
+                                SecurityConstants.API_PREFIX + "/stores/*",
+                                SecurityConstants.API_PREFIX + "/stores/slug/*",
                                 SecurityConstants.API_PREFIX + "/stores/*/products",
                                 SecurityConstants.API_PREFIX + "/stores/*/page",
                                 SecurityConstants.API_PREFIX + "/stores/*/coupons",
                                 SecurityConstants.API_PREFIX + "/platform-coupons",
-                                SecurityConstants.API_PREFIX + "/decoration/templates"
+                                SecurityConstants.API_PREFIX + "/decoration/templates",
+                                SecurityConstants.API_PREFIX + "/platform/config"
                         ).permitAll()
                         // I4 支付通道回调（验签在业务内完成）
                         .requestMatchers(HttpMethod.POST,

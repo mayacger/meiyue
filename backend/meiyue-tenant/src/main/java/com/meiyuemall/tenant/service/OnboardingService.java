@@ -1,5 +1,6 @@
 package com.meiyuemall.tenant.service;
 
+import com.meiyuemall.common.audit.Audited;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
 import com.meiyuemall.common.security.MeiyuePrincipal;
@@ -18,6 +19,7 @@ import com.meiyuemall.tenant.dto.OnboardingApplicationResponse;
 import com.meiyuemall.tenant.dto.OnboardingApplyRequest;
 import com.meiyuemall.tenant.dto.ReviewOnboardingRequest;
 import com.meiyuemall.tenant.dto.StoreResponse;
+import com.meiyuemall.tenant.dto.StoreUpdateRequest;
 import com.meiyuemall.tenant.repo.OnboardingApplicationRepository;
 import com.meiyuemall.tenant.repo.SellerMemberRepository;
 import com.meiyuemall.tenant.repo.StoreRepository;
@@ -204,8 +206,50 @@ public class OnboardingService {
                 store.getTenantId(),
                 store.getName(),
                 store.getSlug(),
+                store.getDescription(),
+                store.getLogoUrl(),
                 store.getStatus().name(),
                 store.getCreatedAt()
         );
+    }
+
+    /**
+     * I22：更新本店名称/简介/Logo。
+     */
+    @Transactional
+    @Audited(action = "STORE_UPDATE", resourceType = "Store")
+    public StoreResponse updateMyStore(StoreUpdateRequest request) {
+        MeiyuePrincipal principal = SecurityUtils.requirePrincipal();
+        if (principal.getTenantId() == null) {
+            throw new BusinessException(ErrorCode.TENANT_REQUIRED, "尚未开店或未完成入驻审核");
+        }
+        Store store = storeRepository.findByTenantId(principal.getTenantId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "店铺不存在"));
+        if (request.name() != null && !request.name().isBlank()) {
+            store.setName(request.name().trim());
+        }
+        if (request.description() != null) {
+            store.setDescription(request.description().isBlank() ? null : request.description().trim());
+        }
+        if (request.logoUrl() != null) {
+            store.setLogoUrl(request.logoUrl().isBlank() ? null : request.logoUrl().trim());
+        }
+        return toStoreResponse(store);
+    }
+
+    /** 公开：按租户查店 */
+    @Transactional(readOnly = true)
+    public StoreResponse getPublicByTenant(Long tenantId) {
+        Store store = storeRepository.findByTenantId(tenantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "店铺不存在"));
+        return toStoreResponse(store);
+    }
+
+    /** 公开：按 slug 查店 */
+    @Transactional(readOnly = true)
+    public StoreResponse getPublicBySlug(String slug) {
+        Store store = storeRepository.findBySlug(slug)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "店铺不存在"));
+        return toStoreResponse(store);
     }
 }

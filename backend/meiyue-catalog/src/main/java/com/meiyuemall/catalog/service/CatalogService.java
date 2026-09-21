@@ -311,6 +311,13 @@ public class CatalogService {
         return principal.getTenantId();
     }
 
+    /**
+     * I22：公开商品视图（收藏列表等复用；不含商家私有字段差异）。
+     */
+    public ProductResponse toPublicResponse(Product product) {
+        return toResponse(product);
+    }
+
     private ProductResponse toResponse(Product product) {
         List<SkuResponse> skus = product.getSkus().stream()
                 .map(s -> new SkuResponse(s.getId(), s.getSkuCode(), s.getSpecText(), s.getPriceCents(), s.getStockQty()))

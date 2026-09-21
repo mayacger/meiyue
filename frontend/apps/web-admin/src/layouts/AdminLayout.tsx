@@ -9,7 +9,8 @@ import {
   LogoutOutlined,
   TeamOutlined,
   DashboardOutlined,
-  CustomerServiceOutlined
+  CustomerServiceOutlined,
+  SettingOutlined
 } from "@ant-design/icons";
 import { Dropdown, Space, Tag } from "antd";
 import { apiFetch, setToken } from "@meiyue/api";
@@ -17,7 +18,7 @@ import type { UserProfile } from "@meiyue/types";
 
 /**
  * 平台后台 ProLayout（I21）
- * - 菜单：概览 / 入驻 / 券 / 通知 / 工单 / 类目 / 账号
+ * - 菜单：概览 / 入驻 / 券 / 运营配置 / 通知 / 工单 / 类目 / 账号
  */
 export function AdminLayout() {
   const location = useLocation();
@@ -47,6 +48,7 @@ export function AdminLayout() {
             { path: "/dashboard", name: "运营概览", icon: <DashboardOutlined /> },
             { path: "/onboarding", name: "入驻审核", icon: <AuditOutlined /> },
             { path: "/coupons", name: "平台券", icon: <GiftOutlined /> },
+            { path: "/platform-config", name: "运营配置", icon: <SettingOutlined /> },
             { path: "/notifications", name: "站内通知", icon: <BellOutlined /> },
             { path: "/tickets", name: "客服工单", icon: <CustomerServiceOutlined /> },
             { path: "/categories", name: "类目管理", icon: <AppstoreOutlined /> },

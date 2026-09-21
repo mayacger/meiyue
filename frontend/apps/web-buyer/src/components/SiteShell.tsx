@@ -41,6 +41,12 @@ export function SiteShell() {
             <NavLink to="/products" onClick={() => setOpen(false)}>
               全部商品
             </NavLink>
+            <NavLink to="/coupons" onClick={() => setOpen(false)}>
+              领券
+            </NavLink>
+            <NavLink to="/favorites" onClick={() => setOpen(false)}>
+              收藏
+            </NavLink>
             <NavLink to="/cart" onClick={() => setOpen(false)}>
               购物车
             </NavLink>

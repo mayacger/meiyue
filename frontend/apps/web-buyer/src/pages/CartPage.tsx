@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch, getToken } from "@meiyue/api";
+import { EmptyState, ErrorState } from "@meiyue/ui";
 import type { CartItem } from "@meiyue/types";
 import "./CartPage.css";
 
-/** 购物车：GET /buyer/cart · DELETE 行 · 去结算（I16 视觉深化） */
+/** 购物车：GET /buyer/cart · DELETE 行 · 去结算（I23 空错态） */
 export function CartPage() {
   const navigate = useNavigate();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -15,6 +16,7 @@ export function CartPage() {
       navigate("/login");
       return;
     }
+    setError(null);
     setCart(await apiFetch<CartItem[]>("/api/v1/buyer/cart"));
   }
 
@@ -33,11 +35,17 @@ export function CartPage() {
     <div className="my-cart my-page">
       <h1 className="my-page-title my-fade-up">购物车</h1>
       <p className="my-page-lead">跨店合并结算 · 店券与平台券互斥</p>
-      {error ? <p className="my-error">{error}</p> : null}
-      {cart.length === 0 ? (
-        <div className="my-empty">
-          购物车为空，<Link to="/products">去逛逛</Link>
-        </div>
+      {error ? (
+        <ErrorState message={error}>
+          <button type="button" className="my-btn my-btn--ghost" onClick={() => reload()}>
+            重试
+          </button>
+        </ErrorState>
+      ) : null}
+      {cart.length === 0 && !error ? (
+        <EmptyState title="购物车为空" hint="挑几件好物再回来">
+          <Link to="/products">去逛逛</Link>
+        </EmptyState>
       ) : (
         <ul className="my-cart__list my-fade-up">
           {cart.map((c) => (
@@ -52,7 +60,11 @@ export function CartPage() {
                 </span>
               </div>
               <div className="my-cart__price">¥{(c.lineTotalCents / 100).toFixed(2)}</div>
-              <button type="button" className="my-cart__remove" onClick={() => remove(c.id).catch(() => undefined)}>
+              <button
+                type="button"
+                className="my-cart__remove"
+                onClick={() => remove(c.id).catch(() => undefined)}
+              >
                 移除
               </button>
             </li>

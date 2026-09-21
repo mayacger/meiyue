@@ -21,20 +21,20 @@ interface VideoTask {
   productId: number | null;
 }
 
+/** 与 MediaAssetResponse 对齐：assetType / moderationStatus / url */
 interface AiAsset {
   id: number;
-  type: string;
-  status: string;
+  assetType: string;
+  moderationStatus: string;
   prompt?: string;
-  resultUrl?: string | null;
+  url?: string | null;
 }
 
 /**
- * AI 素材入口完整化（I16）
- * - 出图 POST /seller/ai/images
- * - 详情文案 POST /seller/ai/details
- * - 推广视频 POST /seller/ai/videos（非直播）
- * - 资产列表 GET /seller/ai/assets · videos
+ * AI 素材入口（I16 + I22 URL 登记）
+ * - 出图 / 详情 / 推广视频 MOCK
+ * - POST /seller/ai/manual-images 登记 URL → media_assets
+ * - 商品页「选用素材」挂封面
  */
 export function AiAssistPage() {
   const { message } = App.useApp();
@@ -73,19 +73,19 @@ export function AiAssistPage() {
 
   const assetCols: ProColumns<AiAsset>[] = [
     { title: "ID", dataIndex: "id", width: 72 },
-    { title: "类型", dataIndex: "type", width: 100 },
+    { title: "类型", dataIndex: "assetType", width: 100 },
     {
       title: "状态",
-      dataIndex: "status",
+      dataIndex: "moderationStatus",
       width: 100,
-      render: (_, r) => <Tag>{r.status}</Tag>
+      render: (_, r) => <Tag>{r.moderationStatus}</Tag>
     },
     { title: "提示词", dataIndex: "prompt", ellipsis: true },
-    { title: "结果", dataIndex: "resultUrl", ellipsis: true }
+    { title: "URL", dataIndex: "url", ellipsis: true }
   ];
 
   return (
-    <PageContainer header={{ title: "AI 素材", subTitle: "出图 / 详情 / 推广视频 MOCK · 非直播" }}>
+    <PageContainer header={{ title: "AI 素材", subTitle: "出图 / 详情 / 视频 MOCK · URL 登记 · 非直播" }}>
       <ProCard gutter={16} wrap>
         <ProCard colSpan={8} title="AI 出图" bordered>
           <ProForm
@@ -129,6 +129,31 @@ export function AiAssistPage() {
           >
             <ProFormText name="title" label="商品标题" rules={[{ required: true }]} />
             <ProFormTextArea name="hints" label="卖点提示" />
+          </ProForm>
+        </ProCard>
+        <ProCard colSpan={8} title="URL 登记（占位）" bordered>
+          <ProForm
+            onFinish={async (values) => {
+              try {
+                await apiFetch("/api/v1/seller/ai/manual-images", {
+                  method: "POST",
+                  json: { url: values.url }
+                });
+                message.success("已登记到素材库（非强制 OSS）");
+                await reload();
+                return true;
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "登记失败");
+                return false;
+              }
+            }}
+          >
+            <ProFormText
+              name="url"
+              label="图片 URL"
+              placeholder="https://…"
+              rules={[{ required: true }]}
+            />
           </ProForm>
         </ProCard>
         <ProCard colSpan={8} title="推广视频（非直播）" bordered>

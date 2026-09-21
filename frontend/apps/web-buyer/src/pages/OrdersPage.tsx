@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch, getToken } from "@meiyue/api";
+import { EmptyState, ErrorState } from "@meiyue/ui";
 import type { OrderSummary } from "@meiyue/types";
 import "./OrdersPage.css";
 
-/** 订单列表（I17 空态统一） */
+/** 订单列表（I23 空错态统一） */
 export function OrdersPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderSummary[]>([]);
@@ -15,6 +16,7 @@ export function OrdersPage() {
       navigate("/login");
       return;
     }
+    setError(null);
     setOrders(await apiFetch<OrderSummary[]>("/api/v1/buyer/orders"));
   }
 
@@ -33,11 +35,17 @@ export function OrdersPage() {
       <p className="my-page-lead">
         待支付可模拟支付 · <Link to="/aftersales">售后列表</Link>
       </p>
-      {error ? <p className="my-error">{error}</p> : null}
-      {orders.length === 0 ? (
-        <div className="my-empty">
-          暂无订单，<Link to="/products">去逛逛</Link>
-        </div>
+      {error ? (
+        <ErrorState message={error}>
+          <button type="button" className="my-btn my-btn--ghost" onClick={() => reload()}>
+            重试
+          </button>
+        </ErrorState>
+      ) : null}
+      {orders.length === 0 && !error ? (
+        <EmptyState title="暂无订单" hint="去逛逛好物再回来">
+          <Link to="/products">去逛逛</Link>
+        </EmptyState>
       ) : (
         <ul className="my-fade-up">
           {orders.map((o) => (

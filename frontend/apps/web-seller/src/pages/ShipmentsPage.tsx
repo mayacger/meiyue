@@ -9,7 +9,7 @@ import {
   ProTable
 } from "@ant-design/pro-components";
 import { App, Button, Tag } from "antd";
-import { apiFetch } from "@meiyue/api";
+import { apiFetch, downloadAuthenticated } from "@meiyue/api";
 
 interface Order {
   id: number;
@@ -112,13 +112,29 @@ export function ShipmentsPage() {
   ];
 
   return (
-    <PageContainer header={{ title: "发货履约", subTitle: "多包裹 · MOCK 面单" }}>
+    <PageContainer header={{ title: "发货履约", subTitle: "多包裹 · MOCK 面单 · 已支付订单导出" }}>
       <ProTable<Shipment>
         actionRef={actionRef}
         rowKey="id"
         search={false}
         columns={columns}
         toolBarRender={() => [
+          <Button
+            key="export"
+            onClick={async () => {
+              try {
+                await downloadAuthenticated(
+                  "/api/v1/seller/orders/export.csv",
+                  "seller-paid-orders.csv"
+                );
+                message.success("已导出已支付订单 CSV");
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "导出失败");
+              }
+            }}
+          >
+            导出已支付订单
+          </Button>,
           <ModalForm
             key="ship"
             title="创建发货包裹"

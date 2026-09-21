@@ -112,3 +112,36 @@ export async function apiFetch<T>(
   }
   return body.data;
 }
+
+/**
+ * I22：带 Bearer 下载二进制/文本文件（如订单 CSV）。
+ * 不走 ApiResponse JSON 外壳；失败时抛 ApiError。
+ *
+ * @param path   API 路径
+ * @param filename 本地保存文件名
+ */
+export async function downloadAuthenticated(path: string, filename: string): Promise<void> {
+  const headers = new Headers({ Accept: "*/*" });
+  const token = getToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+  const res = await fetch(path, { headers });
+  if (!res.ok) {
+    const body = (await res.json().catch(() => null)) as ApiResponse<unknown> | null;
+    throw new ApiError(
+      body?.code ?? "HTTP_ERROR",
+      body?.message ?? `HTTP ${res.status}`,
+      res.status
+    );
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}

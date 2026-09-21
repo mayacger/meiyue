@@ -12,14 +12,15 @@ import {
   AccountBookOutlined,
   CommentOutlined,
   BellOutlined,
-  DatabaseOutlined
+  DatabaseOutlined,
+  SettingOutlined
 } from "@ant-design/icons";
 import { Dropdown } from "antd";
 import { setToken } from "@meiyue/api";
 
 /**
  * 商家后台 ProLayout
- * 菜单：概览 / 商品 / 库存 / 装修 / 发货 / 售后 / 评价 / 通知 / 结算 / 店券 / AI
+ * 菜单：概览 / 店铺设置 / 商品 / 库存 / 装修 / 发货 / 售后 / 评价 / 通知 / 结算 / 店券 / AI
  */
 export function SellerLayout() {
   const location = useLocation();
@@ -39,6 +40,7 @@ export function SellerLayout() {
           path: "/",
           routes: [
             { path: "/", name: "店铺概览", icon: <DashboardOutlined /> },
+            { path: "/store", name: "店铺设置", icon: <SettingOutlined /> },
             { path: "/products", name: "商品管理", icon: <ShopOutlined /> },
             { path: "/inventory", name: "库存管理", icon: <DatabaseOutlined /> },
             { path: "/decoration", name: "店铺装修", icon: <SkinOutlined /> },

@@ -17,6 +17,7 @@ import { ReviewsPage } from "./pages/ReviewsPage";
 import { InventoryPage } from "./pages/InventoryPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { TicketsPage } from "./pages/TicketsPage";
+import { StoreSettingsPage } from "./pages/StoreSettingsPage";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   if (!getToken()) return <Navigate to="/login" replace />;
@@ -49,6 +50,7 @@ export function App() {
         }
       >
         <Route index element={<DashboardPage />} />
+        <Route path="store" element={<StoreSettingsPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="inventory" element={<InventoryPage />} />
         <Route path="decoration" element={<DecorationPage />} />

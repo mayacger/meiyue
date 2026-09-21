@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { PageContainer, ProCard, ProTable } from "@ant-design/pro-components";
 import type { ProColumns } from "@ant-design/pro-components";
-import { App, Tag } from "antd";
+import { App, Tag, Typography } from "antd";
 import { apiFetch } from "@meiyue/api";
+import type { PlatformConfigView } from "@meiyue/types";
 
 interface Bill {
   id: number;
@@ -19,6 +20,20 @@ interface Period {
   status: string;
   amountCents: number;
   entryCount: number;
+}
+
+/** I23：费率只读提示（公开 /platform/config） */
+function FeeHint() {
+  const [text, setText] = useState("费率加载中…");
+  useEffect(() => {
+    apiFetch<PlatformConfigView>("/api/v1/platform/config")
+      .then((c) => {
+        const pct = (Number(c.platformFeeRateBps) / 100).toFixed(2);
+        setText(`平台费率 ${pct}% · ${c.settlementCycle} · 只读`);
+      })
+      .catch(() => setText("费率暂不可用"));
+  }, []);
+  return <Typography.Text type="secondary">{text}</Typography.Text>;
 }
 
 /** 结算账本：周期汇总 + 明细（不自动打款） */
@@ -65,8 +80,8 @@ export function SettlementsPage() {
   ];
 
   return (
-    <PageContainer header={{ title: "结算账本", subTitle: "MVP 记账结算，不自动打款" }}>
-      <ProCard title="周期汇总" style={{ marginBottom: 16 }}>
+    <PageContainer header={{ title: "结算账本", subTitle: "MVP 记账结算，不自动打款 · 费率只读见平台配置" }}>
+      <ProCard title="周期汇总" style={{ marginBottom: 16 }} extra={<FeeHint />}>
         <ProTable<Period>
           rowKey={(r) => `${r.periodKey}-${r.status}`}
           search={false}

@@ -282,6 +282,30 @@ public class AiAssistService {
         return catalogService.attachPromoVideo(productId, asset.getId(), asset.getUrl());
     }
 
+    /**
+     * I22：将已审核 IMAGE 素材挂为商品封面（Seller 素材库选用）。
+     */
+    @Transactional
+    @Audited(action = "PRODUCT_ATTACH_COVER_ASSET", resourceType = "Product")
+    public ProductResponse attachCoverAsset(Long productId, Long assetId) {
+        MeiyuePrincipal principal = requireSeller();
+        if (assetId == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "assetId 不能为空");
+        }
+        MediaAsset asset = mediaAssetRepository.findById(assetId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "素材不存在"));
+        if (!principal.getTenantId().equals(asset.getTenantId())) {
+            throw new BusinessException(ErrorCode.TENANT_MISMATCH);
+        }
+        if (asset.getAssetType() != AssetType.IMAGE) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "仅 IMAGE 素材可挂封面");
+        }
+        if (asset.getModerationStatus() != ModerationStatus.APPROVED) {
+            throw new BusinessException(ErrorCode.MEDIA_NOT_APPROVED);
+        }
+        return catalogService.attachCover(productId, asset.getId(), asset.getUrl());
+    }
+
     private MeiyuePrincipal requireSeller() {
         MeiyuePrincipal p = SecurityUtils.requirePrincipal();
         if (p.getTenantId() == null) {
