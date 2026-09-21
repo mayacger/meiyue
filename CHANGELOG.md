@@ -1,6 +1,13 @@
 # 美月商城 · CHANGELOG
 
-## [0.1.0-SNAPSHOT] · I16 前端完整化（当前 PR）
+## [0.1.0-SNAPSHOT] · I17 体验打磨（当前 PR）
+
+- 买家 PC：售后列表 `/aftersales`、结算/订单空态统一、导航补售后入口
+- 文档：admin/taro README；进度同步 I16–I17
+
+---
+
+## [0.1.0-SNAPSHOT] · I16 前端完整化
 
 ### 平台 / 商家 Pro
 

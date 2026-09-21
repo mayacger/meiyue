@@ -1,19 +1,19 @@
-.my-orders ul {
+.my-as__list {
   list-style: none;
   padding: 0;
   margin: 0;
 }
 
-.my-orders li {
+.my-as__list li {
   display: flex;
+  justify-content: space-between;
+  gap: 1rem;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 0.75rem 1.25rem;
   padding: 1rem 0;
   border-bottom: 1px solid var(--my-line);
 }
 
-.my-orders a {
-  font-weight: 600;
+.my-as__list a {
   color: var(--my-ink);
+  font-weight: 600;
 }

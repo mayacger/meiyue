@@ -8,11 +8,12 @@ import { CheckoutPage } from "./pages/CheckoutPage";
 import { OrdersPage } from "./pages/OrdersPage";
 import { OrderDetailPage } from "./pages/OrderDetailPage";
 import { LoginPage } from "./pages/LoginPage";
+import { AftersalesPage } from "./pages/AftersalesPage";
 
 /**
  * 买家 PC 路由
  * / 首页英雄 · /products 列表 · /products/:id 详情
- * /cart /checkout · /orders /orders/:id · /login
+ * /cart /checkout · /orders /orders/:id · /aftersales · /login
  */
 export function App() {
   return (
@@ -25,6 +26,7 @@ export function App() {
         <Route path="/checkout" element={<CheckoutPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
+        <Route path="/aftersales" element={<AftersalesPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
