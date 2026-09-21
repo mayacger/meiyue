@@ -1,6 +1,27 @@
 # 美月商城 · CHANGELOG
 
-## [0.1.0-SNAPSHOT] · I14 前端架构重建（当前 PR）
+## [0.1.0-SNAPSHOT] · I16 前端完整化（当前 PR）
+
+### 平台 / 商家 Pro
+
+- web-admin：运营概览、类目只读、账号权限、通知受众/分类、ProLayout 角色展示
+- web-seller：商品编辑 PUT、装修楼层可视化、AI 出图/详情/视频 ProForm、发货推进保留
+
+### 买家
+
+- web-buyer：设计 Token/动效/购物车布局/履约承诺区深化
+- taro-buyer：订单列表/详情、售后申请、地址本地占位；`build:weapp` 通过
+
+### 验证
+
+```bash
+cd frontend && pnpm build && pnpm build:taro:h5
+pnpm --filter @meiyue/taro-buyer build:weapp
+```
+
+---
+
+## [0.1.0-SNAPSHOT] · I14 前端架构重建
 
 ### 前端四端（C20）
 

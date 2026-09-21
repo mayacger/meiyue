@@ -6,8 +6,8 @@ import { apiFetch, getToken, setToken } from "../../services/api";
 import "./index.css";
 
 /**
- * 我的：登录 / 订单列表 / 模拟支付（I15）
- * 演示账号：buyer1 / buyer123
+ * 我的（I16 完善）
+ * 登录 / 订单入口 / 地址占位 / 模拟支付快捷
  */
 export default function MinePage() {
   const [username, setUsername] = useState("buyer1");
@@ -78,9 +78,25 @@ export default function MinePage() {
         <View className="card">
           <Text>已登录：{me.displayName || me.username}</Text>
           <Text className="muted">角色：{me.roles.join(", ")}</Text>
-          <Button className="btn ghost" onClick={logout}>
-            退出登录
-          </Button>
+          <View className="links">
+            <Button
+              className="btn ghost"
+              size="mini"
+              onClick={() => Taro.navigateTo({ url: "/pages/orders/index" })}
+            >
+              全部订单
+            </Button>
+            <Button
+              className="btn ghost"
+              size="mini"
+              onClick={() => Taro.navigateTo({ url: "/pages/address/index" })}
+            >
+              收货地址
+            </Button>
+            <Button className="btn ghost" size="mini" onClick={logout}>
+              退出
+            </Button>
+          </View>
         </View>
       ) : (
         <View className="card">
@@ -106,11 +122,11 @@ export default function MinePage() {
 
       {me ? (
         <View className="orders">
-          <Text className="h2">我的订单</Text>
+          <Text className="h2">最近订单</Text>
           {orders.length === 0 ? <Text className="muted">暂无订单</Text> : null}
-          {orders.map((o) => (
+          {orders.slice(0, 5).map((o) => (
             <View key={o.id} className="order-row">
-              <View>
+              <View onClick={() => Taro.navigateTo({ url: `/pages/order-detail/index?id=${o.id}` })}>
                 <Text className="order-no">{o.orderNo}</Text>
                 <Text className="muted">
                   [{o.status}] ¥{(o.totalCents / 100).toFixed(2)}

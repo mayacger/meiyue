@@ -3,9 +3,12 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { getToken } from "@meiyue/api";
 import { AdminLayout } from "./layouts/AdminLayout";
 import { LoginPage } from "./pages/LoginPage";
+import { DashboardPage } from "./pages/DashboardPage";
 import { OnboardingPage } from "./pages/OnboardingPage";
 import { CouponsPage } from "./pages/CouponsPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
+import { CategoriesPage } from "./pages/CategoriesPage";
+import { AccountPage } from "./pages/AccountPage";
 
 /** 未登录跳转登录页 */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -16,11 +19,8 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 /**
- * 平台后台路由
- * /login 登录
- * /onboarding 入驻审核
- * /coupons 平台券
- * /notifications 站内通知
+ * 平台后台路由（I16）
+ * /login · /dashboard · /onboarding · /coupons · /notifications · /categories · /account
  */
 export function App() {
   return (
@@ -34,10 +34,13 @@ export function App() {
           </RequireAuth>
         }
       >
-        <Route index element={<Navigate to="/onboarding" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="onboarding" element={<OnboardingPage />} />
         <Route path="coupons" element={<CouponsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="categories" element={<CategoriesPage />} />
+        <Route path="account" element={<AccountPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

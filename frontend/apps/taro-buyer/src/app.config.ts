@@ -1,5 +1,7 @@
 /**
- * 全局页面配置：Tab 首页/分类/购物车/我的；详情为二级页
+ * 全局页面配置（I16）
+ * Tab：首页 / 分类 / 购物车 / 我的
+ * 二级：详情 / 订单列表 / 订单详情 / 地址占位
  */
 export default defineAppConfig({
   pages: [
@@ -7,7 +9,10 @@ export default defineAppConfig({
     "pages/category/index",
     "pages/cart/index",
     "pages/mine/index",
-    "pages/detail/index"
+    "pages/detail/index",
+    "pages/orders/index",
+    "pages/order-detail/index",
+    "pages/address/index"
   ],
   window: {
     backgroundTextStyle: "light",
@@ -22,22 +27,10 @@ export default defineAppConfig({
     backgroundColor: "#F7F6F3",
     borderStyle: "black",
     list: [
-      {
-        pagePath: "pages/index/index",
-        text: "首页"
-      },
-      {
-        pagePath: "pages/category/index",
-        text: "分类"
-      },
-      {
-        pagePath: "pages/cart/index",
-        text: "购物车"
-      },
-      {
-        pagePath: "pages/mine/index",
-        text: "我的"
-      }
+      { pagePath: "pages/index/index", text: "首页" },
+      { pagePath: "pages/category/index", text: "分类" },
+      { pagePath: "pages/cart/index", text: "购物车" },
+      { pagePath: "pages/mine/index", text: "我的" }
     ]
   }
 });

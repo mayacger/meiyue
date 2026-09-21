@@ -35,6 +35,11 @@
   display: grid;
   place-items: center;
   overflow: hidden;
+  transition: box-shadow 0.35s var(--my-ease);
+}
+
+.my-rail__item:hover .my-rail__visual {
+  box-shadow: 0 18px 40px rgba(15, 61, 56, 0.12);
 }
 
 .my-rail__visual span {

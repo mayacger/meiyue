@@ -28,7 +28,8 @@ a {
 
 button,
 input,
-select {
+select,
+textarea {
   font: inherit;
 }
 
@@ -37,7 +38,6 @@ img {
   display: block;
 }
 
-/* 入场动效：克制 fade-up */
 @keyframes my-fade-up {
   from {
     opacity: 0;
@@ -58,10 +58,71 @@ img {
   }
 }
 
+@keyframes my-soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
 .my-fade-up {
   animation: my-fade-up 0.7s var(--my-ease) both;
 }
 
 .my-fade-up-delay {
   animation: my-fade-up 0.8s var(--my-ease) 0.12s both;
+}
+
+.my-page {
+  max-width: var(--my-max);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3.5rem;
+}
+
+.my-page-title {
+  margin: 0 0 0.35rem;
+  font-family: var(--my-font-brand);
+  font-weight: 500;
+  font-size: clamp(1.6rem, 2.5vw, 2rem);
+  color: var(--my-ink-deep);
+}
+
+.my-page-lead {
+  margin: 0 0 1.5rem;
+  color: var(--my-muted);
+}
+
+.my-empty {
+  padding: 2.5rem 0;
+  color: var(--my-muted);
+  text-align: center;
+}
+
+.my-error {
+  color: var(--my-danger);
+}
+
+.my-ok {
+  color: var(--my-ink);
+}
+
+.my-muted {
+  color: var(--my-muted);
+}
+
+.my-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .my-fade-up,
+  .my-fade-up-delay,
+  .my-hero__plane {
+    animation: none !important;
+  }
 }

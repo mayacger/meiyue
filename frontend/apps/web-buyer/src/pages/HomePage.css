@@ -98,6 +98,35 @@
   border-radius: 40% 60% 55% 45% / 45% 40% 60% 55%;
 }
 
+.my-promise {
+  max-width: var(--my-max);
+  margin: 1rem auto 0;
+  padding: 0 1.25rem 3rem;
+}
+
+.my-promise__inner {
+  padding: 2.5rem clamp(1.25rem, 4vw, 3rem);
+  background:
+    linear-gradient(120deg, rgba(26, 77, 69, 0.06), transparent 55%),
+    var(--my-mist);
+  border-top: 1px solid var(--my-line);
+}
+
+.my-promise__inner h2 {
+  margin: 0 0 0.5rem;
+  font-family: var(--my-font-brand);
+  font-weight: 500;
+  font-size: 1.45rem;
+  color: var(--my-ink-deep);
+}
+
+.my-promise__inner p {
+  margin: 0;
+  color: var(--my-muted);
+  max-width: 36rem;
+  line-height: 1.65;
+}
+
 @media (max-width: 860px) {
   .my-hero {
     grid-template-columns: 1fr;

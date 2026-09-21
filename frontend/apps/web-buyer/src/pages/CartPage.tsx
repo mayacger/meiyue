@@ -4,7 +4,7 @@ import { apiFetch, getToken } from "@meiyue/api";
 import type { CartItem } from "@meiyue/types";
 import "./CartPage.css";
 
-/** 购物车：GET /buyer/cart · DELETE 行 · 去结算 */
+/** 购物车：GET /buyer/cart · DELETE 行 · 去结算（I16 视觉深化） */
 export function CartPage() {
   const navigate = useNavigate();
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -30,25 +30,29 @@ export function CartPage() {
   const total = cart.reduce((s, c) => s + c.lineTotalCents, 0);
 
   return (
-    <div className="my-cart">
-      <h1 className="my-fade-up">购物车</h1>
+    <div className="my-cart my-page">
+      <h1 className="my-page-title my-fade-up">购物车</h1>
+      <p className="my-page-lead">跨店合并结算 · 店券与平台券互斥</p>
       {error ? <p className="my-error">{error}</p> : null}
       {cart.length === 0 ? (
-        <p className="my-muted">
+        <div className="my-empty">
           购物车为空，<Link to="/products">去逛逛</Link>
-        </p>
+        </div>
       ) : (
         <ul className="my-cart__list my-fade-up">
           {cart.map((c) => (
             <li key={c.id}>
-              <div>
+              <div className="my-cart__thumb" aria-hidden>
+                {c.productTitle.slice(0, 1)}
+              </div>
+              <div className="my-cart__meta">
                 <strong>{c.productTitle}</strong>
                 <span className="my-muted">
-                  {" "}
-                  ×{c.quantity} · ¥{(c.lineTotalCents / 100).toFixed(2)}
+                  {c.skuCode} · ×{c.quantity}
                 </span>
               </div>
-              <button type="button" onClick={() => remove(c.id).catch(() => undefined)}>
+              <div className="my-cart__price">¥{(c.lineTotalCents / 100).toFixed(2)}</div>
+              <button type="button" className="my-cart__remove" onClick={() => remove(c.id).catch(() => undefined)}>
                 移除
               </button>
             </li>

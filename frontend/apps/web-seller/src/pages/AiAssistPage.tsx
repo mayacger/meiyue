@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import {
   PageContainer,
+  ProCard,
   ProForm,
   ProFormSelect,
-  ProFormTextArea
+  ProFormText,
+  ProFormTextArea,
+  ProTable
 } from "@ant-design/pro-components";
-import { App, Card, List, Tag } from "antd";
+import type { ProColumns } from "@ant-design/pro-components";
+import { App, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
 import type { ProductSummary } from "@meiyue/types";
 
@@ -22,11 +26,15 @@ interface AiAsset {
   type: string;
   status: string;
   prompt?: string;
+  resultUrl?: string | null;
 }
 
 /**
- * AI 素材入口（图/详情/推广视频 MOCK）
- * 非直播；主交易不依赖 AI
+ * AI 素材入口完整化（I16）
+ * - 出图 POST /seller/ai/images
+ * - 详情文案 POST /seller/ai/details
+ * - 推广视频 POST /seller/ai/videos（非直播）
+ * - 资产列表 GET /seller/ai/assets · videos
  */
 export function AiAssistPage() {
   const { message } = App.useApp();
@@ -48,65 +56,130 @@ export function AiAssistPage() {
     reload().catch((e) => message.error(e instanceof Error ? e.message : "加载失败"));
   }, [message]);
 
+  const productOptions = products.map((p) => ({ label: `#${p.id} ${p.title}`, value: p.id }));
+
+  const videoCols: ProColumns<VideoTask>[] = [
+    { title: "ID", dataIndex: "id", width: 72 },
+    { title: "提示词", dataIndex: "prompt", ellipsis: true },
+    {
+      title: "状态",
+      dataIndex: "status",
+      width: 100,
+      render: (_, r) => <Tag>{r.status}</Tag>
+    },
+    { title: "商品", dataIndex: "productId", width: 90 },
+    { title: "结果", dataIndex: "resultUrl", ellipsis: true }
+  ];
+
+  const assetCols: ProColumns<AiAsset>[] = [
+    { title: "ID", dataIndex: "id", width: 72 },
+    { title: "类型", dataIndex: "type", width: 100 },
+    {
+      title: "状态",
+      dataIndex: "status",
+      width: 100,
+      render: (_, r) => <Tag>{r.status}</Tag>
+    },
+    { title: "提示词", dataIndex: "prompt", ellipsis: true },
+    { title: "结果", dataIndex: "resultUrl", ellipsis: true }
+  ];
+
   return (
-    <PageContainer header={{ title: "AI 素材", subTitle: "出图/详情/推广视频 MOCK · 非直播" }}>
-      <Card title="提交推广视频任务" style={{ marginBottom: 16 }}>
-        <ProForm
-          onFinish={async (values) => {
-            try {
-              await apiFetch("/api/v1/seller/ai/videos", {
-                method: "POST",
-                json: {
-                  prompt: values.prompt,
-                  productId: values.productId || null
-                }
-              });
-              message.success("任务已提交（MOCK 异步）");
-              await reload();
-              return true;
-            } catch (err) {
-              message.error(err instanceof Error ? err.message : "提交失败");
-              return false;
-            }
-          }}
-        >
-          <ProFormTextArea name="prompt" label="提示词" initialValue="商品展示短视频" rules={[{ required: true }]} />
-          <ProFormSelect
-            name="productId"
-            label="关联商品"
-            options={products.map((p) => ({ label: `#${p.id} ${p.title}`, value: p.id }))}
-            allowClear
-          />
-        </ProForm>
-      </Card>
-      <Card title="视频任务" style={{ marginBottom: 16 }}>
-        <List
+    <PageContainer header={{ title: "AI 素材", subTitle: "出图 / 详情 / 推广视频 MOCK · 非直播" }}>
+      <ProCard gutter={16} wrap>
+        <ProCard colSpan={8} title="AI 出图" bordered>
+          <ProForm
+            onFinish={async (values) => {
+              try {
+                await apiFetch("/api/v1/seller/ai/images", {
+                  method: "POST",
+                  json: { prompt: values.prompt }
+                });
+                message.success("出图任务已提交");
+                await reload();
+                return true;
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "提交失败");
+                return false;
+              }
+            }}
+          >
+            <ProFormTextArea name="prompt" label="提示词" rules={[{ required: true }]} />
+          </ProForm>
+        </ProCard>
+        <ProCard colSpan={8} title="AI 详情文案" bordered>
+          <ProForm
+            onFinish={async (values) => {
+              try {
+                await apiFetch("/api/v1/seller/ai/details", {
+                  method: "POST",
+                  json: {
+                    title: values.title,
+                    hints: values.hints || ""
+                  }
+                });
+                message.success("详情任务已提交");
+                await reload();
+                return true;
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "提交失败");
+                return false;
+              }
+            }}
+          >
+            <ProFormText name="title" label="商品标题" rules={[{ required: true }]} />
+            <ProFormTextArea name="hints" label="卖点提示" />
+          </ProForm>
+        </ProCard>
+        <ProCard colSpan={8} title="推广视频（非直播）" bordered>
+          <ProForm
+            onFinish={async (values) => {
+              try {
+                await apiFetch("/api/v1/seller/ai/videos", {
+                  method: "POST",
+                  json: { prompt: values.prompt, productId: values.productId || null }
+                });
+                message.success("视频任务已提交（MOCK）");
+                await reload();
+                return true;
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "提交失败");
+                return false;
+              }
+            }}
+          >
+            <ProFormTextArea
+              name="prompt"
+              label="提示词"
+              initialValue="商品展示短视频"
+              rules={[{ required: true }]}
+            />
+            <ProFormSelect name="productId" label="关联商品" options={productOptions} allowClear />
+          </ProForm>
+        </ProCard>
+      </ProCard>
+
+      <ProCard title="视频任务" style={{ marginTop: 16 }}>
+        <ProTable<VideoTask>
+          rowKey="id"
+          search={false}
+          toolBarRender={false}
           dataSource={videos}
-          renderItem={(v) => (
-            <List.Item>
-              <List.Item.Meta
-                title={
-                  <>
-                    任务#{v.id} <Tag>{v.status}</Tag>
-                  </>
-                }
-                description={`${v.prompt}${v.resultUrl ? ` → ${v.resultUrl}` : ""}`}
-              />
-            </List.Item>
-          )}
+          columns={videoCols}
+          pagination={{ pageSize: 5 }}
         />
-      </Card>
-      <Card title="素材资产">
-        <List
+      </ProCard>
+      <ProCard title="素材资产" style={{ marginTop: 16 }}>
+        <ProTable<AiAsset>
+          rowKey="id"
+          search={false}
+          toolBarRender={false}
           dataSource={assets}
-          locale={{ emptyText: "暂无素材（可后续调用出图/详情接口）" }}
-          renderItem={(a) => (
-            <List.Item>
-              #{a.id} · {a.type} · <Tag>{a.status}</Tag>
-            </List.Item>
-          )}
+          columns={assetCols}
+          locale={{ emptyText: "暂无素材" }}
+          pagination={{ pageSize: 5 }}
         />
-      </Card>
+      </ProCard>
     </PageContainer>
   );
 }

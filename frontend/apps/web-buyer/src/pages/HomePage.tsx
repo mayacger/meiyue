@@ -44,6 +44,12 @@ export function HomePage() {
         </div>
       </section>
       <ProductRail products={products.slice(0, 8)} title="本季上架" />
+      <section className="my-promise my-fade-up">
+        <div className="my-promise__inner">
+          <h2>完整履约，月色安心</h2>
+          <p>正向物流全程可追 · 售后原路退款 · 多店一单支付 · 不做直播带货</p>
+        </div>
+      </section>
     </>
   );
 }

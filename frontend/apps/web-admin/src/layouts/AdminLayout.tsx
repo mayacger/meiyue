@@ -1,22 +1,34 @@
+import { useEffect, useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { ProLayout } from "@ant-design/pro-components";
 import {
+  AppstoreOutlined,
   AuditOutlined,
   BellOutlined,
   GiftOutlined,
-  LogoutOutlined
+  LogoutOutlined,
+  TeamOutlined,
+  DashboardOutlined
 } from "@ant-design/icons";
-import { Dropdown } from "antd";
-import { setToken } from "@meiyue/api";
+import { Dropdown, Space, Tag } from "antd";
+import { apiFetch, setToken } from "@meiyue/api";
+import type { UserProfile } from "@meiyue/types";
 
 /**
- * 平台后台 ProLayout
- * - 侧栏：入驻审核 / 平台券 / 通知
- * - 右上角退出清 Token
+ * 平台后台 ProLayout（I16）
+ * - 菜单：概览 / 入驻审核 / 平台券 / 通知 / 类目（只读） / 账号权限
+ * - 右上角展示角色 Tag + 退出
  */
 export function AdminLayout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const [me, setMe] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    apiFetch<UserProfile>("/api/v1/auth/me")
+      .then(setMe)
+      .catch(() => setMe(null));
+  }, []);
 
   return (
     <div style={{ height: "100vh" }}>
@@ -32,21 +44,12 @@ export function AdminLayout() {
         route={{
           path: "/",
           routes: [
-            {
-              path: "/onboarding",
-              name: "入驻审核",
-              icon: <AuditOutlined />
-            },
-            {
-              path: "/coupons",
-              name: "平台券",
-              icon: <GiftOutlined />
-            },
-            {
-              path: "/notifications",
-              name: "站内通知",
-              icon: <BellOutlined />
-            }
+            { path: "/dashboard", name: "运营概览", icon: <DashboardOutlined /> },
+            { path: "/onboarding", name: "入驻审核", icon: <AuditOutlined /> },
+            { path: "/coupons", name: "平台券", icon: <GiftOutlined /> },
+            { path: "/notifications", name: "站内通知", icon: <BellOutlined /> },
+            { path: "/categories", name: "类目（只读）", icon: <AppstoreOutlined /> },
+            { path: "/account", name: "账号与权限", icon: <TeamOutlined /> }
           ]
         }}
         menuItemRender={(item, dom) => (
@@ -60,25 +63,37 @@ export function AdminLayout() {
           </a>
         )}
         avatarProps={{
-          title: "平台管理员",
+          title: me?.displayName || me?.username || "平台管理员",
           render: (_props, dom) => (
-            <Dropdown
-              menu={{
-                items: [
-                  {
-                    key: "logout",
-                    icon: <LogoutOutlined />,
-                    label: "退出登录",
-                    onClick: () => {
-                      setToken(null);
-                      navigate("/login");
+            <Space>
+              {me?.roles?.map((r) => (
+                <Tag key={r} color="green">
+                  {r}
+                </Tag>
+              ))}
+              <Dropdown
+                menu={{
+                  items: [
+                    {
+                      key: "account",
+                      label: "账号与权限",
+                      onClick: () => navigate("/account")
+                    },
+                    {
+                      key: "logout",
+                      icon: <LogoutOutlined />,
+                      label: "退出登录",
+                      onClick: () => {
+                        setToken(null);
+                        navigate("/login");
+                      }
                     }
-                  }
-                ]
-              }}
-            >
-              {dom}
-            </Dropdown>
+                  ]
+                }}
+              >
+                {dom}
+              </Dropdown>
+            </Space>
           )
         }}
       >

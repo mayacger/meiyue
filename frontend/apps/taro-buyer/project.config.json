@@ -1,15 +1,22 @@
 {
   "miniprogramRoot": "dist/weapp/",
   "projectname": "meiyue-taro-buyer",
-  "description": "美月商城买家小程序",
+  "description": "美月商城买家小程序（H5 + weapp）",
   "appid": "touristappid",
   "setting": {
-    "urlCheck": true,
-    "es6": false,
-    "enhance": false,
-    "compileHotReLoad": false,
-    "postcss": false,
-    "minified": false
+    "urlCheck": false,
+    "es6": true,
+    "enhance": true,
+    "compileHotReLoad": true,
+    "postcss": true,
+    "minified": true,
+    "coverView": true,
+    "showShadowRootInWxmlPanel": true
   },
-  "compileType": "miniprogram"
+  "compileType": "miniprogram",
+  "condition": {},
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  }
 }
