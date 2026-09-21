@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================
-# 美月商城 · I18/I20/I24–I27 轻量冒烟
+# 美月商城 · I18–I29 轻量冒烟
 # 覆盖：类目 / 地址簿 / 用户 / 库存 / 概览 / 改密资料 / 审计 / 批量上下架 /
-#       库存预警 / 通知 / 员工邀请 / OpenAPI / 看板序列 / 草稿箱
-# 前置：API 已启动（demo profile 以开放 OpenAPI）；依赖 curl、python3
+#       库存预警 / 通知 / 员工 / OpenAPI / series / 草稿 / Banner / 结算 /
+#       售后凭证与退货物流
+# 前置：API 已启动（demo profile）；依赖 curl、python3
 # 用法：BASE_URL=http://localhost:8080 ./scripts/smoke-i18.sh
 # ============================================================
 set -euo pipefail
@@ -181,7 +182,40 @@ d = req("POST", "/api/v1/seller/products", seller_token, {
 drafts2 = req("GET", "/api/v1/seller/products/drafts", seller_token)
 assert any(p["id"] == d["id"] for p in drafts2)
 
+print("==> I28 banners + settlements")
+req("GET", "/api/v1/banners")
+bn = req("POST", "/api/v1/admin/banners", admin_token, {
+    "title": f"i18Banner{SUFFIX}",
+    "imageUrl": "https://picsum.photos/seed/i18b/800/200",
+    "linkUrl": "/products",
+    "sortOrder": 1,
+    "enabled": True
+})
+req("DELETE", f"/api/v1/admin/banners/{bn['id']}", admin_token)
+req("GET", "/api/v1/admin/settlements/periods", admin_token)
+req("GET", "/api/v1/seller/settlements/periods", seller_token)
+
+print("==> I29 evidence + reverse tracking")
+req("POST", f"/api/v1/seller/products/{prod['id']}/status", seller_token, {"status": "ON_SALE"})
+req("POST", f"/api/v1/seller/inventory/skus/{sku_id}/stock", seller_token, {"stockQty": 20})
+req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
+ordx = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})
+req("POST", f"/api/v1/buyer/orders/{ordx['id']}/mock-pay", buyer_token)
+itemx = req("GET", f"/api/v1/buyer/orders/{ordx['id']}", buyer_token)["items"][0]["id"]
+as_ev = req("POST", "/api/v1/buyer/aftersales", buyer_token, {
+    "orderId": ordx["id"], "orderItemId": itemx, "type": "RETURN_REFUND",
+    "reason": "i18 evidence", "refundCents": 200,
+    "evidenceImageUrls": ["https://picsum.photos/seed/i18ev/120/120"]
+})
+assert as_ev.get("evidenceImageUrls") and len(as_ev["evidenceImageUrls"]) >= 1
+req("POST", f"/api/v1/seller/aftersales/{as_ev['id']}/approve", seller_token, {"reviewNote": "ok"})
+req("POST", f"/api/v1/buyer/aftersales/{as_ev['id']}/reverse-tracking", buyer_token, {
+    "carrierCode": "YTO", "trackingNo": f"YT{SUFFIX}", "remark": "i18"
+})
+req("POST", f"/api/v1/seller/aftersales/{as_ev['id']}/confirm-return", seller_token)
+
 print("")
-print("SMOKE I18/I20/I24–I27 PASSED")
+print("SMOKE I18–I29 PASSED")
 print(f"  seller={seller} buyer={buyer} staff={staff_user} sku={sku_id} cat={cat['id']}")
 PY
+

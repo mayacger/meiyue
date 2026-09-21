@@ -1,6 +1,6 @@
 # 美月商城 · 开发进度（用户可读）
 
-> 状态：**I1 → I27 完成**（C19）  
+> 状态：**I1 → I29 完成**（C19）  
 > 分支：`cursor/meiyue-mall-scaffold-9727` · PR #1  
 
 ## 验证
@@ -15,9 +15,9 @@ pnpm build:taro:h5 && pnpm --filter @meiyue/taro-buyer build:weapp
 
 ## 最近交付
 
-- **I27**：Seller/Admin 概览近 7 日图表（Recharts）；商品草稿箱 `GET /seller/products/drafts`
-- **I26**：商家员工邀请/列表/移除；`SELLER_STAFF` 权限收紧；springdoc OpenAPI（仅 demo/dev）
-- **I25**：消息已读/未读；批量上下架；库存预警
-- **I24**：改密/资料；审计日志；物流时间线
+- **I29**：退货物流填写体验；售后凭证图 URL；全站 Skeleton 骨架
+- **I28**：平台 Banner CRUD + Buyer/Taro 展示；结算明细；Buyer SEO meta；Flyway V16
+- **I27**：看板图表；商品草稿箱
+- **I26**：员工管理；OpenAPI（demo/dev）
 
-详见 [i26-i27-capabilities.md](./i26-i27-capabilities.md)、[i24-i25-capabilities.md](./i24-i25-capabilities.md)。
+详见 [i28-i29-capabilities.md](./i28-i29-capabilities.md)、[i26-i27-capabilities.md](./i26-i27-capabilities.md)。

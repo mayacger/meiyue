@@ -1,7 +1,8 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiFetch, getToken } from "@meiyue/api";
-import { TrackTimeline } from "@meiyue/ui";
+import { Skeleton, TrackTimeline } from "@meiyue/ui";
+import { SeoHead } from "../components/SeoHead";
 import "./OrderDetailPage.css";
 
 interface Track {
@@ -28,6 +29,7 @@ interface Aftersale {
   type: string;
   status: string;
   refundCents: number;
+  reverseShipmentId?: number | null;
 }
 
 interface OrderItem {
@@ -44,7 +46,7 @@ interface Order {
 }
 
 /**
- * 订单详情：确认收货 / 评价 / 物流 / 售后
+ * 订单详情：确认收货 / 评价 / 物流 / 售后（I29 凭证图 URL）
  */
 export function OrderDetailPage() {
   const { id } = useParams();
@@ -56,11 +58,14 @@ export function OrderDetailPage() {
   const [type, setType] = useState<"REFUND_ONLY" | "RETURN_REFUND">("REFUND_ONLY");
   const [reason, setReason] = useState("不想要了");
   const [refundYuan, setRefundYuan] = useState("99");
+  /** I29：凭证图 URL（逗号分隔输入） */
+  const [evidenceUrls, setEvidenceUrls] = useState("");
   const [rating, setRating] = useState("5");
   const [content, setContent] = useState("不错");
   const [reviewItemId, setReviewItemId] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   async function reload() {
     if (!getToken()) {
@@ -76,7 +81,11 @@ export function OrderDetailPage() {
   }
 
   useEffect(() => {
-    reload().catch((e) => setError(e instanceof Error ? e.message : "加载失败"));
+    setLoading(true);
+    reload()
+      .catch((e) => setError(e instanceof Error ? e.message : "加载失败"))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
   async function confirmReceipt() {
@@ -109,16 +118,23 @@ export function OrderDetailPage() {
   async function applyAftersale(e: FormEvent) {
     e.preventDefault();
     try {
+      const urls = evidenceUrls
+        .split(/[,，\n]/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .slice(0, 6);
       await apiFetch("/api/v1/buyer/aftersales", {
         method: "POST",
         json: {
           orderId,
           type,
           reason,
-          refundCents: Math.round(parseFloat(refundYuan) * 100)
+          refundCents: Math.round(parseFloat(refundYuan) * 100),
+          evidenceImageUrls: urls.length ? urls : null
         }
       });
-      setMsg("售后已申请");
+      setMsg("售后已申请" + (type === "RETURN_REFUND" ? "，同意后请到售后页填写退货物流" : ""));
+      setEvidenceUrls("");
       await reload();
     } catch (err) {
       setError(err instanceof Error ? err.message : "申请失败");
@@ -127,11 +143,13 @@ export function OrderDetailPage() {
 
   return (
     <div className="my-od">
+      <SeoHead title={order?.orderNo || `订单 #${id}`} description="订单详情与履约轨迹" />
       <p>
         <Link to="/orders">← 订单列表</Link>
       </p>
       <h1>{order?.orderNo ?? `订单 #${id}`}</h1>
       <p>状态：{order?.status}</p>
+      {loading ? <Skeleton rows={4} /> : null}
       {error ? <p className="my-error">{error}</p> : null}
       {msg ? <p className="my-ok">{msg}</p> : null}
 
@@ -191,16 +209,25 @@ export function OrderDetailPage() {
             <option value="REFUND_ONLY">仅退款</option>
             <option value="RETURN_REFUND">退货退款</option>
           </select>
-          <input value={reason} onChange={(e) => setReason(e.target.value)} />
+          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="原因" />
           <input value={refundYuan} onChange={(e) => setRefundYuan(e.target.value)} placeholder="退款金额（元）" />
+          <input
+            value={evidenceUrls}
+            onChange={(e) => setEvidenceUrls(e.target.value)}
+            placeholder="凭证图 URL（可选，逗号分隔）"
+          />
           <button type="submit" className="my-btn my-btn--ghost">
             申请售后
           </button>
         </form>
+        <p className="my-muted">
+          退货退款同意后请到 <Link to="/aftersales">我的售后</Link> 填写退货物流
+        </p>
         <ul>
           {aftersales.map((a) => (
             <li key={a.id}>
               {a.aftersaleNo} · {a.type} · {a.status} · ¥{(a.refundCents / 100).toFixed(2)}
+              {a.reverseShipmentId ? ` · 退货运单 #${a.reverseShipmentId}` : ""}
             </li>
           ))}
         </ul>

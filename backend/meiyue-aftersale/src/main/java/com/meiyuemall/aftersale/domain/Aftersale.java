@@ -36,6 +36,9 @@ public class Aftersale {
     private String reviewNote;
     @Column(name = "reverse_shipment_id")
     private Long reverseShipmentId;
+    /** I29：凭证图 URL，逗号分隔 */
+    @Column(name = "evidence_image_urls", length = 2048)
+    private String evidenceImageUrls;
     @Column(name = "closed_at")
     private Instant closedAt;
     @Column(name = "created_at", nullable = false)
@@ -73,6 +76,8 @@ public class Aftersale {
     public void setReviewNote(String reviewNote) { this.reviewNote = reviewNote; }
     public Long getReverseShipmentId() { return reverseShipmentId; }
     public void setReverseShipmentId(Long reverseShipmentId) { this.reverseShipmentId = reverseShipmentId; }
+    public String getEvidenceImageUrls() { return evidenceImageUrls; }
+    public void setEvidenceImageUrls(String evidenceImageUrls) { this.evidenceImageUrls = evidenceImageUrls; }
     public Instant getClosedAt() { return closedAt; }
     public void setClosedAt(Instant closedAt) { this.closedAt = closedAt; }
     public Instant getCreatedAt() { return createdAt; }

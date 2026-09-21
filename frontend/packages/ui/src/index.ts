@@ -10,3 +10,5 @@ export { ErrorState } from "./ErrorState";
 export type { ErrorStateProps } from "./ErrorState";
 export { TrackTimeline } from "./TrackTimeline";
 export type { TrackTimelineProps, TrackNode } from "./TrackTimeline";
+export { Skeleton } from "./Skeleton";
+export type { SkeletonProps } from "./Skeleton";

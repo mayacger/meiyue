@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import type { ProductSummary } from "@meiyue/types";
+import { Skeleton } from "@meiyue/ui";
 import { ProductRail } from "../components/ProductRail";
+import { SeoHead } from "../components/SeoHead";
 import "./ProductListPage.css";
 
 interface Category {
@@ -23,16 +25,22 @@ export function ProductListPage() {
     searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : null
   );
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   async function load(keyword = q, cat = categoryId) {
-    const params = new URLSearchParams();
-    if (keyword.trim()) params.set("q", keyword.trim());
-    if (cat) params.set("categoryId", String(cat));
-    const qs = params.toString();
-    const res = await fetch(`/api/v1/products${qs ? `?${qs}` : ""}`);
-    const body = await res.json();
-    if (!body.success) throw new Error(body.message || "加载失败");
-    setProducts(body.data);
+    setLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (keyword.trim()) params.set("q", keyword.trim());
+      if (cat) params.set("categoryId", String(cat));
+      const qs = params.toString();
+      const res = await fetch(`/api/v1/products${qs ? `?${qs}` : ""}`);
+      const body = await res.json();
+      if (!body.success) throw new Error(body.message || "加载失败");
+      setProducts(body.data);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -74,6 +82,7 @@ export function ProductListPage() {
 
   return (
     <div className="my-list">
+      <SeoHead title="全部商品" description="浏览美月商城在售商品，多商家精选上架。" path="/products" />
       <header className="my-list__head my-fade-up">
         <h1>全部商品</h1>
         <form onSubmit={onSearch} className="my-list__search">
@@ -109,7 +118,9 @@ export function ProductListPage() {
         {error ? <p className="my-error">{error}</p> : null}
         <p className="my-muted my-list__count">共 {products.length} 件</p>
       </header>
-      {products.length === 0 ? (
+      {loading ? (
+        <Skeleton rows={4} />
+      ) : products.length === 0 ? (
         <div className="my-empty">没有匹配商品，试试其它关键词或类目</div>
       ) : (
         <ProductRail products={products} />

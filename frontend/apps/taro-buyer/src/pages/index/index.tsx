@@ -1,18 +1,29 @@
-import { View, Text, Input, Button } from "@tarojs/components";
+import { View, Text, Input, Button, Image, Swiper, SwiperItem } from "@tarojs/components";
 import { useEffect, useState } from "react";
 import Taro from "@tarojs/taro";
 import type { ProductSummary } from "@meiyue/types";
 import { apiFetch } from "../../services/api";
 import "./index.css";
 
+/** 平台 Banner（I28） */
+interface Banner {
+  id: number;
+  title: string;
+  imageUrl: string;
+  linkUrl: string | null;
+}
+
 /**
- * 首页（I19）：品牌 + 搜索 + 商品列表
- * API：GET /api/v1/products?q=
+ * 首页（I19 + I28 Banner）
+ * API：GET /api/v1/banners · GET /api/v1/products?q=
+ * 禁直播组件
  */
 export default function IndexPage() {
   const [products, setProducts] = useState<ProductSummary[]>([]);
+  const [banners, setBanners] = useState<Banner[]>([]);
   const [q, setQ] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
 
   async function load(keyword = "") {
     const qs = keyword.trim() ? `?q=${encodeURIComponent(keyword.trim())}` : "";
@@ -20,7 +31,14 @@ export default function IndexPage() {
   }
 
   useEffect(() => {
-    load().catch((e) => setError(e instanceof Error ? e.message : "加载失败"));
+    setLoading(true);
+    Promise.all([
+      apiFetch<Banner[]>("/api/v1/banners").catch(() => [] as Banner[]),
+      load()
+    ])
+      .then(([b]) => setBanners(b || []))
+      .catch((e) => setError(e instanceof Error ? e.message : "加载失败"))
+      .finally(() => setLoading(false));
   }, []);
 
   async function onSearch() {
@@ -29,6 +47,13 @@ export default function IndexPage() {
       await load(q);
     } catch (e) {
       setError(e instanceof Error ? e.message : "搜索失败");
+    }
+  }
+
+  function onBannerTap(b: Banner) {
+    const href = b.linkUrl || "";
+    if (href.startsWith("/products")) {
+      Taro.navigateTo({ url: "/pages/category/index" }).catch(() => undefined);
     }
   }
 
@@ -51,9 +76,26 @@ export default function IndexPage() {
           </Button>
         </View>
       </View>
+
+      {banners.length > 0 ? (
+        <View className="banner-wrap">
+          <Swiper className="banner-swiper" circular autoplay indicatorDots>
+            {banners.map((b) => (
+              <SwiperItem key={b.id}>
+                <View className="banner-item" onClick={() => onBannerTap(b)}>
+                  <Image className="banner-img" src={b.imageUrl} mode="aspectFill" />
+                  <Text className="banner-cap">{b.title}</Text>
+                </View>
+              </SwiperItem>
+            ))}
+          </Swiper>
+        </View>
+      ) : null}
+
       {error ? <Text className="err">{error}</Text> : null}
+      {loading ? <Text className="empty">加载中…</Text> : null}
       <View className="list">
-        {products.length === 0 ? <Text className="empty">暂无商品</Text> : null}
+        {!loading && products.length === 0 ? <Text className="empty">暂无商品</Text> : null}
         {products.map((p) => (
           <View
             key={p.id}

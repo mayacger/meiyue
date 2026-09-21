@@ -23,6 +23,8 @@ import com.meiyuemall.tenant.domain.TenantStatus;
 import com.meiyuemall.tenant.repo.SellerMemberRepository;
 import com.meiyuemall.tenant.repo.StoreRepository;
 import com.meiyuemall.tenant.repo.TenantRepository;
+import com.meiyuemall.platform.domain.PlatformBanner;
+import com.meiyuemall.platform.repo.PlatformBannerRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -38,13 +40,13 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * I13 演示种子（可开关）。
+ * I13 演示种子（可开关）+ I28 Banner 补种。
  * <p>
  * 启用条件：{@code meiyue.demo.enabled=true}（通常随 {@code spring.profiles.active=demo} 加载
  * {@code application-demo.yml}）。
  * </p>
  * <p>
- * 幂等键：店主用户名 {@code seller1}；若已存在则整段跳过。
+ * 幂等键：店主用户名 {@code seller1}；若已存在则跳过账号/商品，仍会补种空 Banner。
  * 写入内容：
  * <ul>
  *   <li>买家 {@code buyer1 / buyer123}（角色 BUYER）</li>
@@ -52,6 +54,7 @@ import java.util.List;
  *   <li>租户 + 店铺 {@code demo-flower}（状态 OPEN）</li>
  *   <li>2 个已上架商品（挂 V2 预置类目「鲜花绿植」）</li>
  *   <li>已发布装修页（BANNER + PRODUCT_RECOMMEND，含商品 ID）</li>
+ *   <li>平台首页运营 Banner（非直播）</li>
  * </ul>
  * 不写入任何支付/AI 密钥；不做真实分账。
  * </p>
@@ -77,6 +80,7 @@ public class DemoSeeder implements ApplicationRunner {
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
     private final StorePageRepository storePageRepository;
+    private final PlatformBannerRepository platformBannerRepository;
 
     public DemoSeeder(
             UserAccountRepository userAccountRepository,
@@ -86,7 +90,8 @@ public class DemoSeeder implements ApplicationRunner {
             SellerMemberRepository sellerMemberRepository,
             CategoryRepository categoryRepository,
             ProductRepository productRepository,
-            StorePageRepository storePageRepository
+            StorePageRepository storePageRepository,
+            PlatformBannerRepository platformBannerRepository
     ) {
         this.userAccountRepository = userAccountRepository;
         this.passwordEncoder = passwordEncoder;
@@ -96,13 +101,16 @@ public class DemoSeeder implements ApplicationRunner {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
         this.storePageRepository = storePageRepository;
+        this.platformBannerRepository = platformBannerRepository;
     }
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        ensureBanners();
+
         if (userAccountRepository.existsByUsername(SELLER_USERNAME)) {
-            log.info("演示种子已存在（{}），跳过 DemoSeeder", SELLER_USERNAME);
+            log.info("演示种子已存在（{}），跳过账号商品；Banner 已校验", SELLER_USERNAME);
             return;
         }
 
@@ -203,6 +211,27 @@ public class DemoSeeder implements ApplicationRunner {
                 rose.getId(),
                 lily.getId()
         );
+    }
+
+    /** I28：若无 Banner 则写入两条示意运营位（渐变占位图用 CSS/空图 URL） */
+    private void ensureBanners() {
+        if (platformBannerRepository.count() > 0) {
+            return;
+        }
+        PlatformBanner a = new PlatformBanner();
+        a.setTitle("月色精选 · 开箱即用");
+        a.setImageUrl("https://picsum.photos/seed/meiyue-banner1/1200/400");
+        a.setLinkUrl("/products");
+        a.setSortOrder(20);
+        a.setEnabled(true);
+        PlatformBanner b = new PlatformBanner();
+        b.setTitle("多店一单 · 安心履约");
+        b.setImageUrl("https://picsum.photos/seed/meiyue-banner2/1200/400");
+        b.setLinkUrl("/products");
+        b.setSortOrder(10);
+        b.setEnabled(true);
+        platformBannerRepository.saveAll(List.of(a, b));
+        log.info("演示 Banner 已写入 2 条");
     }
 
     /**

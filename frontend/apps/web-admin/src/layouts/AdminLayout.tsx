@@ -11,15 +11,17 @@ import {
   DashboardOutlined,
   CustomerServiceOutlined,
   SettingOutlined,
-  FileSearchOutlined
+  FileSearchOutlined,
+  PictureOutlined,
+  AccountBookOutlined
 } from "@ant-design/icons";
 import { Dropdown, Space, Tag } from "antd";
 import { apiFetch, setToken } from "@meiyue/api";
 import type { UserProfile } from "@meiyue/types";
 
 /**
- * 平台后台 ProLayout（I21）
- * - 菜单：概览 / 入驻 / 券 / 运营配置 / 通知 / 工单 / 类目 / 账号
+ * 平台后台 ProLayout（I21 + I28）
+ * - 菜单：概览 / 入驻 / 券 / Banner / 结算 / 运营配置 / 通知 / 工单 / 类目 / 账号
  */
 export function AdminLayout() {
   const location = useLocation();
@@ -49,6 +51,8 @@ export function AdminLayout() {
             { path: "/dashboard", name: "运营概览", icon: <DashboardOutlined /> },
             { path: "/onboarding", name: "入驻审核", icon: <AuditOutlined /> },
             { path: "/coupons", name: "平台券", icon: <GiftOutlined /> },
+            { path: "/banners", name: "首页 Banner", icon: <PictureOutlined /> },
+            { path: "/settlements", name: "结算汇总", icon: <AccountBookOutlined /> },
             { path: "/platform-config", name: "运营配置", icon: <SettingOutlined /> },
             { path: "/audit-logs", name: "审计日志", icon: <FileSearchOutlined /> },
             { path: "/notifications", name: "站内通知", icon: <BellOutlined /> },

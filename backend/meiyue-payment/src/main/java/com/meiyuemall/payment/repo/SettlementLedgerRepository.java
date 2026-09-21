@@ -24,4 +24,18 @@ public interface SettlementLedgerRepository extends JpaRepository<SettlementLedg
             order by s.periodKey desc
             """)
     List<Object[]> summarizeByPeriod(@Param("tenantId") Long tenantId);
+
+    /** I28：全站按周期+状态汇总（Admin 只读） */
+    @Query("""
+            select s.periodKey, s.status, coalesce(sum(s.amountCents), 0), count(s), count(distinct s.tenantId)
+            from SettlementLedger s
+            group by s.periodKey, s.status
+            order by s.periodKey desc
+            """)
+    List<Object[]> summarizeAllByPeriod();
+
+    /** I28：可选按租户+周期查明细 */
+    List<SettlementLedger> findByPeriodKeyOrderByCreatedAtDesc(String periodKey);
+
+    List<SettlementLedger> findAllByOrderByCreatedAtDesc();
 }

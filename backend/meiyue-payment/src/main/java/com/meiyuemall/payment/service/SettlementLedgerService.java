@@ -1,6 +1,7 @@
 package com.meiyuemall.payment.service;
 
 import com.meiyuemall.payment.domain.SettlementLedger;
+import com.meiyuemall.payment.dto.AdminSettlementPeriodSummary;
 import com.meiyuemall.payment.dto.SettlementLedgerResponse;
 import com.meiyuemall.payment.dto.SettlementPeriodSummary;
 import com.meiyuemall.payment.repo.SettlementLedgerRepository;
@@ -96,9 +97,41 @@ public class SettlementLedgerService {
                 )).toList();
     }
 
+    /** I28：平台全站周期汇总（只读，无打款） */
+    @Transactional(readOnly = true)
+    public List<AdminSettlementPeriodSummary> adminPeriodSummaries() {
+        return ledgerRepository.summarizeAllByPeriod().stream()
+                .map(r -> new AdminSettlementPeriodSummary(
+                        (String) r[0],
+                        (String) r[1],
+                        ((Number) r[2]).longValue(),
+                        ((Number) r[3]).longValue(),
+                        ((Number) r[4]).longValue()
+                )).toList();
+    }
+
+    /** I28：平台明细（可选 tenantId / periodKey） */
+    @Transactional(readOnly = true)
+    public List<SettlementLedgerResponse> adminListBills(Long tenantId, String periodKey) {
+        List<SettlementLedger> rows;
+        if (tenantId != null && periodKey != null && !periodKey.isBlank()) {
+            rows = ledgerRepository.findByTenantIdAndPeriodKeyOrderByCreatedAtDesc(tenantId, periodKey.trim());
+        } else if (tenantId != null) {
+            rows = ledgerRepository.findByTenantIdOrderByCreatedAtDesc(tenantId);
+        } else if (periodKey != null && !periodKey.isBlank()) {
+            rows = ledgerRepository.findByPeriodKeyOrderByCreatedAtDesc(periodKey.trim());
+        } else {
+            rows = ledgerRepository.findAllByOrderByCreatedAtDesc();
+            if (rows.size() > 200) {
+                rows = rows.subList(0, 200);
+            }
+        }
+        return rows.stream().map(this::toResponse).toList();
+    }
+
     private SettlementLedgerResponse toResponse(SettlementLedger s) {
         return new SettlementLedgerResponse(
-                s.getId(), s.getOrderId(), s.getOrderItemId(), s.getEntryType(),
+                s.getId(), s.getTenantId(), s.getOrderId(), s.getOrderItemId(), s.getEntryType(),
                 s.getAmountCents(), s.getStatus(), s.getPeriodKey(), s.getRemark(),
                 s.getCreatedAt() == null ? null : s.getCreatedAt().toString()
         );

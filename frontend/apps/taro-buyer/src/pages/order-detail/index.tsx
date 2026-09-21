@@ -41,11 +41,14 @@ interface Aftersale {
   type: string;
   status: string;
   refundCents: number;
+  reverseShipmentId?: number | null;
 }
 
+const CARRIERS = ["SF", "YTO", "ZTO", "STO", "YD", "JT"];
+
 /**
- * 订单详情（I16）
- * 确认收货 / 申请售后入口 / 物流摘要
+ * 订单详情（I16 + I29）
+ * 确认收货 / 申请售后（凭证图）/ 退货物流填写 / 物流摘要
  */
 export default function OrderDetailPage() {
   const { params } = useRouter();
@@ -56,9 +59,12 @@ export default function OrderDetailPage() {
   const [typeIndex, setTypeIndex] = useState(0);
   const [reason, setReason] = useState("不想要了");
   const [refundYuan, setRefundYuan] = useState("99");
+  const [evidenceUrl, setEvidenceUrl] = useState("");
   const [reviewItemId, setReviewItemId] = useState<number | null>(null);
   const [rating, setRating] = useState(5);
   const [reviewContent, setReviewContent] = useState("很好");
+  const [carrierIndex, setCarrierIndex] = useState(0);
+  const [trackingNo, setTrackingNo] = useState("");
   const types = [
     { label: "仅退款", value: "REFUND_ONLY" },
     { label: "退货退款", value: "RETURN_REFUND" }
@@ -96,19 +102,44 @@ export default function OrderDetailPage() {
 
   async function applyAftersale() {
     try {
+      const urls = evidenceUrl.trim() ? [evidenceUrl.trim()] : null;
       await apiFetch("/api/v1/buyer/aftersales", {
         method: "POST",
         data: {
           orderId,
           type: types[typeIndex].value,
           reason,
-          refundCents: Math.round(parseFloat(refundYuan) * 100)
+          refundCents: Math.round(parseFloat(refundYuan) * 100),
+          evidenceImageUrls: urls
         }
       });
       Taro.showToast({ title: "售后已申请", icon: "success" });
+      setEvidenceUrl("");
       await reload();
     } catch (e) {
       Taro.showToast({ title: e instanceof Error ? e.message : "申请失败", icon: "none" });
+    }
+  }
+
+  async function fillReverse(asId: number) {
+    if (!trackingNo.trim()) {
+      Taro.showToast({ title: "请填写运单号", icon: "none" });
+      return;
+    }
+    try {
+      await apiFetch(`/api/v1/buyer/aftersales/${asId}/reverse-tracking`, {
+        method: "POST",
+        data: {
+          carrierCode: CARRIERS[carrierIndex],
+          trackingNo: trackingNo.trim(),
+          remark: "买家寄回"
+        }
+      });
+      Taro.showToast({ title: "退货运单已提交", icon: "success" });
+      setTrackingNo("");
+      await reload();
+    } catch (e) {
+      Taro.showToast({ title: e instanceof Error ? e.message : "提交失败", icon: "none" });
     }
   }
 
@@ -233,13 +264,45 @@ export default function OrderDetailPage() {
           onInput={(e) => setRefundYuan(e.detail.value)}
           placeholder="退款金额（元）"
         />
+        <Input
+          className="input"
+          value={evidenceUrl}
+          onInput={(e) => setEvidenceUrl(e.detail.value)}
+          placeholder="凭证图 URL（可选）"
+        />
         <Button className="btn ghost" onClick={applyAftersale}>
           提交售后
         </Button>
         {aftersales.map((a) => (
-          <Text key={a.id} className="line muted">
-            {a.aftersaleNo} · {a.type} · {a.status} · ¥{(a.refundCents / 100).toFixed(2)}
-          </Text>
+          <View key={a.id} className="as-block">
+            <Text className="line muted">
+              {a.aftersaleNo} · {a.type} · {a.status} · ¥{(a.refundCents / 100).toFixed(2)}
+            </Text>
+            {a.type === "RETURN_REFUND" && a.status === "APPROVED" && !a.reverseShipmentId ? (
+              <View>
+                <Picker
+                  mode="selector"
+                  range={CARRIERS}
+                  value={carrierIndex}
+                  onChange={(e) => setCarrierIndex(Number(e.detail.value))}
+                >
+                  <View className="picker">承运商：{CARRIERS[carrierIndex]}</View>
+                </Picker>
+                <Input
+                  className="input"
+                  value={trackingNo}
+                  onInput={(e) => setTrackingNo(e.detail.value)}
+                  placeholder="退货运单号"
+                />
+                <Button className="btn" size="mini" onClick={() => fillReverse(a.id)}>
+                  提交退货物流
+                </Button>
+              </View>
+            ) : null}
+            {a.reverseShipmentId ? (
+              <Text className="muted">已填退货运单 #{a.reverseShipmentId}</Text>
+            ) : null}
+          </View>
         ))}
       </View>
     </View>

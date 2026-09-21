@@ -93,6 +93,7 @@ public class AftersaleService {
         as.setStatus(AftersaleStatus.REVIEWING);
         as.setReason(request.reason());
         as.setRefundCents(request.refundCents());
+        as.setEvidenceImageUrls(joinUrls(request.evidenceImageUrls()));
         as.setSellerDeadlineAt(Instant.now().plus(SELLER_REVIEW_HOURS, ChronoUnit.HOURS));
         aftersaleRepository.save(as);
         // I9：Redis 延迟 48h 自动同意
@@ -277,8 +278,32 @@ public class AftersaleService {
         return new AftersaleResponse(
                 as.getId(), as.getAftersaleNo(), as.getOrderId(), as.getOrderItemId(), as.getTenantId(),
                 as.getType().name(), as.getStatus().name(), as.getReason(), as.getRefundCents(),
-                as.getSellerDeadlineAt().toString(), as.getReverseShipmentId(), as.getReviewNote()
+                as.getSellerDeadlineAt().toString(), as.getReverseShipmentId(), as.getReviewNote(),
+                splitUrls(as.getEvidenceImageUrls())
         );
+    }
+
+    /** 最多 6 个 URL，逗号拼接入库 */
+    private static String joinUrls(List<String> urls) {
+        if (urls == null || urls.isEmpty()) {
+            return null;
+        }
+        return urls.stream()
+                .filter(u -> u != null && !u.isBlank())
+                .map(String::trim)
+                .limit(6)
+                .reduce((a, b) -> a + "," + b)
+                .orElse(null);
+    }
+
+    private static List<String> splitUrls(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return List.of();
+        }
+        return java.util.Arrays.stream(raw.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
     }
 
     private static String genNo(String prefix) {

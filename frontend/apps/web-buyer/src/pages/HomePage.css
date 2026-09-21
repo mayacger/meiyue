@@ -157,6 +157,47 @@
   line-height: 1.65;
 }
 
+/* I28：首页运营 Banner（非直播） */
+.my-banners {
+  padding: 0 clamp(1.25rem, 4vw, 3rem) 1.5rem;
+}
+
+.my-banners__track {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.my-banners__item {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  aspect-ratio: 3 / 1;
+  background: #1a4d45;
+  color: #f7f6f3;
+  text-decoration: none;
+}
+
+.my-banners__item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.my-banners__cap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.95rem;
+  background: linear-gradient(transparent, rgba(15, 61, 56, 0.82));
+}
+
 @media (max-width: 860px) {
   .my-hero {
     grid-template-columns: 1fr;

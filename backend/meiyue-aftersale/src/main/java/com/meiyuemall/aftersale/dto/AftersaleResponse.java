@@ -1,5 +1,12 @@
 package com.meiyuemall.aftersale.dto;
 
+import java.util.List;
+
+/**
+ * 售后单视图（I6 + I29）。
+ *
+ * @param evidenceImageUrls 凭证图 URL 列表
+ */
 public record AftersaleResponse(
         Long id,
         String aftersaleNo,
@@ -12,5 +19,6 @@ public record AftersaleResponse(
         long refundCents,
         String sellerDeadlineAt,
         Long reverseShipmentId,
-        String reviewNote
+        String reviewNote,
+        List<String> evidenceImageUrls
 ) {}

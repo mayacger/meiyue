@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch, getToken } from "@meiyue/api";
-import { EmptyState, ErrorState } from "@meiyue/ui";
+import { EmptyState, ErrorState, Skeleton } from "@meiyue/ui";
 import type { OrderSummary } from "@meiyue/types";
 import "./OrdersPage.css";
 
-/** 订单列表（I23 空错态统一） */
+/** 订单列表（I23 空错态 + I29 骨架） */
 export function OrdersPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   async function reload() {
     if (!getToken()) {
@@ -17,11 +18,19 @@ export function OrdersPage() {
       return;
     }
     setError(null);
-    setOrders(await apiFetch<OrderSummary[]>("/api/v1/buyer/orders"));
+    setLoading(true);
+    try {
+      setOrders(await apiFetch<OrderSummary[]>("/api/v1/buyer/orders"));
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
-    reload().catch((e) => setError(e instanceof Error ? e.message : "加载失败"));
+    reload().catch((e) => {
+      setError(e instanceof Error ? e.message : "加载失败");
+      setLoading(false);
+    });
   }, []);
 
   async function mockPay(id: number) {
@@ -42,11 +51,13 @@ export function OrdersPage() {
           </button>
         </ErrorState>
       ) : null}
-      {orders.length === 0 && !error ? (
+      {loading ? <Skeleton rows={3} /> : null}
+      {!loading && orders.length === 0 && !error ? (
         <EmptyState title="暂无订单" hint="去逛逛好物再回来">
           <Link to="/products">去逛逛</Link>
         </EmptyState>
-      ) : (
+      ) : null}
+      {!loading && orders.length > 0 ? (
         <ul className="my-fade-up">
           {orders.map((o) => (
             <li key={o.id}>
@@ -62,7 +73,7 @@ export function OrdersPage() {
             </li>
           ))}
         </ul>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -66,7 +66,8 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/stores/*/coupons",
                                 SecurityConstants.API_PREFIX + "/platform-coupons",
                                 SecurityConstants.API_PREFIX + "/decoration/templates",
-                                SecurityConstants.API_PREFIX + "/platform/config"
+                                SecurityConstants.API_PREFIX + "/platform/config",
+                                SecurityConstants.API_PREFIX + "/banners"
                         ).permitAll()
                         // I4 支付通道回调（验签在业务内完成）
                         .requestMatchers(HttpMethod.POST,

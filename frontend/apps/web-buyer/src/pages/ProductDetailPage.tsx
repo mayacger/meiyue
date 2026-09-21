@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiFetch, getToken } from "@meiyue/api";
 import type { ProductSummary } from "@meiyue/types";
+import { Skeleton } from "@meiyue/ui";
+import { SeoHead } from "../components/SeoHead";
 import "./ProductDetailPage.css";
 
 interface Review {
@@ -92,6 +94,16 @@ export function ProductDetailPage() {
 
   return (
     <article className="my-detail">
+      <SeoHead
+        title={product?.title || "商品详情"}
+        description={
+          product
+            ? `${product.title}${product.subtitle ? ` — ${product.subtitle}` : ""} · 美月商城`
+            : "商品详情 · 美月商城"
+        }
+        ogImage={product?.coverImageUrl || undefined}
+        path={`/products/${id}`}
+      />
       <p className="my-detail__crumb">
         <Link to="/products">全部商品</Link>
         <span aria-hidden> / </span>
@@ -99,8 +111,7 @@ export function ProductDetailPage() {
       </p>
       {loading ? (
         <div className="my-detail__loading my-fade-up" aria-live="polite">
-          <span className="my-state__pulse" />
-          正在展开商品…
+          <Skeleton rows={5} height={16} />
         </div>
       ) : null}
       {error ? <p className="my-error">{error}</p> : null}

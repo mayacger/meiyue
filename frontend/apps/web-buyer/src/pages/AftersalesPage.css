@@ -4,16 +4,67 @@
   margin: 0;
 }
 
-.my-as__list li {
+.my-as__card {
   display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
-  padding: 1rem 0;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1.1rem 0;
   border-bottom: 1px solid var(--my-line);
 }
 
 .my-as__list a {
   color: var(--my-ink);
   font-weight: 600;
+}
+
+.my-as__evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.my-as__evidence img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--my-line);
+}
+
+.my-as__reverse {
+  margin-top: 0.35rem;
+}
+
+.my-as__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-width: 22rem;
+  padding: 0.75rem;
+  background: rgba(15, 61, 56, 0.04);
+  border-radius: 8px;
+}
+
+.my-as__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.9rem;
+  color: var(--my-muted);
+}
+
+.my-as__form select,
+.my-as__form input {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--my-line);
+  border-radius: 6px;
+  font: inherit;
+  color: var(--my-text);
+  background: #fff;
+}
+
+.my-as__form-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
 }

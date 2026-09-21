@@ -13,10 +13,11 @@ interface Aftersale {
   reason: string;
   refundCents: number;
   reverseShipmentId: number | null;
+  evidenceImageUrls?: string[];
 }
 
 /**
- * 售后审核
+ * 售后审核（I6 + I29 凭证图）
  * approve / reject / confirm-return
  */
 export function AftersalesPage() {
@@ -33,6 +34,22 @@ export function AftersalesPage() {
       render: (_, r) => <Tag>{r.status}</Tag>
     },
     { title: "原因", dataIndex: "reason", ellipsis: true },
+    {
+      title: "凭证",
+      width: 120,
+      render: (_, r) =>
+        r.evidenceImageUrls && r.evidenceImageUrls.length > 0 ? (
+          <Space wrap>
+            {r.evidenceImageUrls.slice(0, 3).map((u) => (
+              <a key={u} href={u} target="_blank" rel="noreferrer">
+                图
+              </a>
+            ))}
+          </Space>
+        ) : (
+          "—"
+        )
+    },
     {
       title: "退款",
       render: (_, r) => `¥${(r.refundCents / 100).toFixed(2)}`
@@ -87,13 +104,16 @@ export function AftersalesPage() {
               确认退货签收
             </Button>
           ) : null}
+          {r.type === "RETURN_REFUND" && r.status === "APPROVED" && !r.reverseShipmentId ? (
+            <Tag color="orange">待买家填运单</Tag>
+          ) : null}
         </Space>
       )
     }
   ];
 
   return (
-    <PageContainer header={{ title: "售后审核", subTitle: "48h 超时自动同意由后端保障" }}>
+    <PageContainer header={{ title: "售后审核", subTitle: "凭证图可点开 · 48h 超时自动同意" }}>
       <ProTable<Aftersale>
         actionRef={actionRef}
         rowKey="id"

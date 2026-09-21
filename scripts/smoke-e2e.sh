@@ -190,6 +190,57 @@ draft = req("POST", "/api/v1/seller/products", seller_token, {
 drafts = req("GET", "/api/v1/seller/products/drafts", seller_token)
 assert any(p["id"] == draft["id"] for p in drafts)
 
+print("==> I28 banners + admin settlements")
+banners = req("GET", "/api/v1/banners")
+assert isinstance(banners, list)
+bn = req("POST", "/api/v1/admin/banners", admin_token, {
+    "title": f"冒烟Banner{SUFFIX}",
+    "imageUrl": "https://picsum.photos/seed/smoke/800/200",
+    "linkUrl": "/products",
+    "sortOrder": 99,
+    "enabled": True
+})
+banners2 = req("GET", "/api/v1/banners")
+assert any(x["id"] == bn["id"] for x in banners2)
+req("PUT", f"/api/v1/admin/banners/{bn['id']}", admin_token, {
+    "title": f"冒烟Banner改{SUFFIX}",
+    "imageUrl": bn["imageUrl"],
+    "linkUrl": "/products",
+    "sortOrder": 99,
+    "enabled": False
+})
+# 禁用后公开列表不应再出现
+banners3 = req("GET", "/api/v1/banners")
+assert not any(x["id"] == bn["id"] for x in banners3)
+req("DELETE", f"/api/v1/admin/banners/{bn['id']}", admin_token)
+periods = req("GET", "/api/v1/admin/settlements/periods", admin_token)
+assert isinstance(periods, list)
+req("GET", "/api/v1/admin/settlements/bills", admin_token)
+# 商家按周期筛选
+seller_periods = req("GET", "/api/v1/seller/settlements/periods", seller_token)
+if seller_periods:
+    pk = seller_periods[0]["periodKey"]
+    req("GET", f"/api/v1/seller/settlements/bills?periodKey={pk}", seller_token)
+
+print("==> I29 aftersale evidence + reverse tracking")
+# 再下一单用于退货退款闭环（凭证图）
+req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
+order3 = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})
+order3_id = order3["id"]
+req("POST", f"/api/v1/buyer/orders/{order3_id}/mock-pay", buyer_token)
+item3 = req("GET", f"/api/v1/buyer/orders/{order3_id}", buyer_token)["items"][0]["id"]
+as_rr = req("POST", "/api/v1/buyer/aftersales", buyer_token, {
+    "orderId": order3_id, "orderItemId": item3, "type": "RETURN_REFUND",
+    "reason": "smoke return", "refundCents": 500,
+    "evidenceImageUrls": ["https://picsum.photos/seed/ev/200/200"]
+})
+assert as_rr.get("evidenceImageUrls") and len(as_rr["evidenceImageUrls"]) >= 1
+req("POST", f"/api/v1/seller/aftersales/{as_rr['id']}/approve", seller_token, {"reviewNote": "ok"})
+req("POST", f"/api/v1/buyer/aftersales/{as_rr['id']}/reverse-tracking", buyer_token, {
+    "carrierCode": "SF", "trackingNo": f"SF{SUFFIX}", "remark": "smoke"
+})
+req("POST", f"/api/v1/seller/aftersales/{as_rr['id']}/confirm-return", seller_token)
+
 print("==> I18 admin categories + users")
 cats = req("GET", "/api/v1/admin/categories", admin_token)
 assert isinstance(cats, list) and len(cats) >= 1
