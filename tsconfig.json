@@ -1,0 +1,8 @@
+{
+  // 根 TS 配置：通过 references 组合应用配置与 Node 工具链配置
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
