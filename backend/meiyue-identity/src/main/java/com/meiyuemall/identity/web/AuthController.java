@@ -3,12 +3,14 @@ package com.meiyuemall.identity.web;
 import com.meiyuemall.common.security.SecurityConstants;
 import com.meiyuemall.common.web.ApiResponse;
 import com.meiyuemall.identity.dto.AuthResponse;
+import com.meiyuemall.identity.dto.CaptchaChallengeResponse;
 import com.meiyuemall.identity.dto.ChangePasswordRequest;
 import com.meiyuemall.identity.dto.LoginRequest;
 import com.meiyuemall.identity.dto.RegisterRequest;
 import com.meiyuemall.identity.dto.UpdateProfileRequest;
 import com.meiyuemall.identity.dto.UserProfileResponse;
 import com.meiyuemall.identity.service.AuthService;
+import com.meiyuemall.identity.service.CaptchaService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
  * <ul>
  *   <li>{@code POST /api/v1/auth/register} — 注册（公开）</li>
  *   <li>{@code POST /api/v1/auth/login} — 登录（公开）</li>
+ *   <li>{@code GET /api/v1/auth/captcha} — 图形验证码挑战（I35，可关闭）</li>
  *   <li>{@code GET /api/v1/auth/me} — 当前用户</li>
  *   <li>{@code PUT /api/v1/auth/profile} — 更新资料（I24）</li>
  *   <li>{@code POST /api/v1/auth/password} — 修改密码（I24）</li>
@@ -35,9 +38,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final CaptchaService captchaService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, CaptchaService captchaService) {
         this.authService = authService;
+        this.captchaService = captchaService;
     }
 
     @PostMapping("/register")
@@ -48,6 +53,12 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.ok(authService.login(request));
+    }
+
+    /** I35：图形验证码（enabled=false 时仅返回开关） */
+    @GetMapping("/captcha")
+    public ApiResponse<CaptchaChallengeResponse> captcha() {
+        return ApiResponse.ok(captchaService.issue());
     }
 
     @GetMapping("/me")

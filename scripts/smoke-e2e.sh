@@ -364,6 +364,29 @@ inv = req("POST", "/api/v1/buyer/invoice-profiles", buyer_token, {
 })
 req("DELETE", f"/api/v1/buyer/invoice-profiles/{inv['id']}", buyer_token)
 
+print("==> I34 gallery + promo video")
+req("PUT", f"/api/v1/seller/products/{prod_id}", seller_token, {
+    "categoryId": cat_id,
+    "title": f"冒烟商品{SUFFIX}",
+    "subtitle": "e2e",
+    "detailHtml": "<p>x</p>",
+    "coverImageUrl": "https://cdn.example.com/cover.jpg",
+    "galleryImageUrls": [
+        "https://cdn.example.com/g1.jpg",
+        "https://cdn.example.com/g2.jpg"
+    ],
+    "promoVideoUrl": "https://cdn.example.com/promo.mp4",
+    "skus": [{"skuCode": f"SK-{SUFFIX}", "specText": "默认", "priceCents": 9900, "stockQty": 18}]
+})
+detail = req("GET", f"/api/v1/products/{prod_id}")
+assert detail.get("promoVideoUrl") == "https://cdn.example.com/promo.mp4", detail
+gals = detail.get("galleryImageUrls") or []
+assert "https://cdn.example.com/g1.jpg" in gals and "https://cdn.example.com/g2.jpg" in gals, gals
+
+print("==> I35 captcha challenge (default off)")
+cap = req("GET", "/api/v1/auth/captcha")
+assert cap.get("enabled") is False, cap
+
 print("==> aftersale REFUND_ONLY (MOCK channel refund)")
 req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
 order2 = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})

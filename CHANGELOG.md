@@ -1,6 +1,50 @@
 # 美月商城 · CHANGELOG
 
-## [0.1.0-SNAPSHOT] · I20/I21 经营概览·库存·工单（当前 PR）
+## [0.1.0-SNAPSHOT] · I34/I35 部署·多媒体·验证码（当前 PR）
+
+### I34 生产部署底座
+
+- `backend/Dockerfile` 多阶段 Maven → JRE；`frontend/Dockerfile.buyer` + nginx 反代 `/api`
+- `docker/docker-compose.prod.yml` + `.env.prod.example`（密钥不入库）
+- `docs/deploy.md`：环境变量、健康检查、compose 启动
+
+### I34 商品详情多媒体
+
+- Flyway **V20**：`products.gallery_image_urls`（JSON URL 列表）
+- Seller 新建/编辑可维护图集与推广视频 URL
+- Buyer PC + Taro 详情：多图 gallery + `promoVideoUrl` 播放（非直播）
+
+### I35 安全占位
+
+- `GET /api/v1/auth/captcha` + `MEIYUE_SECURITY_CAPTCHA_ENABLED`（默认 `false`）
+- 四端登录可选接入验证码；改密 / 导出 CSV 二次确认
+
+### I30–I35 汇总
+
+| 迭代 | 要点 |
+|------|------|
+| I30 | 相关推荐、浏览足迹、评价审核 |
+| I31 | 店铺运费 / 包邮门槛、结算运费 |
+| I32 | 取消释库存、自动确认收货、搜索历史 |
+| I33 | 发票抬头、下单备注/发票快照 |
+| I34 | 生产镜像、图集/推广视频 |
+| I35 | 验证码开关、敏感操作确认 |
+
+不含直播、真实分账打款。
+
+### 验证
+
+```bash
+cd backend && mvn -q -DskipTests package
+cd frontend && pnpm build && pnpm build:taro:h5
+pnpm --filter @meiyue/taro-buyer build:weapp
+BASE_URL=http://localhost:8080 ./scripts/smoke-e2e.sh
+BASE_URL=http://localhost:8080 ./scripts/smoke-i18.sh
+```
+
+---
+
+## [0.1.0-SNAPSHOT] · I20/I21 经营概览·库存·工单
 
 - Seller：经营概览 `/seller/dashboard`；库存管理 `/seller/inventory`；工单；评价待回复筛选
 - Admin：运营概览 `/admin/dashboard`；客服工单

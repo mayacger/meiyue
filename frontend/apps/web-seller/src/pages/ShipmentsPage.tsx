@@ -53,7 +53,7 @@ const FORWARD_FLOW = [
  */
 export function ShipmentsPage() {
   const actionRef = useRef<ActionType>();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
@@ -144,16 +144,25 @@ export function ShipmentsPage() {
         toolBarRender={() => [
           <Button
             key="export"
-            onClick={async () => {
-              try {
-                await downloadAuthenticated(
-                  "/api/v1/seller/orders/export.csv",
-                  "seller-paid-orders.csv"
-                );
-                message.success("已导出已支付订单 CSV");
-              } catch (err) {
-                message.error(err instanceof Error ? err.message : "导出失败");
-              }
+            onClick={() => {
+              // I35：导出二次确认
+              modal.confirm({
+                title: "确认导出已支付订单 CSV？",
+                content: "将下载本店已支付订单明细，请妥善保管。",
+                okText: "确认导出",
+                cancelText: "取消",
+                onOk: async () => {
+                  try {
+                    await downloadAuthenticated(
+                      "/api/v1/seller/orders/export.csv",
+                      "seller-paid-orders.csv"
+                    );
+                    message.success("已导出已支付订单 CSV");
+                  } catch (err) {
+                    message.error(err instanceof Error ? err.message : "导出失败");
+                  }
+                }
+              });
             }}
           >
             导出已支付订单

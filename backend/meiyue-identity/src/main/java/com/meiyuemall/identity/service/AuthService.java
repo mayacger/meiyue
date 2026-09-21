@@ -37,19 +37,22 @@ public class AuthService {
     private final JwtService jwtService;
     private final JwtProperties jwtProperties;
     private final PrincipalFactory principalFactory;
+    private final CaptchaService captchaService;
 
     public AuthService(
             UserAccountRepository userAccountRepository,
             PasswordEncoder passwordEncoder,
             JwtService jwtService,
             JwtProperties jwtProperties,
-            PrincipalFactory principalFactory
+            PrincipalFactory principalFactory,
+            CaptchaService captchaService
     ) {
         this.userAccountRepository = userAccountRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.jwtProperties = jwtProperties;
         this.principalFactory = principalFactory;
+        this.captchaService = captchaService;
     }
 
     @Transactional
@@ -77,6 +80,7 @@ public class AuthService {
 
     @Transactional(readOnly = true)
     public AuthResponse login(LoginRequest request) {
+        captchaService.verifyOrThrow(request.captchaId(), request.captchaCode());
         UserAccount user = userAccountRepository.findByUsername(request.username().trim())
                 .orElseThrow(() -> new BusinessException(ErrorCode.INVALID_CREDENTIALS));
         if (user.getStatus() != UserStatus.ENABLED) {

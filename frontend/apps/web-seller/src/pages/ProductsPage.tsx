@@ -123,10 +123,17 @@ export function ProductsPage() {
               priceYuan: (r.skus[0]?.priceCents ?? 0) / 100,
               stock: r.skus[0]?.stockQty ?? 0,
               detailHtml: "",
-              coverImageUrl: r.coverImageUrl || ""
+              coverImageUrl: r.coverImageUrl || "",
+              galleryUrls: (r.galleryImageUrls || []).join("\n"),
+              promoVideoUrl: r.promoVideoUrl || ""
             }}
             onFinish={async (values) => {
               try {
+                const galleryImageUrls = String(values.galleryUrls || "")
+                  .split(/[\n,]+/)
+                  .map((s: string) => s.trim())
+                  .filter(Boolean)
+                  .slice(0, 20);
                 await apiFetch(`/api/v1/seller/products/${r.id}`, {
                   method: "PUT",
                   json: {
@@ -135,6 +142,8 @@ export function ProductsPage() {
                     subtitle: values.subtitle || "",
                     detailHtml: values.detailHtml || "",
                     coverImageUrl: values.coverImageUrl || null,
+                    galleryImageUrls,
+                    promoVideoUrl: values.promoVideoUrl || null,
                     skus: [
                       {
                         skuCode: values.skuCode,
@@ -158,6 +167,17 @@ export function ProductsPage() {
             <ProFormText name="title" label="标题" rules={[{ required: true }]} />
             <ProFormText name="subtitle" label="副标题" />
             <ProFormText name="coverImageUrl" label="封面 URL（直写）" />
+            <ProFormTextArea
+              name="galleryUrls"
+              label="图集 URL（每行一个）"
+              fieldProps={{ rows: 4, placeholder: "https://…\nhttps://…" }}
+              extra="I34：最多 20 张；与封面一起在买家详情展示"
+            />
+            <ProFormText
+              name="promoVideoUrl"
+              label="推广视频 URL"
+              placeholder="非直播 · mp4/webm 直链"
+            />
             <ProFormText name="skuCode" label="SKU 编码" rules={[{ required: true }]} />
             <ProFormDigit name="priceYuan" label="价格（元）" min={0.01} rules={[{ required: true }]} />
             <ProFormDigit name="stock" label="库存" min={0} rules={[{ required: true }]} />
@@ -266,6 +286,12 @@ export function ProductsPage() {
             trigger={<Button type="primary">新建商品</Button>}
             onFinish={async (values) => {
               try {
+                // I34：创建时即可写入图集 / 推广视频（每行一个 URL，最多 20）
+                const galleryImageUrls = String(values.galleryUrls || "")
+                  .split(/[\n,]+/)
+                  .map((s: string) => s.trim())
+                  .filter(Boolean)
+                  .slice(0, 20);
                 await apiFetch("/api/v1/seller/products", {
                   method: "POST",
                   json: {
@@ -274,6 +300,8 @@ export function ProductsPage() {
                     subtitle: values.subtitle || "",
                     detailHtml: values.detailHtml || "",
                     coverImageUrl: values.coverImageUrl || null,
+                    galleryImageUrls,
+                    promoVideoUrl: values.promoVideoUrl || null,
                     skus: [
                       {
                         skuCode: values.skuCode,
@@ -303,6 +331,17 @@ export function ProductsPage() {
             <ProFormText name="title" label="标题" rules={[{ required: true }]} />
             <ProFormText name="subtitle" label="副标题" />
             <ProFormText name="coverImageUrl" label="封面 URL" />
+            <ProFormTextArea
+              name="galleryUrls"
+              label="图集 URL（每行一个）"
+              fieldProps={{ rows: 3, placeholder: "https://…\nhttps://…" }}
+              extra="I34：新建草稿即可维护图集"
+            />
+            <ProFormText
+              name="promoVideoUrl"
+              label="推广视频 URL"
+              placeholder="非直播 · mp4/webm 直链"
+            />
             <ProFormText name="skuCode" label="SKU 编码" rules={[{ required: true }]} />
             <ProFormDigit
               name="priceYuan"

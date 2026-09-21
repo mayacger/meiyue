@@ -1,17 +1,32 @@
-import { LockOutlined, UserOutlined } from "@ant-design/icons";
+import { useCallback, useEffect, useState } from "react";
+import { LockOutlined, SafetyOutlined, UserOutlined } from "@ant-design/icons";
 import { LoginForm, ProFormText } from "@ant-design/pro-components";
-import { App, Typography } from "antd";
+import { App, Space, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, setToken } from "@meiyue/api";
-import type { AuthResult } from "@meiyue/types";
+import type { AuthResult, CaptchaChallenge } from "@meiyue/types";
 
 /**
- * 平台登录页（Pro LoginForm）
+ * 平台登录页（Pro LoginForm + I35 可选验证码）
  * 种子账号：admin / admin123；校验 PLATFORM_ADMIN 角色
  */
 export function LoginPage() {
   const navigate = useNavigate();
   const { message } = App.useApp();
+  /** I35：验证码挑战；enabled=false 时不渲染字段 */
+  const [captcha, setCaptcha] = useState<CaptchaChallenge | null>(null);
+
+  const refreshCaptcha = useCallback(async () => {
+    try {
+      setCaptcha(await apiFetch<CaptchaChallenge>("/api/v1/auth/captcha"));
+    } catch {
+      setCaptcha({ enabled: false, captchaId: null, imageBase64: null });
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshCaptcha();
+  }, [refreshCaptcha]);
 
   return (
     <div
@@ -32,7 +47,9 @@ export function LoginPage() {
               method: "POST",
               json: {
                 username: values.username,
-                password: values.password
+                password: values.password,
+                captchaId: captcha?.enabled ? captcha.captchaId : null,
+                captchaCode: captcha?.enabled ? values.captchaCode : null
               }
             });
             if (!data.user.roles.includes("PLATFORM_ADMIN")) {
@@ -45,6 +62,7 @@ export function LoginPage() {
             navigate("/onboarding");
           } catch (err) {
             message.error(err instanceof Error ? err.message : "登录失败");
+            refreshCaptcha();
           }
         }}
       >
@@ -65,6 +83,28 @@ export function LoginPage() {
           initialValue="admin123"
           rules={[{ required: true, message: "请输入密码" }]}
         />
+        {captcha?.enabled ? (
+          <Space align="start" style={{ width: "100%", marginBottom: 16 }} size={12}>
+            <ProFormText
+              name="captchaCode"
+              fieldProps={{ size: "large", prefix: <SafetyOutlined /> }}
+              placeholder="验证码"
+              rules={[{ required: true, message: "请输入验证码" }]}
+              formItemProps={{ style: { flex: 1, marginBottom: 0 } }}
+            />
+            {captcha.imageBase64 ? (
+              <img
+                src={captcha.imageBase64}
+                alt="验证码"
+                width={120}
+                height={40}
+                style={{ cursor: "pointer", borderRadius: 6, border: "1px solid #d9d9d9" }}
+                onClick={refreshCaptcha}
+                title="点击刷新"
+              />
+            ) : null}
+          </Space>
+        ) : null}
       </LoginForm>
     </div>
   );

@@ -18,7 +18,7 @@ import type { PlatformConfigView } from "@meiyue/types";
  * I32：可改 auto_confirm_receipt_days；费率仍只读展示
  */
 export function PlatformConfigPage() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [cfg, setCfg] = useState<PlatformConfigView | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -84,16 +84,25 @@ export function PlatformConfigPage() {
           <Button
             key="export"
             type="primary"
-            onClick={async () => {
-              try {
-                await downloadAuthenticated(
-                  "/api/v1/admin/orders/export.csv",
-                  "admin-paid-orders.csv"
-                );
-                message.success("已导出全站已支付订单");
-              } catch (e) {
-                message.error(e instanceof Error ? e.message : "导出失败");
-              }
+            onClick={() => {
+              // I35：导出二次确认
+              modal.confirm({
+                title: "确认导出全站已支付订单 CSV？",
+                content: "包含全平台已支付订单明细，请妥善保管。",
+                okText: "确认导出",
+                cancelText: "取消",
+                onOk: async () => {
+                  try {
+                    await downloadAuthenticated(
+                      "/api/v1/admin/orders/export.csv",
+                      "admin-paid-orders.csv"
+                    );
+                    message.success("已导出全站已支付订单");
+                  } catch (e) {
+                    message.error(e instanceof Error ? e.message : "导出失败");
+                  }
+                }
+              });
             }}
           >
             导出已支付订单 CSV

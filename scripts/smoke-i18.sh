@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# 美月商城 · I18–I33 轻量冒烟
+# 美月商城 · I18–I35 轻量冒烟
 # 覆盖：类目 / 地址簿 / 用户 / 库存 / 概览 / 改密资料 / 审计 / 批量上下架 /
 #       库存预警 / 通知 / 员工 / OpenAPI / series / 草稿 / Banner / 结算 /
 #       凭证图+退货物流 / 相关推荐 / 足迹 / 评价审核 / 运费模板 /
@@ -312,8 +312,25 @@ req("PUT", f"/api/v1/buyer/invoice-profiles/{inv['id']}", buyer_token, {
 })
 req("DELETE", f"/api/v1/buyer/invoice-profiles/{inv['id']}", buyer_token)
 
+print("==> I34 gallery + promo")
+req("PUT", f"/api/v1/seller/products/{prod['id']}", seller_token, {
+    "categoryId": cat_id,
+    "title": f"冒烟商品{SUFFIX}",
+    "subtitle": "i18",
+    "detailHtml": "<p>x</p>",
+    "galleryImageUrls": ["https://cdn.example.com/a.jpg"],
+    "promoVideoUrl": "https://cdn.example.com/v.mp4",
+    "skus": [{"skuCode": f"I18-{SUFFIX}", "specText": "默认", "priceCents": 1200, "stockQty": 10}]
+})
+pd = req("GET", f"/api/v1/products/{prod['id']}")
+assert pd.get("promoVideoUrl", "").endswith("v.mp4")
+assert "https://cdn.example.com/a.jpg" in (pd.get("galleryImageUrls") or [])
+
+print("==> I35 captcha (off by default)")
+assert req("GET", "/api/v1/auth/captcha").get("enabled") is False
+
 print("")
-print("SMOKE I18–I33 PASSED")
+print("SMOKE I18–I35 PASSED")
 print(f"  seller={seller} buyer={buyer} staff={staff_user} sku={sku_id} cat={cat['id']}")
 PY
 

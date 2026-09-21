@@ -28,8 +28,10 @@ export function ProductDetailPage() {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [favorited, setFavorited] = useState(false);
+  const [galleryIdx, setGalleryIdx] = useState(0);
 
   useEffect(() => {
+    setGalleryIdx(0);
     setLoading(true);
     setError(null);
     Promise.all([
@@ -96,6 +98,14 @@ export function ProductDetailPage() {
   }
 
   const price = ((product?.skus[0]?.priceCents ?? 0) / 100).toFixed(2);
+  // I34：封面 + 图集去重
+  const gallery = product
+    ? [
+        ...(product.coverImageUrl ? [product.coverImageUrl] : []),
+        ...((product.galleryImageUrls || []).filter(Boolean) as string[])
+      ].filter((u, i, arr) => arr.indexOf(u) === i)
+    : [];
+  const activeImg = gallery[galleryIdx] || null;
 
   return (
     <article className="my-detail">
@@ -106,7 +116,7 @@ export function ProductDetailPage() {
             ? `${product.title}${product.subtitle ? ` — ${product.subtitle}` : ""} · 美月商城`
             : "商品详情 · 美月商城"
         }
-        ogImage={product?.coverImageUrl || undefined}
+        ogImage={product?.coverImageUrl || gallery[0] || undefined}
         path={`/products/${id}`}
       />
       <p className="my-detail__crumb">
@@ -128,9 +138,32 @@ export function ProductDetailPage() {
       ) : null}
       {product ? (
         <div className="my-detail__grid my-fade-up">
-          <div className="my-detail__visual" aria-hidden>
-            <span className="my-detail__letter">{product.title.slice(0, 1)}</span>
-            <span className="my-detail__brand-mark">美月</span>
+          <div className="my-detail__visual">
+            {activeImg ? (
+              <img className="my-detail__photo" src={activeImg} alt={product.title} />
+            ) : (
+              <>
+                <span className="my-detail__letter" aria-hidden>
+                  {product.title.slice(0, 1)}
+                </span>
+                <span className="my-detail__brand-mark">美月</span>
+              </>
+            )}
+            {gallery.length > 1 ? (
+              <div className="my-detail__thumbs" role="list">
+                {gallery.map((url, i) => (
+                  <button
+                    key={url + i}
+                    type="button"
+                    className={`my-detail__thumb ${i === galleryIdx ? "is-active" : ""}`}
+                    onClick={() => setGalleryIdx(i)}
+                    aria-label={`图 ${i + 1}`}
+                  >
+                    <img src={url} alt="" />
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </div>
           <div className="my-detail__info">
             <p className="my-detail__eyebrow">meiyuemall</p>
@@ -153,6 +186,15 @@ export function ProductDetailPage() {
             </div>
           </div>
         </div>
+      ) : null}
+      {product?.promoVideoUrl ? (
+        <section className="my-detail__video my-fade-up">
+          <h2>推广视频</h2>
+          <p className="my-muted">非直播 · AI/商家上传</p>
+          <video className="my-detail__player" controls preload="metadata" src={product.promoVideoUrl}>
+            您的浏览器不支持 video
+          </video>
+        </section>
       ) : null}
       {!loading ? (
         <section className="my-detail__reviews my-fade-up">

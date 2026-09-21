@@ -1,4 +1,4 @@
-import { View, Text, Button } from "@tarojs/components";
+import { View, Text, Button, Image, Video, Swiper, SwiperItem } from "@tarojs/components";
 import { useEffect, useState } from "react";
 import Taro, { useRouter } from "@tarojs/taro";
 import type { ProductSummary } from "@meiyue/types";
@@ -13,8 +13,7 @@ interface Review {
 }
 
 /**
- * 商品详情（I19 + I22 + I30）
- * API：GET /products/:id · reviews · related · favorites · browse-history · 加购
+ * 商品详情（I19 + I22 + I30 + I34 图集/推广视频）
  */
 export default function DetailPage() {
   const { params } = useRouter();
@@ -95,15 +94,32 @@ export default function DetailPage() {
     }
   }
 
+  const gallery = product
+    ? [
+        ...(product.coverImageUrl ? [product.coverImageUrl] : []),
+        ...((product.galleryImageUrls || []).filter(Boolean) as string[])
+      ].filter((u, i, arr) => arr.indexOf(u) === i)
+    : [];
+
   return (
     <View className="page">
       {error ? <Text className="err">{error}</Text> : null}
       {!product && !error ? <Text className="muted empty">商品不存在或已下架</Text> : null}
       {product ? (
         <>
-          <View className="hero">
-            <Text className="letter">{product.title.slice(0, 1)}</Text>
-          </View>
+          {gallery.length > 0 ? (
+            <Swiper className="gallery" circular indicatorDots autoplay={false}>
+              {gallery.map((url) => (
+                <SwiperItem key={url}>
+                  <Image className="gallery-img" src={url} mode="aspectFill" />
+                </SwiperItem>
+              ))}
+            </Swiper>
+          ) : (
+            <View className="hero">
+              <Text className="letter">{product.title.slice(0, 1)}</Text>
+            </View>
+          )}
           <Text className="title">{product.title}</Text>
           <Text className="price">¥{((product.skus[0]?.priceCents ?? 0) / 100).toFixed(2)}</Text>
           <View className="actions">
@@ -122,6 +138,12 @@ export default function DetailPage() {
               进店
             </Button>
           </View>
+          {product.promoVideoUrl ? (
+            <View className="video-wrap">
+              <Text className="h2">推广视频</Text>
+              <Video className="video" src={product.promoVideoUrl} controls showCenterPlayBtn />
+            </View>
+          ) : null}
         </>
       ) : null}
 

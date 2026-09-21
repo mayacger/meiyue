@@ -36,6 +36,10 @@ public class Product {
     /** I11：推广视频素材 ID */
     @Column(name = "promo_video_asset_id")
     private Long promoVideoAssetId;
+    /** I34：图集 URL 列表（JSON） */
+    @Convert(converter = StringListJsonConverter.class)
+    @Column(name = "gallery_image_urls", columnDefinition = "TEXT")
+    private List<String> galleryImageUrls = new ArrayList<>();
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private ProductStatus status = ProductStatus.DRAFT;
@@ -76,6 +80,10 @@ public class Product {
     public void setPromoVideoUrl(String promoVideoUrl) { this.promoVideoUrl = promoVideoUrl; }
     public Long getPromoVideoAssetId() { return promoVideoAssetId; }
     public void setPromoVideoAssetId(Long promoVideoAssetId) { this.promoVideoAssetId = promoVideoAssetId; }
+    public List<String> getGalleryImageUrls() { return galleryImageUrls; }
+    public void setGalleryImageUrls(List<String> galleryImageUrls) {
+        this.galleryImageUrls = galleryImageUrls == null ? new ArrayList<>() : galleryImageUrls;
+    }
     public ProductStatus getStatus() { return status; }
     public void setStatus(ProductStatus status) { this.status = status; }
     public Instant getCreatedAt() { return createdAt; }

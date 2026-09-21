@@ -32,3 +32,24 @@
   border-radius: 8px;
   background: #fff;
 }
+
+/* I35：图形验证码行（开关开启时出现） */
+.my-login__captcha {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.my-login__captcha-img {
+  padding: 0;
+  border: 1px solid var(--my-line);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.my-login__captcha-img img {
+  display: block;
+}

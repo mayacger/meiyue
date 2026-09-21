@@ -49,6 +49,16 @@ export default function SettingsPage() {
 
   async function changePassword() {
     setError("");
+    // I35：改密二次确认
+    const { confirm } = await Taro.showModal({
+      title: "确认修改登录密码？",
+      content: "修改后请使用新密码登录。",
+      confirmText: "确认修改",
+      cancelText: "取消"
+    });
+    if (!confirm) {
+      return;
+    }
     try {
       await apiFetch("/api/v1/auth/password", {
         method: "POST",

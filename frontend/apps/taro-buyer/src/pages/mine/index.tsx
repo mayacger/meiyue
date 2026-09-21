@@ -1,25 +1,40 @@
-import { View, Text, Input, Button } from "@tarojs/components";
-import { useState } from "react";
+import { View, Text, Input, Button, Image } from "@tarojs/components";
+import { useCallback, useState } from "react";
 import Taro, { useDidShow } from "@tarojs/taro";
-import type { AuthResult, OrderSummary, UserProfile } from "@meiyue/types";
+import type { AuthResult, CaptchaChallenge, OrderSummary, UserProfile } from "@meiyue/types";
 import { apiFetch, getToken, setToken } from "../../services/api";
 import "./index.css";
 
 /**
- * 我的（I16 完善）
- * 登录 / 订单入口 / 地址占位 / 模拟支付快捷
+ * 我的（I16 + I35 可选登录验证码）
+ * 登录 / 订单入口 / 地址 / 模拟支付快捷
+ * API：GET /auth/captcha · POST /auth/login
  */
 export default function MinePage() {
   const [username, setUsername] = useState("buyer1");
   const [password, setPassword] = useState("buyer123");
+  /** I35：验证码挑战；enabled=false 时不展示 */
+  const [captcha, setCaptcha] = useState<CaptchaChallenge | null>(null);
+  const [captchaCode, setCaptchaCode] = useState("");
   const [me, setMe] = useState<UserProfile | null>(null);
   const [orders, setOrders] = useState<OrderSummary[]>([]);
   const [error, setError] = useState("");
+
+  const refreshCaptcha = useCallback(async () => {
+    try {
+      const c = await apiFetch<CaptchaChallenge>("/api/v1/auth/captcha");
+      setCaptcha(c);
+      setCaptchaCode("");
+    } catch {
+      setCaptcha({ enabled: false, captchaId: null, imageBase64: null });
+    }
+  }, []);
 
   async function loadMe() {
     if (!getToken()) {
       setMe(null);
       setOrders([]);
+      await refreshCaptcha();
       return;
     }
     try {
@@ -28,6 +43,7 @@ export default function MinePage() {
     } catch {
       setMe(null);
       setOrders([]);
+      await refreshCaptcha();
     }
   }
 
@@ -40,7 +56,12 @@ export default function MinePage() {
     try {
       const data = await apiFetch<AuthResult>("/api/v1/auth/login", {
         method: "POST",
-        data: { username, password }
+        data: {
+          username,
+          password,
+          captchaId: captcha?.enabled ? captcha.captchaId : null,
+          captchaCode: captcha?.enabled ? captchaCode : null
+        }
       });
       setToken(data.accessToken);
       setMe(data.user);
@@ -48,6 +69,7 @@ export default function MinePage() {
       Taro.showToast({ title: "登录成功", icon: "success" });
     } catch (e) {
       setError(e instanceof Error ? e.message : "登录失败");
+      refreshCaptcha();
     }
   }
 
@@ -55,6 +77,7 @@ export default function MinePage() {
     setToken(null);
     setMe(null);
     setOrders([]);
+    refreshCaptcha();
   }
 
   async function mockPay(id: number) {
@@ -148,6 +171,25 @@ export default function MinePage() {
             onInput={(e) => setPassword(e.detail.value)}
             placeholder="密码"
           />
+          {captcha?.enabled ? (
+            <View className="captcha-row">
+              <Input
+                className="input captcha-input"
+                value={captchaCode}
+                onInput={(e) => setCaptchaCode(e.detail.value)}
+                placeholder="验证码"
+                maxlength={8}
+              />
+              {captcha.imageBase64 ? (
+                <Image
+                  className="captcha-img"
+                  src={captcha.imageBase64}
+                  mode="aspectFit"
+                  onClick={refreshCaptcha}
+                />
+              ) : null}
+            </View>
+          ) : null}
           {error ? <Text className="err">{error}</Text> : null}
           <Button className="btn" onClick={login}>
             登录

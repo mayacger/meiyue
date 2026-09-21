@@ -54,6 +54,10 @@ export function SettingsPage() {
     e.preventDefault();
     setError(null);
     setMsg(null);
+    // I35：敏感操作二次确认
+    if (!window.confirm("确认修改登录密码？修改后请使用新密码登录。")) {
+      return;
+    }
     try {
       await apiFetch("/api/v1/auth/password", {
         method: "POST",

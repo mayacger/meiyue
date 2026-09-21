@@ -15,7 +15,7 @@ import type { UserProfile } from "@meiyue/types";
  * 入口：SellerLayout /settings
  */
 export function SettingsPage() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [me, setMe] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -70,6 +70,20 @@ export function SettingsPage() {
           <ProCard colSpan={12} title="修改密码" bordered style={{ marginTop: 16 }}>
             <ProForm
               onFinish={async (values) => {
+                // I35：改密二次确认
+                const ok = await new Promise<boolean>((resolve) => {
+                  modal.confirm({
+                    title: "确认修改登录密码？",
+                    content: "修改后请使用新密码登录。",
+                    okText: "确认修改",
+                    cancelText: "取消",
+                    onOk: () => resolve(true),
+                    onCancel: () => resolve(false)
+                  });
+                });
+                if (!ok) {
+                  return false;
+                }
                 try {
                   await apiFetch("/api/v1/auth/password", {
                     method: "POST",

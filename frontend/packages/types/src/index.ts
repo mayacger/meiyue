@@ -41,6 +41,18 @@ export interface AuthResult {
   user: UserProfile;
 }
 
+/**
+ * 登录图形验证码挑战（I35）
+ * - enabled：服务端开关 MEIYUE_SECURITY_CAPTCHA_ENABLED
+ * - captchaId：挑战 ID（登录时回传）
+ * - imageBase64：SVG data URI，可直接作 img.src
+ */
+export interface CaptchaChallenge {
+  enabled: boolean;
+  captchaId: string | null;
+  imageBase64: string | null;
+}
+
 /** 入驻申请：shopName / shopSlug / status PENDING|APPROVED|REJECTED */
 export interface OnboardingApplication {
   id: number;
@@ -94,6 +106,8 @@ export interface ProductSummary {
   coverAssetId?: number | null;
   skus: SkuSummary[];
   promoVideoUrl?: string | null;
+  /** I34：图集 URL 列表 */
+  galleryImageUrls?: string[];
 }
 
 /** 购物车行 */

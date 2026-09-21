@@ -369,6 +369,19 @@ public class CatalogService {
         if (request.coverImageUrl() != null) {
             product.setCoverImageUrl(request.coverImageUrl().isBlank() ? null : request.coverImageUrl().trim());
         }
+        // I34：图集（传 null 表示不改；空列表清空）
+        if (request.galleryImageUrls() != null) {
+            List<String> urls = request.galleryImageUrls().stream()
+                    .filter(u -> u != null && !u.isBlank())
+                    .map(String::trim)
+                    .distinct()
+                    .limit(20)
+                    .toList();
+            product.setGalleryImageUrls(new ArrayList<>(urls));
+        }
+        if (request.promoVideoUrl() != null) {
+            product.setPromoVideoUrl(request.promoVideoUrl().isBlank() ? null : request.promoVideoUrl().trim());
+        }
         for (ProductUpsertRequest.SkuRequest skuReq : request.skus()) {
             ProductSku sku = new ProductSku();
             sku.setTenantId(tenantId);
@@ -411,6 +424,7 @@ public class CatalogService {
                 product.getCoverAssetId(),
                 product.getPromoVideoUrl(),
                 product.getPromoVideoAssetId(),
+                product.getGalleryImageUrls() == null ? List.of() : List.copyOf(product.getGalleryImageUrls()),
                 product.getStatus().name(),
                 skus,
                 product.getUpdatedAt()

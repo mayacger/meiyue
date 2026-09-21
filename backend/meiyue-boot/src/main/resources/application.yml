@@ -61,7 +61,7 @@ info:
     name: 美月商城
     code: meiyue-mall
     module: boot
-    description: B2B2C 多租户电商 API（I1–I27）
+    description: B2B2C 多租户电商 API（I1–I35）
 
 # I26：默认关闭 OpenAPI（demo/dev profile 打开）
 springdoc:
@@ -87,6 +87,8 @@ meiyue:
       secret: "meiyue-mall-dev-jwt-secret-change-me-32b!"
       issuer: meiyue-mall
       expire-seconds: 86400
+    # I35：登录图形验证码开关（生产可用 MEIYUE_SECURITY_CAPTCHA_ENABLED）
+    captcha-enabled: ${MEIYUE_SECURITY_CAPTCHA_ENABLED:false}
   # I7/I9：关键接口限流（优先 Redis）
   rate-limit:
     enabled: true

@@ -22,7 +22,8 @@ public final class SecurityConstants {
             "/actuator/info",
             API_PREFIX + "/ping",
             API_PREFIX + "/auth/register",
-            API_PREFIX + "/auth/login"
+            API_PREFIX + "/auth/login",
+            API_PREFIX + "/auth/captcha"
     };
 
     /** Spring Security 角色名（带 ROLE_ 前缀） */
