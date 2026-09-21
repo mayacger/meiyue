@@ -33,6 +33,11 @@
 }
 
 .my-od__ship {
-  padding: 0.75rem 0;
+  padding: 0.75rem 0 0.25rem;
   border-bottom: 1px solid var(--my-line);
+}
+
+.my-od__ship-head {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
 }

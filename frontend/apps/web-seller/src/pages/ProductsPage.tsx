@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type Key } from "react";
 import type { ActionType, ProColumns } from "@ant-design/pro-components";
 import {
   ModalForm,
@@ -27,8 +27,8 @@ interface MediaAsset {
 }
 
 /**
- * 商品管理 CRUD（I16 + I22 封面选用）
- * GET/POST /seller/products · PUT /:id · POST /:id/status
+ * 商品管理 CRUD（I16 + I22 封面选用 + I25 批量上下架）
+ * GET/POST /seller/products · PUT /:id · POST /:id/status · POST /batch-status
  * 封面：POST /seller/ai/manual-images 登记 URL → POST …/cover-asset 挂接
  */
 export function ProductsPage() {
@@ -36,6 +36,8 @@ export function ProductsPage() {
   const { message } = App.useApp();
   const [categories, setCategories] = useState<Category[]>([]);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
+  /** I25：批量上下架选中行 */
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
 
   useEffect(() => {
     apiFetch<Category[]>("/api/v1/categories").then(setCategories).catch(() => undefined);
@@ -45,6 +47,24 @@ export function ProductsPage() {
       )
       .catch(() => setAssets([]));
   }, []);
+
+  async function batchStatus(status: "ON_SALE" | "OFF_SALE") {
+    if (selectedRowKeys.length === 0) {
+      message.warning("请先勾选商品");
+      return;
+    }
+    try {
+      await apiFetch("/api/v1/seller/products/batch-status", {
+        method: "POST",
+        json: { productIds: selectedRowKeys.map(Number), status }
+      });
+      message.success(status === "ON_SALE" ? "已批量上架" : "已批量下架");
+      setSelectedRowKeys([]);
+      actionRef.current?.reload();
+    } catch (err) {
+      message.error(err instanceof Error ? err.message : "批量操作失败");
+    }
+  }
 
   const categoryOptions = categories.map((c) => ({ label: c.name, value: c.id }));
   const assetOptions = assets.map((a) => ({
@@ -203,13 +223,23 @@ export function ProductsPage() {
   ];
 
   return (
-    <PageContainer header={{ title: "商品管理", subTitle: "SPU/SKU · CRUD · 上下架 · 封面素材" }}>
+    <PageContainer header={{ title: "商品管理", subTitle: "SPU/SKU · 批量上下架 · 封面素材" }}>
       <ProTable<ProductSummary>
         actionRef={actionRef}
         rowKey="id"
         search={false}
         columns={columns}
+        rowSelection={{
+          selectedRowKeys,
+          onChange: setSelectedRowKeys
+        }}
         toolBarRender={() => [
+          <Button key="on" disabled={!selectedRowKeys.length} onClick={() => batchStatus("ON_SALE")}>
+            批量上架
+          </Button>,
+          <Button key="off" disabled={!selectedRowKeys.length} onClick={() => batchStatus("OFF_SALE")}>
+            批量下架
+          </Button>,
           <ModalForm
             key="create"
             title="创建草稿商品"

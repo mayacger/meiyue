@@ -5,6 +5,7 @@ import com.meiyuemall.catalog.domain.CategoryStatus;
 import com.meiyuemall.catalog.domain.Product;
 import com.meiyuemall.catalog.domain.ProductSku;
 import com.meiyuemall.catalog.domain.ProductStatus;
+import com.meiyuemall.catalog.dto.BatchProductStatusRequest;
 import com.meiyuemall.catalog.dto.CategoryResponse;
 import com.meiyuemall.catalog.dto.CategoryUpsertRequest;
 import com.meiyuemall.catalog.dto.InventorySkuResponse;
@@ -23,6 +24,7 @@ import com.meiyuemall.common.security.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -152,6 +154,27 @@ public class CatalogService {
     }
 
     /**
+     * I25：批量上下架（本店商品；单条失败则整批回滚）。
+     */
+    @Transactional
+    @Audited(action = "PRODUCT_BATCH_STATUS", resourceType = "Product")
+    public List<ProductResponse> batchChangeStatus(BatchProductStatusRequest request) {
+        Long tenantId = requireSellerTenant();
+        ProductStatus status = ProductStatus.valueOf(request.status());
+        List<ProductResponse> result = new ArrayList<>();
+        for (Long productId : request.productIds()) {
+            Product product = productRepository.findByIdAndTenantId(productId, tenantId)
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在: " + productId));
+            if (status == ProductStatus.ON_SALE && product.getSkus().isEmpty()) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "商品 " + productId + " 无 SKU 不可上架");
+            }
+            product.setStatus(status);
+            result.add(toResponse(product));
+        }
+        return result;
+    }
+
+    /**
      * I8：将已审核素材挂到商品封面（AI 或人工流程共用）。
      */
     @Transactional
@@ -257,6 +280,19 @@ public class CatalogService {
                         s.getStockQty(),
                         s.getProduct().getStatus().name()
                 ))
+                .toList();
+    }
+
+    /**
+     * I25：库存预警列表（默认阈值 5，含 0）。
+     *
+     * @param threshold 库存 ≤ threshold 的 SKU
+     */
+    @Transactional(readOnly = true)
+    public List<InventorySkuResponse> listLowStock(int threshold) {
+        int th = Math.max(threshold, 0);
+        return listInventory().stream()
+                .filter(s -> s.stockQty() <= th)
                 .toList();
     }
 

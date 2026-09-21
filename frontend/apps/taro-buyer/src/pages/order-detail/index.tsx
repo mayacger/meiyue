@@ -18,11 +18,20 @@ interface Order {
   items: OrderItem[];
 }
 
+interface Track {
+  status: string;
+  description: string;
+  trackedAt?: string;
+  source?: string;
+}
+
 interface Shipment {
   id: number;
   status: string;
   carrierCode: string;
   trackingNo: string;
+  packageSeq?: number;
+  tracks?: Track[];
 }
 
 interface Aftersale {
@@ -144,12 +153,28 @@ export default function OrderDetailPage() {
       </View>
 
       <View className="section">
-        <Text className="h2">物流</Text>
+        <Text className="h2">物流轨迹</Text>
         {shipments.length === 0 ? <Text className="muted">暂无物流</Text> : null}
         {shipments.map((s) => (
-          <Text key={s.id} className="line">
-            {s.carrierCode} {s.trackingNo} · {s.status}
-          </Text>
+          <View key={s.id} className="ship">
+            <Text className="line">
+              包裹 #{s.packageSeq ?? s.id} · {s.carrierCode} {s.trackingNo} · {s.status}
+            </Text>
+            {(s.tracks || []).length === 0 ? (
+              <Text className="muted">暂无轨迹节点</Text>
+            ) : (
+              [...(s.tracks || [])].reverse().map((t, i) => (
+                <View key={`${t.status}-${i}`} className="track">
+                  <Text className="track-status">{t.status}</Text>
+                  <Text className="track-desc">{t.description}</Text>
+                  <Text className="muted">
+                    {t.trackedAt || ""}
+                    {t.source ? ` · ${t.source}` : ""}
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
         ))}
       </View>
 

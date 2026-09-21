@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { ActionType, ProColumns } from "@ant-design/pro-components";
 import {
   ModalForm,
@@ -6,13 +6,13 @@ import {
   ProFormDigit,
   ProTable
 } from "@ant-design/pro-components";
-import { App, Button, Tag } from "antd";
+import { App, Button, Tabs, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
 
 /**
- * 商家库存管理（I20）
- * API：GET /seller/inventory · POST /seller/inventory/skus/{skuId}/stock
- * 字段：skuId / productTitle / skuCode / specText / priceCents / stockQty / productStatus
+ * 商家库存管理（I20 + I25 预警列表）
+ * API：GET /seller/inventory · GET /seller/inventory/alerts?threshold=
+ *      POST /seller/inventory/skus/{skuId}/stock
  */
 interface InventorySku {
   skuId: number;
@@ -27,7 +27,9 @@ interface InventorySku {
 
 export function InventoryPage() {
   const actionRef = useRef<ActionType>();
+  const alertRef = useRef<ActionType>();
   const { message } = App.useApp();
+  const [tab, setTab] = useState("all");
 
   const columns: ProColumns<InventorySku>[] = [
     { title: "SKU ID", dataIndex: "skuId", width: 90 },
@@ -71,6 +73,7 @@ export function InventoryPage() {
               });
               message.success("库存已更新");
               actionRef.current?.reload();
+              alertRef.current?.reload();
               return true;
             } catch (err) {
               message.error(err instanceof Error ? err.message : "调整失败");
@@ -90,17 +93,50 @@ export function InventoryPage() {
   ];
 
   return (
-    <PageContainer header={{ title: "库存管理", subTitle: "按 SKU 调整可售库存" }}>
-      <ProTable<InventorySku>
-        actionRef={actionRef}
-        rowKey="skuId"
-        search={false}
-        columns={columns}
-        request={async () => {
-          const data = await apiFetch<InventorySku[]>("/api/v1/seller/inventory");
-          return { data, success: true, total: data.length };
-        }}
-        pagination={{ pageSize: 20 }}
+    <PageContainer header={{ title: "库存管理", subTitle: "SKU 调整 · 低库存预警（≤5）" }}>
+      <Tabs
+        activeKey={tab}
+        onChange={setTab}
+        items={[
+          {
+            key: "all",
+            label: "全部库存",
+            children: (
+              <ProTable<InventorySku>
+                actionRef={actionRef}
+                rowKey="skuId"
+                search={false}
+                columns={columns}
+                request={async () => {
+                  const data = await apiFetch<InventorySku[]>("/api/v1/seller/inventory");
+                  return { data, success: true, total: data.length };
+                }}
+                pagination={{ pageSize: 20 }}
+              />
+            )
+          },
+          {
+            key: "alerts",
+            label: "库存预警",
+            children: (
+              <ProTable<InventorySku>
+                actionRef={alertRef}
+                rowKey="skuId"
+                search={false}
+                columns={columns}
+                headerTitle="库存 ≤ 5 的 SKU"
+                request={async () => {
+                  const data = await apiFetch<InventorySku[]>(
+                    "/api/v1/seller/inventory/alerts?threshold=5"
+                  );
+                  return { data, success: true, total: data.length };
+                }}
+                pagination={{ pageSize: 20 }}
+                locale={{ emptyText: "暂无低库存 SKU" }}
+              />
+            )
+          }
+        ]}
       />
     </PageContainer>
   );

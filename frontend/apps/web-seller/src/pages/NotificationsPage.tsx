@@ -1,18 +1,19 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import type { ActionType, ProColumns } from "@ant-design/pro-components";
 import { PageContainer, ProTable } from "@ant-design/pro-components";
-import { App, Button, Tag } from "antd";
+import { App, Button, Segmented, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
 import type { NotificationItem } from "@meiyue/types";
 
 /**
- * 商家站内通知箱（I19）
+ * 商家消息中心（I19 + I25 已读未读）
  * API：GET /notifications · POST /{id}/read · read-all
- * 字段：id / title / body / category / read / createdAt
  */
 export function NotificationsPage() {
   const actionRef = useRef<ActionType>();
   const { message } = App.useApp();
+  const [filter, setFilter] = useState<"all" | "unread">("all");
+  const [unread, setUnread] = useState(0);
 
   const columns: ProColumns<NotificationItem>[] = [
     { title: "标题", dataIndex: "title" },
@@ -56,13 +57,28 @@ export function NotificationsPage() {
   ];
 
   return (
-    <PageContainer header={{ title: "站内通知", subTitle: "商家通知箱 · 已读/未读" }}>
+    <PageContainer
+      header={{
+        title: "消息中心",
+        subTitle: `未读 ${unread} · 已读/未读筛选`
+      }}
+    >
       <ProTable<NotificationItem>
         actionRef={actionRef}
         rowKey="id"
         search={false}
         columns={columns}
+        params={{ filter }}
         toolBarRender={() => [
+          <Segmented
+            key="filter"
+            value={filter}
+            onChange={(v) => setFilter(v as "all" | "unread")}
+            options={[
+              { label: "全部", value: "all" },
+              { label: "未读", value: "unread" }
+            ]}
+          />,
           <Button
             key="all"
             onClick={async () => {
@@ -79,10 +95,14 @@ export function NotificationsPage() {
           </Button>
         ]}
         request={async () => {
-          const data = await apiFetch<NotificationItem[]>("/api/v1/notifications");
+          const [items, count] = await Promise.all([
+            apiFetch<NotificationItem[]>("/api/v1/notifications"),
+            apiFetch<{ unread: number }>("/api/v1/notifications/unread-count")
+          ]);
+          setUnread(count.unread ?? 0);
+          const data = filter === "unread" ? items.filter((n) => !n.read) : items;
           return { data, success: true, total: data.length };
         }}
-        pagination={{ pageSize: 20 }}
       />
     </PageContainer>
   );

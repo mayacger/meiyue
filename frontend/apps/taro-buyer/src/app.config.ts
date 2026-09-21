@@ -16,7 +16,8 @@ export default defineAppConfig({
     "pages/notifications/index",
     "pages/favorites/index",
     "pages/store/index",
-    "pages/coupons/index"
+    "pages/coupons/index",
+    "pages/settings/index"
   ],
   window: {
     backgroundTextStyle: "light",

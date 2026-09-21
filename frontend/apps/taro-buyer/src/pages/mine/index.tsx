@@ -82,6 +82,13 @@ export default function MinePage() {
             <Button
               className="btn ghost"
               size="mini"
+              onClick={() => Taro.navigateTo({ url: "/pages/settings/index" })}
+            >
+              个人设置
+            </Button>
+            <Button
+              className="btn ghost"
+              size="mini"
               onClick={() => Taro.navigateTo({ url: "/pages/favorites/index" })}
             >
               我的收藏

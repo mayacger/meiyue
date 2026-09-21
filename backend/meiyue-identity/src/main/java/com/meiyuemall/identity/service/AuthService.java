@@ -1,5 +1,6 @@
 package com.meiyuemall.identity.service;
 
+import com.meiyuemall.common.audit.Audited;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
 import com.meiyuemall.common.security.MeiyuePrincipal;
@@ -9,8 +10,10 @@ import com.meiyuemall.identity.domain.RoleCode;
 import com.meiyuemall.identity.domain.UserAccount;
 import com.meiyuemall.identity.domain.UserStatus;
 import com.meiyuemall.identity.dto.AuthResponse;
+import com.meiyuemall.identity.dto.ChangePasswordRequest;
 import com.meiyuemall.identity.dto.LoginRequest;
 import com.meiyuemall.identity.dto.RegisterRequest;
+import com.meiyuemall.identity.dto.UpdateProfileRequest;
 import com.meiyuemall.identity.dto.UserProfileResponse;
 import com.meiyuemall.identity.repo.UserAccountRepository;
 import com.meiyuemall.identity.security.JwtService;
@@ -91,6 +94,42 @@ public class AuthService {
         UserAccount user = userAccountRepository.findById(principal.getUserId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
         return toProfile(user, principalFactory.fromUser(user));
+    }
+
+    /**
+     * I24：更新展示名 / 手机号（username 不可改）。
+     */
+    @Transactional
+    @Audited(action = "PROFILE_UPDATE", resourceType = "UserAccount")
+    public UserProfileResponse updateProfile(UpdateProfileRequest request) {
+        MeiyuePrincipal principal = SecurityUtils.requirePrincipal();
+        UserAccount user = userAccountRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        if (request.displayName() != null && !request.displayName().isBlank()) {
+            user.setDisplayName(request.displayName().trim());
+        }
+        if (request.phone() != null) {
+            user.setPhone(request.phone().isBlank() ? null : request.phone().trim());
+        }
+        return toProfile(user, principalFactory.fromUser(user));
+    }
+
+    /**
+     * I24：修改密码（校验旧密码；新密码入库 BCrypt；不写明文到审计）。
+     */
+    @Transactional
+    @Audited(action = "PASSWORD_CHANGE", resourceType = "UserAccount")
+    public void changePassword(ChangePasswordRequest request) {
+        MeiyuePrincipal principal = SecurityUtils.requirePrincipal();
+        UserAccount user = userAccountRepository.findById(principal.getUserId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.UNAUTHORIZED));
+        if (!passwordEncoder.matches(request.oldPassword(), user.getPasswordHash())) {
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "当前密码不正确");
+        }
+        if (request.oldPassword().equals(request.newPassword())) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "新密码不能与当前密码相同");
+        }
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
     }
 
     private AuthResponse toAuthResponse(UserAccount user) {

@@ -45,3 +45,25 @@
   font-size: 0.85rem;
   color: var(--my-muted);
 }
+
+.my-notify__filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.my-notify__filters button {
+  border: 1px solid rgba(15, 61, 56, 0.25);
+  background: transparent;
+  color: var(--my-muted);
+  padding: 0.25rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.my-notify__filters button.is-active {
+  background: #0f3d38;
+  color: #f7f6f3;
+  border-color: #0f3d38;
+}
+

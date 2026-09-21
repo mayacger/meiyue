@@ -1,0 +1,32 @@
+.my-settings__form {
+  max-width: 28rem;
+  margin-bottom: 2.5rem;
+}
+
+.my-settings__form h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+  color: var(--my-ink-deep);
+}
+
+.my-settings__form label {
+  display: block;
+  margin-bottom: 0.85rem;
+  font-size: 0.9rem;
+  color: var(--my-muted);
+}
+
+.my-settings__form input {
+  display: block;
+  width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid rgba(15, 61, 56, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  color: var(--my-text);
+}
+
+.my-settings__form button {
+  margin-top: 0.5rem;
+}

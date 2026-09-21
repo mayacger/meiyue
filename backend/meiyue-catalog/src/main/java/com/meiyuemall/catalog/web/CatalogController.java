@@ -1,6 +1,7 @@
 package com.meiyuemall.catalog.web;
 
 import com.meiyuemall.catalog.domain.ProductStatus;
+import com.meiyuemall.catalog.dto.BatchProductStatusRequest;
 import com.meiyuemall.catalog.dto.CategoryResponse;
 import com.meiyuemall.catalog.dto.InventorySkuResponse;
 import com.meiyuemall.catalog.dto.ProductResponse;
@@ -86,11 +87,27 @@ public class CatalogController {
         return ApiResponse.ok(catalogService.changeStatus(id, status));
     }
 
+    /** I25：批量上下架 */
+    @PostMapping(SecurityConstants.API_PREFIX + "/seller/products/batch-status")
+    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    public ApiResponse<List<ProductResponse>> batchStatus(@Valid @RequestBody BatchProductStatusRequest request) {
+        return ApiResponse.ok(catalogService.batchChangeStatus(request));
+    }
+
     /** I20：本店 SKU 库存列表 */
     @GetMapping(SecurityConstants.API_PREFIX + "/seller/inventory")
     @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
     public ApiResponse<List<InventorySkuResponse>> inventory() {
         return ApiResponse.ok(catalogService.listInventory());
+    }
+
+    /** I25：库存预警列表（默认阈值 5） */
+    @GetMapping(SecurityConstants.API_PREFIX + "/seller/inventory/alerts")
+    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    public ApiResponse<List<InventorySkuResponse>> inventoryAlerts(
+            @RequestParam(defaultValue = "5") int threshold
+    ) {
+        return ApiResponse.ok(catalogService.listLowStock(threshold));
     }
 
     /** I20：调整 SKU 库存为目标值 */

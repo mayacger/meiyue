@@ -10,7 +10,8 @@ import {
   TeamOutlined,
   DashboardOutlined,
   CustomerServiceOutlined,
-  SettingOutlined
+  SettingOutlined,
+  FileSearchOutlined
 } from "@ant-design/icons";
 import { Dropdown, Space, Tag } from "antd";
 import { apiFetch, setToken } from "@meiyue/api";
@@ -49,6 +50,7 @@ export function AdminLayout() {
             { path: "/onboarding", name: "入驻审核", icon: <AuditOutlined /> },
             { path: "/coupons", name: "平台券", icon: <GiftOutlined /> },
             { path: "/platform-config", name: "运营配置", icon: <SettingOutlined /> },
+            { path: "/audit-logs", name: "审计日志", icon: <FileSearchOutlined /> },
             { path: "/notifications", name: "站内通知", icon: <BellOutlined /> },
             { path: "/tickets", name: "客服工单", icon: <CustomerServiceOutlined /> },
             { path: "/categories", name: "类目管理", icon: <AppstoreOutlined /> },

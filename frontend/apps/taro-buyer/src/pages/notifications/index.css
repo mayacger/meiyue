@@ -29,6 +29,23 @@
   color: #f7f6f3 !important;
 }
 
+.btn.ghost {
+  background: transparent !important;
+  color: #1a4d45 !important;
+  border: 1px solid #1a4d45 !important;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.empty {
+  text-align: center;
+  padding: 48px 0;
+}
+
 .card {
   padding: 20px 0;
   border-bottom: 1px solid rgba(26, 77, 69, 0.12);

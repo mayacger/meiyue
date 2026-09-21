@@ -102,6 +102,43 @@ req("POST", f"/api/v1/seller/inventory/skus/{sku_id}/stock", seller_token, {"sto
 req("GET", "/api/v1/seller/dashboard", seller_token)
 req("GET", "/api/v1/admin/dashboard", admin_token)
 
+print("==> I24 profile + password")
+req("PUT", "/api/v1/auth/profile", buyer_token, {
+    "displayName": f"买家改{SUFFIX}", "phone": "13900009999"
+})
+me = req("GET", "/api/v1/auth/me", buyer_token)
+assert me["displayName"] == f"买家改{SUFFIX}"
+req("POST", "/api/v1/auth/password", buyer_token, {
+    "oldPassword": PASS, "newPassword": PASS + "x"
+})
+buyer_token = req("POST", "/api/v1/auth/login", body={"username": buyer, "password": PASS + "x"})["accessToken"]
+req("POST", "/api/v1/auth/password", buyer_token, {
+    "oldPassword": PASS + "x", "newPassword": PASS
+})
+buyer_token = req("POST", "/api/v1/auth/login", body={"username": buyer, "password": PASS})["accessToken"]
+
+print("==> I24 audit logs")
+audits = req("GET", "/api/v1/admin/audit-logs?page=0&size=5", admin_token)
+assert "content" in audits and "totalElements" in audits
+
+print("==> I25 batch status + inventory alerts")
+req("POST", "/api/v1/seller/products/batch-status", seller_token, {
+    "productIds": [prod_id], "status": "OFF_SALE"
+})
+req("POST", "/api/v1/seller/products/batch-status", seller_token, {
+    "productIds": [prod_id], "status": "ON_SALE"
+})
+req("POST", f"/api/v1/seller/inventory/skus/{sku_id}/stock", seller_token, {"stockQty": 3})
+alerts = req("GET", "/api/v1/seller/inventory/alerts?threshold=5", seller_token)
+assert any(x["skuId"] == sku_id for x in alerts)
+req("POST", f"/api/v1/seller/inventory/skus/{sku_id}/stock", seller_token, {"stockQty": 18})
+
+print("==> I25 notifications read")
+# 发货等会写入通知；至少 unread-count / read-all 可用
+uc = req("GET", "/api/v1/notifications/unread-count", buyer_token)
+assert "unread" in uc
+req("POST", "/api/v1/notifications/read-all", buyer_token)
+
 print("==> I18 admin categories + users")
 cats = req("GET", "/api/v1/admin/categories", admin_token)
 assert isinstance(cats, list) and len(cats) >= 1

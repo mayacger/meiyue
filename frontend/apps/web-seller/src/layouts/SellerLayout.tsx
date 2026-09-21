@@ -13,7 +13,8 @@ import {
   CommentOutlined,
   BellOutlined,
   DatabaseOutlined,
-  SettingOutlined
+  SettingOutlined,
+  UserOutlined
 } from "@ant-design/icons";
 import { Dropdown } from "antd";
 import { setToken } from "@meiyue/api";
@@ -41,6 +42,7 @@ export function SellerLayout() {
           routes: [
             { path: "/", name: "店铺概览", icon: <DashboardOutlined /> },
             { path: "/store", name: "店铺设置", icon: <SettingOutlined /> },
+            { path: "/settings", name: "账号设置", icon: <UserOutlined /> },
             { path: "/products", name: "商品管理", icon: <ShopOutlined /> },
             { path: "/inventory", name: "库存管理", icon: <DatabaseOutlined /> },
             { path: "/decoration", name: "店铺装修", icon: <SkinOutlined /> },

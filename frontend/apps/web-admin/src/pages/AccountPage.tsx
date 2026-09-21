@@ -1,15 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import type { ActionType, ProColumns } from "@ant-design/pro-components";
-import { PageContainer, ProDescriptions, ProTable } from "@ant-design/pro-components";
+import { PageContainer, ProDescriptions, ProForm, ProFormText, ProTable } from "@ant-design/pro-components";
 import { App, Alert, Card, Popconfirm, Select, Space, Spin, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
 import type { AdminUserSummary, UserProfile } from "@meiyue/types";
 
 /**
- * 账号与权限（I18）
- * - 当前登录平台管理员：GET /auth/me
+ * 账号与权限（I18 + I24 资料/改密）
+ * - 当前登录平台管理员：GET /auth/me · PUT /auth/profile · POST /auth/password
  * - 用户目录：GET /admin/users?role= · POST /admin/users/{id}/status
- * 字段：id / username / displayName / phone / status / roles / createdAt
  */
 
 export function AccountPage() {
@@ -119,6 +118,60 @@ export function AccountPage() {
           <p>未获取到用户信息</p>
         )}
       </Card>
+
+      {me ? (
+        <Space align="start" style={{ marginBottom: 16 }} wrap>
+          <Card title="更新资料" style={{ width: 360 }}>
+            <ProForm
+              initialValues={{ displayName: me.displayName, phone: me.phone || "" }}
+              onFinish={async (values) => {
+                try {
+                  const u = await apiFetch<UserProfile>("/api/v1/auth/profile", {
+                    method: "PUT",
+                    json: { displayName: values.displayName, phone: values.phone || "" }
+                  });
+                  setMe(u);
+                  message.success("资料已保存");
+                  return true;
+                } catch (err) {
+                  message.error(err instanceof Error ? err.message : "保存失败");
+                  return false;
+                }
+              }}
+            >
+              <ProFormText name="displayName" label="展示名" rules={[{ required: true }]} />
+              <ProFormText name="phone" label="手机" />
+            </ProForm>
+          </Card>
+          <Card title="修改密码" style={{ width: 360 }}>
+            <ProForm
+              onFinish={async (values) => {
+                try {
+                  await apiFetch("/api/v1/auth/password", {
+                    method: "POST",
+                    json: {
+                      oldPassword: values.oldPassword,
+                      newPassword: values.newPassword
+                    }
+                  });
+                  message.success("密码已更新");
+                  return true;
+                } catch (err) {
+                  message.error(err instanceof Error ? err.message : "改密失败");
+                  return false;
+                }
+              }}
+            >
+              <ProFormText.Password name="oldPassword" label="当前密码" rules={[{ required: true }]} />
+              <ProFormText.Password
+                name="newPassword"
+                label="新密码"
+                rules={[{ required: true, min: 6 }]}
+              />
+            </ProForm>
+          </Card>
+        </Space>
+      ) : null}
 
       <ProTable<AdminUserSummary>
         headerTitle="用户目录"

@@ -1,12 +1,14 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { apiFetch, getToken } from "@meiyue/api";
+import { TrackTimeline } from "@meiyue/ui";
 import "./OrderDetailPage.css";
 
 interface Track {
   status: string;
   description: string;
   trackedAt: string;
+  source?: string;
 }
 
 interface Shipment {
@@ -15,6 +17,7 @@ interface Shipment {
   status: string;
   carrierCode: string;
   trackingNo: string;
+  packageSeq?: number;
   tracks: Track[];
 }
 
@@ -150,20 +153,15 @@ export function OrderDetailPage() {
       </section>
 
       <section>
-        <h2>物流</h2>
+        <h2>物流轨迹</h2>
         {shipments.length === 0 ? <p className="my-muted">暂无物流</p> : null}
         {shipments.map((s) => (
           <div key={s.id} className="my-od__ship">
-            <p>
-              {s.direction} · {s.carrierCode} {s.trackingNo} · {s.status}
+            <p className="my-od__ship-head">
+              包裹 #{s.packageSeq ?? s.id} · {s.direction} · {s.carrierCode} {s.trackingNo} ·{" "}
+              <strong>{s.status}</strong>
             </p>
-            <ul>
-              {s.tracks?.map((t, i) => (
-                <li key={i}>
-                  {t.status} · {t.description} · {t.trackedAt}
-                </li>
-              ))}
-            </ul>
+            <TrackTimeline tracks={s.tracks || []} emptyText="暂无轨迹节点，发货后将在此展示" />
           </div>
         ))}
       </section>

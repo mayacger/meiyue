@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
-# 美月商城 · I18/I20 轻量冒烟（类目 / 地址簿 / 用户 / 库存 / 概览）
+# 美月商城 · I18/I20/I24/I25 轻量冒烟
+# 覆盖：类目 / 地址簿 / 用户 / 库存 / 概览 / 改密资料 / 审计 / 批量上下架 / 库存预警 / 通知
 # 前置：API 已启动；依赖 curl、python3
 # 用法：BASE_URL=http://localhost:8080 ./scripts/smoke-i18.sh
 # ============================================================
@@ -99,6 +100,34 @@ print("==> seller dashboard")
 sd = req("GET", "/api/v1/seller/dashboard", seller_token)
 assert "pendingShipCount" in sd and "todaySalesCents" in sd
 
+print("==> I24 profile + password + audit")
+req("PUT", "/api/v1/auth/profile", seller_token, {
+    "displayName": f"店主{SUFFIX}", "phone": "13800004444"
+})
+req("POST", "/api/v1/auth/password", seller_token, {
+    "oldPassword": PASS, "newPassword": PASS + "y"
+})
+seller_token = req("POST", "/api/v1/auth/login", body={"username": seller, "password": PASS + "y"})["accessToken"]
+req("POST", "/api/v1/auth/password", seller_token, {
+    "oldPassword": PASS + "y", "newPassword": PASS
+})
+seller_token = req("POST", "/api/v1/auth/login", body={"username": seller, "password": PASS})["accessToken"]
+audits = req("GET", "/api/v1/admin/audit-logs?page=0&size=3", admin_token)
+assert isinstance(audits.get("content"), list)
+
+print("==> I25 batch + alerts + notify")
+req("POST", "/api/v1/seller/products/batch-status", seller_token, {
+    "productIds": [prod["id"]], "status": "OFF_SALE"
+})
+req("POST", "/api/v1/seller/products/batch-status", seller_token, {
+    "productIds": [prod["id"]], "status": "ON_SALE"
+})
+req("POST", f"/api/v1/seller/inventory/skus/{sku_id}/stock", seller_token, {"stockQty": 2})
+alerts = req("GET", "/api/v1/seller/inventory/alerts?threshold=5", seller_token)
+assert any(x["skuId"] == sku_id for x in alerts)
+req("GET", "/api/v1/notifications/unread-count", buyer_token)
+req("POST", "/api/v1/notifications/read-all", buyer_token)
+
 print("==> buyer addresses CRUD")
 addr = req("POST", "/api/v1/buyer/addresses", buyer_token, {
     "receiverName": "收件人", "receiverPhone": "13900003333",
@@ -110,6 +139,6 @@ req("POST", f"/api/v1/buyer/addresses/{addr['id']}/default", buyer_token)
 req("DELETE", f"/api/v1/buyer/addresses/{addr['id']}", buyer_token)
 
 print("")
-print("SMOKE I18/I20 PASSED")
+print("SMOKE I18/I20/I24/I25 PASSED")
 print(f"  seller={seller} buyer={buyer} sku={sku_id} cat={cat['id']}")
 PY

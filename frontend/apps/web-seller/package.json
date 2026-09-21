@@ -14,6 +14,7 @@
     "@ant-design/pro-components": "^2.8.2",
     "@meiyue/api": "workspace:*",
     "@meiyue/types": "workspace:*",
+    "@meiyue/ui": "workspace:*",
     "antd": "^5.22.3",
     "dayjs": "^1.11.13",
     "react": "^18.3.1",

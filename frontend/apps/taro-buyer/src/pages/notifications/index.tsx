@@ -6,13 +6,13 @@ import { apiFetch, getToken } from "../../services/api";
 import "./index.css";
 
 /**
- * 站内通知（I19）
- * 入口：我的 → 通知 · pages/notifications/index
- * API：GET /notifications · unread-count · POST read / read-all
+ * 消息中心（I19 + I25 已读未读筛选）
+ * 入口：我的 → 通知
  */
 export default function NotificationsPage() {
   const [list, setList] = useState<NotificationItem[]>([]);
   const [unread, setUnread] = useState(0);
+  const [filter, setFilter] = useState<"all" | "unread">("all");
   const [error, setError] = useState("");
 
   async function reload() {
@@ -50,18 +50,40 @@ export default function NotificationsPage() {
     }
   }
 
+  const shown = filter === "unread" ? list.filter((n) => !n.read) : list;
+
   return (
     <View className="page">
-      <Text className="h1">站内通知</Text>
+      <Text className="h1">消息中心</Text>
       <Text className="muted">未读 {unread} 条</Text>
+      <View className="filters">
+        <Button
+          size="mini"
+          className={filter === "all" ? "btn" : "btn ghost"}
+          onClick={() => setFilter("all")}
+        >
+          全部
+        </Button>
+        <Button
+          size="mini"
+          className={filter === "unread" ? "btn" : "btn ghost"}
+          onClick={() => setFilter("unread")}
+        >
+          未读
+        </Button>
+      </View>
       {error ? <Text className="err">{error}</Text> : null}
       {unread > 0 ? (
         <Button className="btn" size="mini" onClick={markAll}>
           全部已读
         </Button>
       ) : null}
-      {list.length === 0 ? <Text className="muted">暂无通知</Text> : null}
-      {list.map((n) => (
+      {shown.length === 0 ? (
+        <Text className="muted empty">
+          {filter === "unread" ? "没有未读消息" : "暂无通知"}
+        </Text>
+      ) : null}
+      {shown.map((n) => (
         <View key={n.id} className={`card ${n.read ? "read" : ""}`}>
           <Text className="title">{n.title}</Text>
           <Text className="meta">

@@ -10,6 +10,7 @@ import {
 } from "@ant-design/pro-components";
 import { App, Button, Tag } from "antd";
 import { apiFetch, downloadAuthenticated } from "@meiyue/api";
+import { TrackTimeline } from "@meiyue/ui";
 
 interface Order {
   id: number;
@@ -17,6 +18,13 @@ interface Order {
   status: string;
   totalCents: number;
   items: { id: number; productTitle: string }[];
+}
+
+interface Track {
+  status: string;
+  description: string;
+  trackedAt?: string;
+  source?: string;
 }
 
 interface Shipment {
@@ -27,6 +35,8 @@ interface Shipment {
   trackingNo: string;
   packageSeq: number;
   ewaybillNo: string | null;
+  /** 轨迹节点（I24 时间线） */
+  tracks?: Track[];
 }
 
 const FORWARD_FLOW = [
@@ -38,7 +48,7 @@ const FORWARD_FLOW = [
 ];
 
 /**
- * 发货履约（I15：状态推进 + 轨迹同步）
+ * 发货履约（I15 + I24 轨迹时间线）
  * API：GET/POST /seller/shipments · POST /:id/status · POST /:id/sync-tracks
  */
 export function ShipmentsPage() {
@@ -82,6 +92,12 @@ export function ShipmentsPage() {
       render: (_, r) => <Tag>{r.status}</Tag>
     },
     {
+      title: "轨迹",
+      width: 72,
+      search: false,
+      render: (_, r) => `${r.tracks?.length ?? 0}`
+    },
+    {
       title: "操作",
       valueType: "option",
       width: 200,
@@ -112,12 +128,19 @@ export function ShipmentsPage() {
   ];
 
   return (
-    <PageContainer header={{ title: "发货履约", subTitle: "多包裹 · MOCK 面单 · 已支付订单导出" }}>
+    <PageContainer header={{ title: "发货履约", subTitle: "多包裹 · MOCK 面单 · 运单时间线" }}>
       <ProTable<Shipment>
         actionRef={actionRef}
         rowKey="id"
         search={false}
         columns={columns}
+        expandable={{
+          expandedRowRender: (r) => (
+            <div style={{ padding: "0 12px 8px" }}>
+              <TrackTimeline tracks={r.tracks || []} emptyText="暂无轨迹，可点「同步轨迹」" />
+            </div>
+          )
+        }}
         toolBarRender={() => [
           <Button
             key="export"

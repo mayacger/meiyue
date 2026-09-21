@@ -59,6 +59,9 @@ export function SiteShell() {
             <NavLink to="/notifications" onClick={() => setOpen(false)}>
               通知
             </NavLink>
+            <NavLink to="/settings" onClick={() => setOpen(false)}>
+              设置
+            </NavLink>
             <NavLink to="/tickets" onClick={() => setOpen(false)}>
               工单
             </NavLink>
