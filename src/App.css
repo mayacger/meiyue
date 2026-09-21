@@ -1,0 +1,69 @@
+/* 页面级布局：让卡片在视口中居中显示 */
+.app {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+/* 内容卡片 */
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 48px;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #1f2937, #111827);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-size: 2.5rem;
+  background: linear-gradient(90deg, #6366f1, #ec4899);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.subtitle {
+  margin: 0;
+  color: #9ca3af;
+}
+
+/* 计数按钮 */
+.counter-button {
+  padding: 12px 24px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: #6366f1;
+  border: none;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.05s ease;
+}
+
+.counter-button:hover {
+  background-color: #4f46e5;
+}
+
+.counter-button:active {
+  transform: scale(0.97);
+}
+
+.hint {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.hint code {
+  padding: 2px 6px;
+  border-radius: 6px;
+  background-color: rgba(148, 163, 184, 0.2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
