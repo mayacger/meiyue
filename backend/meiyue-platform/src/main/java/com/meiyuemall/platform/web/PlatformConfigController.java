@@ -4,16 +4,19 @@ import com.meiyuemall.common.security.SecurityConstants;
 import com.meiyuemall.common.web.ApiResponse;
 import com.meiyuemall.platform.dto.PlatformConfigResponse;
 import com.meiyuemall.platform.service.PlatformConfigService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
- * 平台运营配置公开只读（I23）。
- * <p>GET /api/v1/platform/config — 费率 / 结算周期 / 提现门槛；无密钥、无分账写操作。</p>
+ * 平台运营配置（I23 公开只读 + I32 Admin 更新）。
+ * <ul>
+ *   <li>GET /api/v1/platform/config</li>
+ *   <li>PUT /api/v1/admin/platform-config — body: { key, value }</li>
+ * </ul>
  */
 @RestController
-@RequestMapping(SecurityConstants.API_PREFIX + "/platform")
 public class PlatformConfigController {
 
     private final PlatformConfigService platformConfigService;
@@ -22,8 +25,17 @@ public class PlatformConfigController {
         this.platformConfigService = platformConfigService;
     }
 
-    @GetMapping("/config")
+    @GetMapping(SecurityConstants.API_PREFIX + "/platform/config")
     public ApiResponse<PlatformConfigResponse> config() {
         return ApiResponse.ok(platformConfigService.getPublicConfig());
+    }
+
+    @PutMapping(SecurityConstants.API_PREFIX + "/admin/platform-config")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public ApiResponse<PlatformConfigResponse> adminUpdate(@RequestBody Map<String, String> body) {
+        return ApiResponse.ok(platformConfigService.update(
+                body.get("key"),
+                body.get("value")
+        ));
     }
 }

@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { apiFetch, getToken } from "@meiyue/api";
 import type { ProductSummary } from "@meiyue/types";
 import { Skeleton } from "@meiyue/ui";
 import { ProductRail } from "../components/ProductRail";
@@ -11,10 +12,28 @@ interface Category {
   name: string;
 }
 
+const LOCAL_SEARCH_KEY = "meiyue_search_history";
+
+/** 本地最近关键词（未登录兜底） */
+function readLocalHistory(): string[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_SEARCH_KEY);
+    if (!raw) return [];
+    const arr = JSON.parse(raw) as string[];
+    return Array.isArray(arr) ? arr.slice(0, 20) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeLocalHistory(list: string[]) {
+  localStorage.setItem(LOCAL_SEARCH_KEY, JSON.stringify(list.slice(0, 20)));
+}
+
 /**
- * 商品列表 / 搜索（I19 打磨）
- * API：GET /products?q=&categoryId=
- * 支持类目芯片筛选 + URL 同步
+ * 商品列表 / 搜索（I19 + I32 搜索历史）
+ * API：GET /products?q= · POST/GET/DELETE /buyer/search-history
+ * 登录：服务端历史；未登录：localStorage
  */
 export function ProductListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,8 +43,50 @@ export function ProductListPage() {
   const [categoryId, setCategoryId] = useState<number | null>(
     searchParams.get("categoryId") ? Number(searchParams.get("categoryId")) : null
   );
+  const [history, setHistory] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  async function loadHistory() {
+    if (getToken()) {
+      try {
+        setHistory(await apiFetch<string[]>("/api/v1/buyer/search-history"));
+        return;
+      } catch {
+        /* 降级本地 */
+      }
+    }
+    setHistory(readLocalHistory());
+  }
+
+  async function recordKeyword(keyword: string) {
+    const k = keyword.trim();
+    if (!k) return;
+    if (getToken()) {
+      try {
+        await apiFetch("/api/v1/buyer/search-history", { method: "POST", json: { keyword: k } });
+        await loadHistory();
+        return;
+      } catch {
+        /* 降级本地 */
+      }
+    }
+    const next = [k, ...readLocalHistory().filter((x) => x !== k)].slice(0, 20);
+    writeLocalHistory(next);
+    setHistory(next);
+  }
+
+  async function clearHistory() {
+    if (getToken()) {
+      try {
+        await apiFetch("/api/v1/buyer/search-history", { method: "DELETE" });
+      } catch {
+        /* ignore */
+      }
+    }
+    writeLocalHistory([]);
+    setHistory([]);
+  }
 
   async function load(keyword = q, cat = categoryId) {
     setLoading(true);
@@ -50,6 +111,7 @@ export function ProductListPage() {
         if (body.success) setCategories(body.data);
       })
       .catch(() => undefined);
+    loadHistory();
     const initialQ = searchParams.get("q") || "";
     const initialCat = searchParams.get("categoryId")
       ? Number(searchParams.get("categoryId"))
@@ -66,11 +128,17 @@ export function ProductListPage() {
     setSearchParams(next, { replace: true });
   }
 
+  async function runSearch(keyword: string) {
+    setError(null);
+    setQ(keyword);
+    syncUrl(keyword, categoryId);
+    await recordKeyword(keyword);
+    await load(keyword, categoryId);
+  }
+
   function onSearch(e: FormEvent) {
     e.preventDefault();
-    setError(null);
-    syncUrl(q, categoryId);
-    load(q, categoryId).catch((err) => setError(err instanceof Error ? err.message : "搜索失败"));
+    runSearch(q).catch((err) => setError(err instanceof Error ? err.message : "搜索失败"));
   }
 
   function selectCategory(id: number | null) {
@@ -96,6 +164,28 @@ export function ProductListPage() {
             搜索
           </button>
         </form>
+        {history.length > 0 ? (
+          <div className="my-list__history">
+            <span className="my-muted">最近搜索</span>
+            {history.map((h) => (
+              <button
+                key={h}
+                type="button"
+                className="my-chip"
+                onClick={() =>
+                  runSearch(h).catch((err) =>
+                    setError(err instanceof Error ? err.message : "搜索失败")
+                  )
+                }
+              >
+                {h}
+              </button>
+            ))}
+            <button type="button" className="my-btn my-btn--ghost" onClick={() => clearHistory()}>
+              清空
+            </button>
+          </div>
+        ) : null}
         <div className="my-list__chips" role="list">
           <button
             type="button"

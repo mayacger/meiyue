@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # ============================================================
-# 美月商城 · I18–I31 轻量冒烟
+# 美月商城 · I18–I33 轻量冒烟
 # 覆盖：类目 / 地址簿 / 用户 / 库存 / 概览 / 改密资料 / 审计 / 批量上下架 /
 #       库存预警 / 通知 / 员工 / OpenAPI / series / 草稿 / Banner / 结算 /
-#       凭证图+退货物流 / 相关推荐 / 足迹 / 评价审核 / 运费模板
+#       凭证图+退货物流 / 相关推荐 / 足迹 / 评价审核 / 运费模板 /
+#       取消订单 / 搜索历史 / 自动确认 / 发票抬头+订单备注
 #       售后凭证与退货物流
 # 前置：API 已启动（demo profile）；依赖 curl、python3
 # 用法：BASE_URL=http://localhost:8080 ./scripts/smoke-i18.sh
@@ -245,12 +246,74 @@ assert store["freightCents"] == 600
 req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
 fest = req("POST", "/api/v1/buyer/orders/freight-estimate", buyer_token, {})
 assert fest["freightCents"] == 600
-ord_f = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})
+ord_f = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {
+    "buyerRemark": "请尽快发货",
+    "invoiceTitle": "冒烟个人",
+    "invoiceType": "PERSONAL"
+})
 assert ord_f["freightCents"] == 600
 assert ord_f["totalCents"] == ord_f["goodsCents"] + 600
+assert ord_f.get("buyerRemark") == "请尽快发货"
+assert ord_f.get("invoiceTitle") == "冒烟个人"
+
+print("==> I32 cancel unpaid + search history + auto confirm")
+# 搜索历史
+req("POST", "/api/v1/buyer/search-history", buyer_token, {"keyword": f"花{SUFFIX}"})
+sh = req("GET", "/api/v1/buyer/search-history", buyer_token)
+assert any(k == f"花{SUFFIX}" for k in sh)
+req("DELETE", "/api/v1/buyer/search-history", buyer_token)
+assert req("GET", "/api/v1/buyer/search-history", buyer_token) == []
+# 取消未支付 → 库存回滚
+stock_before = req("GET", "/api/v1/seller/inventory", seller_token)
+sku_stock = next(x["stockQty"] for x in stock_before if x["skuId"] == sku_id)
+req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
+ord_c = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})
+assert ord_c["status"] == "PENDING_PAYMENT"
+mid = next(x["stockQty"] for x in req("GET", "/api/v1/seller/inventory", seller_token) if x["skuId"] == sku_id)
+assert mid == sku_stock - 1
+req("POST", f"/api/v1/buyer/orders/{ord_c['id']}/cancel", buyer_token)
+assert req("GET", f"/api/v1/buyer/orders/{ord_c['id']}", buyer_token)["status"] == "CANCELLED"
+after = next(x["stockQty"] for x in req("GET", "/api/v1/seller/inventory", seller_token) if x["skuId"] == sku_id)
+assert after == sku_stock
+# 自动确认：天数改 0 → 签收后立即完成
+req("PUT", "/api/v1/admin/platform-config", admin_token, {
+    "key": "auto_confirm_receipt_days", "value": "0"
+})
+req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
+ord_a = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})
+req("POST", f"/api/v1/buyer/orders/{ord_a['id']}/mock-pay", buyer_token)
+ship_a = req("POST", "/api/v1/seller/shipments", seller_token, {
+    "orderId": ord_a["id"], "carrierCode": "SF", "printEwaybill": True,
+    "receiverName": "买家", "receiverPhone": "", "receiverAddress": ""
+})
+for st in ["PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"]:
+    try:
+        req("POST", f"/api/v1/seller/shipments/{ship_a['id']}/status", seller_token,
+            {"status": st, "description": f"auto {st}"})
+    except SystemExit:
+        pass
+oa = req("GET", f"/api/v1/buyer/orders/{ord_a['id']}", buyer_token)
+assert oa["status"] == "COMPLETED", oa
+# 恢复默认天数
+req("PUT", "/api/v1/admin/platform-config", admin_token, {
+    "key": "auto_confirm_receipt_days", "value": "7"
+})
+
+print("==> I33 invoice profiles")
+inv = req("POST", "/api/v1/buyer/invoice-profiles", buyer_token, {
+    "title": f"抬头{SUFFIX}", "taxNo": "91110000MA00TEST", "invoiceType": "COMPANY",
+    "defaultProfile": True
+})
+invs = req("GET", "/api/v1/buyer/invoice-profiles", buyer_token)
+assert any(x["id"] == inv["id"] for x in invs)
+req("PUT", f"/api/v1/buyer/invoice-profiles/{inv['id']}", buyer_token, {
+    "title": f"抬头改{SUFFIX}", "taxNo": "91110000MA00TEST", "invoiceType": "COMPANY",
+    "defaultProfile": True
+})
+req("DELETE", f"/api/v1/buyer/invoice-profiles/{inv['id']}", buyer_token)
 
 print("")
-print("SMOKE I18–I31 PASSED")
+print("SMOKE I18–I33 PASSED")
 print(f"  seller={seller} buyer={buyer} staff={staff_user} sku={sku_id} cat={cat['id']}")
 PY
 

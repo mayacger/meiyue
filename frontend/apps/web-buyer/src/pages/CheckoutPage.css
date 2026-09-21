@@ -18,6 +18,13 @@
   background: rgba(255, 255, 255, 0.75);
 }
 
+.my-checkout input {
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  border: 1px solid var(--my-line);
+  background: rgba(255, 255, 255, 0.75);
+}
+
 .my-hint {
   font-size: 0.9rem;
   color: var(--my-muted);

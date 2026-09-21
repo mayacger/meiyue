@@ -38,11 +38,16 @@ export function OrdersPage() {
     await reload();
   }
 
+  async function cancelOrder(id: number) {
+    await apiFetch(`/api/v1/buyer/orders/${id}/cancel`, { method: "POST" });
+    await reload();
+  }
+
   return (
     <div className="my-orders my-page">
       <h1 className="my-page-title my-fade-up">我的订单</h1>
       <p className="my-page-lead">
-        待支付可模拟支付 · <Link to="/aftersales">售后列表</Link>
+        待支付可模拟支付或取消 · <Link to="/aftersales">售后列表</Link>
       </p>
       {error ? (
         <ErrorState message={error}>
@@ -66,9 +71,22 @@ export function OrdersPage() {
                 [{o.status}] ¥{(o.totalCents / 100).toFixed(2)}
               </span>
               {o.status === "PENDING_PAYMENT" ? (
-                <button type="button" className="my-btn my-btn--ghost" onClick={() => mockPay(o.id)}>
-                  模拟支付
-                </button>
+                <>
+                  <button type="button" className="my-btn my-btn--ghost" onClick={() => mockPay(o.id)}>
+                    模拟支付
+                  </button>
+                  <button
+                    type="button"
+                    className="my-btn my-btn--ghost"
+                    onClick={() =>
+                      cancelOrder(o.id).catch((e) =>
+                        setError(e instanceof Error ? e.message : "取消失败")
+                      )
+                    }
+                  >
+                    取消订单
+                  </button>
+                </>
               ) : null}
             </li>
           ))}

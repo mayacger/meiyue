@@ -25,6 +25,24 @@ public class Order {
     /** I31：运费合计 */
     @Column(name = "freight_cents", nullable = false)
     private long freightCents = 0;
+    /** I32：全部正向包裹签收时间 */
+    @Column(name = "delivered_at")
+    private Instant deliveredAt;
+    /** I32：计划自动确认收货时间 */
+    @Column(name = "auto_confirm_at")
+    private Instant autoConfirmAt;
+    /** I33：买家下单备注 */
+    @Column(name = "buyer_remark", length = 256)
+    private String buyerRemark;
+    /** I33：发票抬头快照 */
+    @Column(name = "invoice_title", length = 128)
+    private String invoiceTitle;
+    /** I33：税号快照 */
+    @Column(name = "invoice_tax_no", length = 64)
+    private String invoiceTaxNo;
+    /** I33：PERSONAL / COMPANY */
+    @Column(name = "invoice_type", length = 16)
+    private String invoiceType;
     @Column(name = "pay_expire_at", nullable = false)
     private Instant payExpireAt;
     @Column(name = "paid_at")
@@ -62,6 +80,18 @@ public class Order {
     public void setGoodsCents(Long goodsCents) { this.goodsCents = goodsCents; }
     public long getFreightCents() { return freightCents; }
     public void setFreightCents(long freightCents) { this.freightCents = freightCents; }
+    public Instant getDeliveredAt() { return deliveredAt; }
+    public void setDeliveredAt(Instant deliveredAt) { this.deliveredAt = deliveredAt; }
+    public Instant getAutoConfirmAt() { return autoConfirmAt; }
+    public void setAutoConfirmAt(Instant autoConfirmAt) { this.autoConfirmAt = autoConfirmAt; }
+    public String getBuyerRemark() { return buyerRemark; }
+    public void setBuyerRemark(String buyerRemark) { this.buyerRemark = buyerRemark; }
+    public String getInvoiceTitle() { return invoiceTitle; }
+    public void setInvoiceTitle(String invoiceTitle) { this.invoiceTitle = invoiceTitle; }
+    public String getInvoiceTaxNo() { return invoiceTaxNo; }
+    public void setInvoiceTaxNo(String invoiceTaxNo) { this.invoiceTaxNo = invoiceTaxNo; }
+    public String getInvoiceType() { return invoiceType; }
+    public void setInvoiceType(String invoiceType) { this.invoiceType = invoiceType; }
     public Instant getPayExpireAt() { return payExpireAt; }
     public void setPayExpireAt(Instant payExpireAt) { this.payExpireAt = payExpireAt; }
     public Instant getPaidAt() { return paidAt; }

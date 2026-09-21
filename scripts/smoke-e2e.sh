@@ -326,6 +326,44 @@ req("POST", f"/api/v1/admin/reviews/{rev['id']}/restore", admin_token)
 pub2 = req("GET", f"/api/v1/products/{prod_id}/reviews")
 assert any(r["id"] == rev["id"] for r in pub2)
 
+print("==> I32 cancel + search + auto-confirm days=0")
+req("POST", "/api/v1/buyer/search-history", buyer_token, {"keyword": "玫瑰"})
+assert "玫瑰" in req("GET", "/api/v1/buyer/search-history", buyer_token)
+req("DELETE", "/api/v1/buyer/search-history", buyer_token)
+req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
+ord_cancel = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})
+req("POST", f"/api/v1/buyer/orders/{ord_cancel['id']}/cancel", buyer_token)
+assert req("GET", f"/api/v1/buyer/orders/{ord_cancel['id']}", buyer_token)["status"] == "CANCELLED"
+req("PUT", "/api/v1/admin/platform-config", admin_token, {
+    "key": "auto_confirm_receipt_days", "value": "0"
+})
+req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
+ord_auto = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {
+    "buyerRemark": "e2e remark", "invoiceTitle": "e2e抬头", "invoiceType": "PERSONAL"
+})
+assert ord_auto.get("buyerRemark") == "e2e remark"
+req("POST", f"/api/v1/buyer/orders/{ord_auto['id']}/mock-pay", buyer_token)
+ship_auto = req("POST", "/api/v1/seller/shipments", seller_token, {
+    "orderId": ord_auto["id"], "carrierCode": "SF", "printEwaybill": True,
+    "receiverName": "买家", "receiverPhone": "", "receiverAddress": ""
+})
+for st in ["PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"]:
+    try:
+        req("POST", f"/api/v1/seller/shipments/{ship_auto['id']}/status", seller_token,
+            {"status": st, "description": f"auto {st}"})
+    except SystemExit:
+        pass
+assert req("GET", f"/api/v1/buyer/orders/{ord_auto['id']}", buyer_token)["status"] == "COMPLETED"
+req("PUT", "/api/v1/admin/platform-config", admin_token, {
+    "key": "auto_confirm_receipt_days", "value": "7"
+})
+
+print("==> I33 invoice profile CRUD")
+inv = req("POST", "/api/v1/buyer/invoice-profiles", buyer_token, {
+    "title": "E2E公司", "taxNo": "91110000MA00E2E", "invoiceType": "COMPANY", "defaultProfile": True
+})
+req("DELETE", f"/api/v1/buyer/invoice-profiles/{inv['id']}", buyer_token)
+
 print("==> aftersale REFUND_ONLY (MOCK channel refund)")
 req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
 order2 = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})

@@ -108,7 +108,7 @@ export interface CartItem {
   tenantId?: number;
 }
 
-/** 订单摘要（I31 含运费拆分） */
+/** 订单摘要（I31 运费 + I33 备注发票） */
 export interface OrderSummary {
   id: number;
   orderNo: string;
@@ -119,6 +119,12 @@ export interface OrderSummary {
   /** 运费合计 */
   freightCents?: number;
   paymentNo?: string;
+  buyerRemark?: string | null;
+  invoiceTitle?: string | null;
+  invoiceTaxNo?: string | null;
+  invoiceType?: string | null;
+  deliveredAt?: string | null;
+  autoConfirmAt?: string | null;
 }
 
 /** I31：结算运费预估（对齐 FreightEstimateResponse） */
@@ -190,6 +196,17 @@ export interface PlatformConfigView {
   platformFeeRateBps: string;
   settlementCycle: string;
   minWithdrawCents: string;
+  /** I32：签收后自动确认天数 */
+  autoConfirmReceiptDays?: string;
+}
+
+/** I33：发票抬头 */
+export interface InvoiceProfile {
+  id: number;
+  title: string;
+  taxNo?: string | null;
+  invoiceType: string;
+  defaultProfile: boolean;
 }
 
 /** 站内通知（与后端 NotificationResponse 对齐） */

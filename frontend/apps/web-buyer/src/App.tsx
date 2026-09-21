@@ -17,10 +17,11 @@ import { FavoritesPage } from "./pages/FavoritesPage";
 import { BrowseHistoryPage } from "./pages/BrowseHistoryPage";
 import { CouponsPage } from "./pages/CouponsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { InvoicePage } from "./pages/InvoicePage";
 
 /**
- * 买家 PC 路由（I24 + I30）
- * /settings · /stores/:tenantId · /favorites · /browse-history · /coupons · …
+ * 买家 PC 路由（I24 + I30 + I33）
+ * /invoices 发票抬头 · /browse-history · …
  */
 export function App() {
   return (
@@ -38,6 +39,7 @@ export function App() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/addresses" element={<AddressPage />} />
+        <Route path="/invoices" element={<InvoicePage />} />
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/tickets" element={<TicketsPage />} />

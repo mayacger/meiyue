@@ -22,6 +22,7 @@ import com.meiyuemall.trade.domain.Order;
 import com.meiyuemall.trade.domain.OrderItem;
 import com.meiyuemall.trade.domain.OrderStatus;
 import com.meiyuemall.trade.repo.OrderRepository;
+import com.meiyuemall.trade.service.OrderService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +31,7 @@ import java.util.List;
 
 /**
  * 物流服务：正向发货 / 多包裹 / MOCK 电子面单 / 状态推进 / 轨迹同步。
+ * I32：全部签收后委托 OrderService 进入自动确认窗口。
  */
 @Service
 public class LogisticsService {
@@ -37,6 +39,7 @@ public class LogisticsService {
     private final ShipmentRepository shipmentRepository;
     private final ShipmentTrackRepository trackRepository;
     private final OrderRepository orderRepository;
+    private final OrderService orderService;
     private final ExpressTrackQueryPort trackQueryPort;
     private final EwaybillProvider ewaybillProvider;
     private final NotificationPublisher notificationPublisher;
@@ -45,6 +48,7 @@ public class LogisticsService {
             ShipmentRepository shipmentRepository,
             ShipmentTrackRepository trackRepository,
             OrderRepository orderRepository,
+            OrderService orderService,
             ExpressTrackQueryPort trackQueryPort,
             EwaybillProvider ewaybillProvider,
             NotificationPublisher notificationPublisher
@@ -52,6 +56,7 @@ public class LogisticsService {
         this.shipmentRepository = shipmentRepository;
         this.trackRepository = trackRepository;
         this.orderRepository = orderRepository;
+        this.orderService = orderService;
         this.trackQueryPort = trackQueryPort;
         this.ewaybillProvider = ewaybillProvider;
         this.notificationPublisher = notificationPublisher;
@@ -173,7 +178,8 @@ public class LogisticsService {
             appendTrack(shipment, to.name(),
                     request.description() == null ? ("状态变更为 " + to) : request.description(), "MANUAL");
             if (to == ForwardStatus.DELIVERED) {
-                maybeCompleteOrder(shipment.getOrderId());
+                // I32：全部签收后进入自动确认窗口（不再立刻 COMPLETED）
+                maybeMarkDeliveredForAutoConfirm(shipment.getOrderId());
                 orderRepository.findById(shipment.getOrderId()).ifPresent(order ->
                         notificationPublisher.publish(
                                 order.getBuyerUserId(), "BUYER",
@@ -283,17 +289,17 @@ public class LogisticsService {
         return (int) count + 1;
     }
 
-    private void maybeCompleteOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId).orElse(null);
-        if (order == null) return;
+    private void maybeMarkDeliveredForAutoConfirm(Long orderId) {
         List<Shipment> forwards = shipmentRepository.findByOrderIdOrderByCreatedAtDesc(orderId).stream()
                 .filter(s -> s.getDirection() == ShipmentDirection.FORWARD)
                 .toList();
-        if (forwards.isEmpty()) return;
+        if (forwards.isEmpty()) {
+            return;
+        }
         boolean allDelivered = forwards.stream()
                 .allMatch(s -> ForwardStatus.DELIVERED.name().equals(s.getStatus()));
         if (allDelivered) {
-            order.setStatus(OrderStatus.COMPLETED);
+            orderService.onAllPackagesDelivered(orderId);
         }
     }
 

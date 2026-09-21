@@ -45,6 +45,10 @@ interface Order {
   totalCents?: number;
   goodsCents?: number | null;
   freightCents?: number;
+  buyerRemark?: string | null;
+  invoiceTitle?: string | null;
+  invoiceTaxNo?: string | null;
+  invoiceType?: string | null;
   items: OrderItem[];
 }
 
@@ -159,6 +163,13 @@ export function OrderDetailPage() {
           {order.goodsCents != null
             ? `（商品 ¥${(order.goodsCents / 100).toFixed(2)} + 运费 ¥${((order.freightCents ?? 0) / 100).toFixed(2)}）`
             : ""}
+        </p>
+      ) : null}
+      {order?.buyerRemark ? <p className="my-muted">备注：{order.buyerRemark}</p> : null}
+      {order?.invoiceTitle ? (
+        <p className="my-muted">
+          发票：[{order.invoiceType}] {order.invoiceTitle}
+          {order.invoiceTaxNo ? ` · ${order.invoiceTaxNo}` : ""}
         </p>
       ) : null}
       {loading ? <Skeleton rows={4} /> : null}

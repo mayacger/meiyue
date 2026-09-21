@@ -17,6 +17,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     List<Order> findByBuyerUserIdOrderByCreatedAtDesc(Long buyerUserId);
     List<Order> findByStatusAndPayExpireAtBefore(OrderStatus status, Instant time);
 
+    /** I32：到期自动确认收货 */
+    List<Order> findByStatusAndAutoConfirmAtBefore(OrderStatus status, Instant time);
+
     @Query("""
             select distinct o from Order o join o.items i
             where i.tenantId = :tenantId and o.status in :statuses

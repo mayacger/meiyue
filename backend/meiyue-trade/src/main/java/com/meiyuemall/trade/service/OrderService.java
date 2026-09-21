@@ -14,6 +14,7 @@ import com.meiyuemall.common.tenant.SellerOwnerLookup;
 import com.meiyuemall.payment.domain.PaymentChannel;
 import com.meiyuemall.payment.dto.PaymentResponse;
 import com.meiyuemall.payment.service.PaymentService;
+import com.meiyuemall.platform.service.PlatformConfigService;
 import com.meiyuemall.trade.domain.CartItem;
 import com.meiyuemall.trade.domain.Order;
 import com.meiyuemall.trade.domain.OrderItem;
@@ -34,13 +35,15 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 下单：校验 → 预占库存（扣减 stock_qty）→ 创建待支付订单 + 支付单。
- * 超时 30 分钟由 Redis 延迟队列 + OrderExpireJob（DB 兜底）关单并回滚库存。
+ * 下单：校验 → 预占库存 → 待支付订单 + 支付单。
+ * I32：买家取消与超时关单共用 {@link #cancelOrder}；签收后 N 天自动确认。
+ * I33：下单备注与发票快照。
  */
 @Service
 public class OrderService {
 
     public static final int PAY_TIMEOUT_MINUTES = 30;
+    public static final int DEFAULT_AUTO_CONFIRM_DAYS = 7;
 
     private final CartItemRepository cartItemRepository;
     private final OrderRepository orderRepository;
@@ -53,6 +56,7 @@ public class OrderService {
     private final NotificationPublisher notificationPublisher;
     private final SellerOwnerLookup sellerOwnerLookup;
     private final FreightService freightService;
+    private final PlatformConfigService platformConfigService;
 
     public OrderService(
             CartItemRepository cartItemRepository,
@@ -65,7 +69,8 @@ public class OrderService {
             @org.springframework.beans.factory.annotation.Value("${meiyue.coupon.stacking:MUTUAL_EXCLUSIVE}") String couponStackingMode,
             NotificationPublisher notificationPublisher,
             SellerOwnerLookup sellerOwnerLookup,
-            FreightService freightService
+            FreightService freightService,
+            PlatformConfigService platformConfigService
     ) {
         this.cartItemRepository = cartItemRepository;
         this.orderRepository = orderRepository;
@@ -78,6 +83,7 @@ public class OrderService {
         this.notificationPublisher = notificationPublisher;
         this.sellerOwnerLookup = sellerOwnerLookup;
         this.freightService = freightService;
+        this.platformConfigService = platformConfigService;
     }
 
     @Transactional
@@ -98,6 +104,13 @@ public class OrderService {
         order.setBuyerUserId(buyerId);
         order.setStatus(OrderStatus.PENDING_PAYMENT);
         order.setPayExpireAt(Instant.now().plus(PAY_TIMEOUT_MINUTES, ChronoUnit.MINUTES));
+        // I33：备注与发票快照
+        if (request != null) {
+            if (request.buyerRemark() != null && !request.buyerRemark().isBlank()) {
+                order.setBuyerRemark(request.buyerRemark().trim());
+            }
+            applyInvoiceSnapshot(order, request);
+        }
 
         long total = 0;
         List<Long> skuIdsToClear = new ArrayList<>();
@@ -222,19 +235,119 @@ public class OrderService {
         if (order.getStatus() != OrderStatus.PAID && order.getStatus() != OrderStatus.FULFILLING) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "当前状态不可确认收货");
         }
-        order.setStatus(OrderStatus.COMPLETED);
-        // I11：确认收货 → 商家 OWNER 通知
-        order.getItems().stream().map(OrderItem::getTenantId).distinct().forEach(tenantId ->
-                sellerOwnerLookup.findOwnerUserId(tenantId).ifPresent(ownerId ->
-                        notificationPublisher.publish(
-                                ownerId, "SELLER",
-                                "买家已确认收货",
-                                "订单 " + order.getOrderNo() + " 已完成，买家可评价",
-                                "ORDER", "ORDER", String.valueOf(order.getId())
-                        )
-                )
-        );
+        markCompleted(order, false);
         return toResponse(order, null);
+    }
+
+    /**
+     * I32：买家取消未支付订单；与超时关单共用 {@link #cancelOrder} 释放预占库存。
+     */
+    @Transactional
+    public OrderResponse cancelMine(Long orderId) {
+        Long buyerId = SecurityUtils.requirePrincipal().getUserId();
+        Order order = orderRepository.findByIdAndBuyerUserId(orderId, buyerId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "订单不存在"));
+        if (order.getStatus() != OrderStatus.PENDING_PAYMENT) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "仅待支付订单可取消");
+        }
+        cancelOrder(order, "买家取消");
+        return toResponse(order, null);
+    }
+
+    /**
+     * I32：全部正向包裹签收后进入待自动确认（不再立刻 COMPLETED）。
+     * days≤0 时立即确认并通知买家。
+     */
+    @Transactional
+    public void onAllPackagesDelivered(Long orderId) {
+        Order order = orderRepository.findById(orderId).orElse(null);
+        if (order == null) {
+            return;
+        }
+        if (order.getStatus() == OrderStatus.COMPLETED || order.getStatus() == OrderStatus.CANCELLED) {
+            return;
+        }
+        Instant now = Instant.now();
+        if (order.getDeliveredAt() == null) {
+            order.setDeliveredAt(now);
+        }
+        int days = Math.max(0, platformConfigService.getInt(
+                PlatformConfigService.KEY_AUTO_CONFIRM_DAYS, DEFAULT_AUTO_CONFIRM_DAYS));
+        if (days <= 0) {
+            markCompleted(order, true);
+            return;
+        }
+        order.setAutoConfirmAt(order.getDeliveredAt().plus(days, ChronoUnit.DAYS));
+        if (order.getStatus() == OrderStatus.PAID) {
+            order.setStatus(OrderStatus.FULFILLING);
+        }
+    }
+
+    /** I32：扫描到期自动确认 */
+    @Transactional
+    public int autoConfirmDueOrders() {
+        List<Order> due = orderRepository.findByStatusAndAutoConfirmAtBefore(
+                OrderStatus.FULFILLING, Instant.now());
+        int n = 0;
+        for (Order order : due) {
+            markCompleted(order, true);
+            n++;
+        }
+        return n;
+    }
+
+    /**
+     * 标记完成；notifyBuyer=true 时发「自动确认收货」通知（I32），否则通知商家（买家手动确认）。
+     */
+    private void markCompleted(Order order, boolean autoConfirm) {
+        if (order.getStatus() == OrderStatus.COMPLETED) {
+            return;
+        }
+        order.setStatus(OrderStatus.COMPLETED);
+        order.setAutoConfirmAt(null);
+        if (autoConfirm) {
+            notificationPublisher.publish(
+                    order.getBuyerUserId(), "BUYER",
+                    "已自动确认收货",
+                    "订单 " + order.getOrderNo() + " 已达签收时限，系统已确认收货，您可评价",
+                    "ORDER", "ORDER", String.valueOf(order.getId())
+            );
+            order.getItems().stream().map(OrderItem::getTenantId).distinct().forEach(tenantId ->
+                    sellerOwnerLookup.findOwnerUserId(tenantId).ifPresent(ownerId ->
+                            notificationPublisher.publish(
+                                    ownerId, "SELLER",
+                                    "订单已自动确认收货",
+                                    "订单 " + order.getOrderNo() + " 已自动完成",
+                                    "ORDER", "ORDER", String.valueOf(order.getId())
+                            )
+                    )
+            );
+        } else {
+            order.getItems().stream().map(OrderItem::getTenantId).distinct().forEach(tenantId ->
+                    sellerOwnerLookup.findOwnerUserId(tenantId).ifPresent(ownerId ->
+                            notificationPublisher.publish(
+                                    ownerId, "SELLER",
+                                    "买家已确认收货",
+                                    "订单 " + order.getOrderNo() + " 已完成，买家可评价",
+                                    "ORDER", "ORDER", String.valueOf(order.getId())
+                            )
+                    )
+            );
+        }
+    }
+
+    private void applyInvoiceSnapshot(Order order, CheckoutRequest request) {
+        if (request.invoiceTitle() != null && !request.invoiceTitle().isBlank()) {
+            order.setInvoiceTitle(request.invoiceTitle().trim());
+            order.setInvoiceTaxNo(request.invoiceTaxNo() == null || request.invoiceTaxNo().isBlank()
+                    ? null : request.invoiceTaxNo().trim());
+            String type = request.invoiceType() == null || request.invoiceType().isBlank()
+                    ? "PERSONAL" : request.invoiceType().trim().toUpperCase();
+            if (!"PERSONAL".equals(type) && !"COMPANY".equals(type)) {
+                throw new BusinessException(ErrorCode.BAD_REQUEST, "invoiceType 须为 PERSONAL 或 COMPANY");
+            }
+            order.setInvoiceType(type);
+        }
     }
 
     /** 模拟支付成功：标记订单 PAID（幂等） */
@@ -455,7 +568,13 @@ public class OrderService {
                 order.getPayExpireAt().toString(),
                 order.getPaidAt() == null ? null : order.getPaidAt().toString(),
                 items,
-                paymentNo
+                paymentNo,
+                order.getBuyerRemark(),
+                order.getInvoiceTitle(),
+                order.getInvoiceTaxNo(),
+                order.getInvoiceType(),
+                order.getDeliveredAt() == null ? null : order.getDeliveredAt().toString(),
+                order.getAutoConfirmAt() == null ? null : order.getAutoConfirmAt().toString()
         );
     }
 

@@ -89,4 +89,10 @@ public class BuyerTradeController {
     public ApiResponse<OrderResponse> confirmReceipt(@PathVariable Long id) {
         return ApiResponse.ok(orderService.confirmReceipt(id));
     }
+
+    /** I32：买家取消未支付订单（释放预占库存） */
+    @PostMapping("/orders/{id}/cancel")
+    public ApiResponse<OrderResponse> cancel(@PathVariable Long id) {
+        return ApiResponse.ok(orderService.cancelMine(id));
+    }
 }

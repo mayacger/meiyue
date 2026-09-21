@@ -1,21 +1,29 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch, getToken } from "@meiyue/api";
-import type { CartItem, CouponClaim, FreightEstimate, OrderSummary } from "@meiyue/types";
+import type {
+  CartItem,
+  CouponClaim,
+  FreightEstimate,
+  InvoiceProfile,
+  OrderSummary
+} from "@meiyue/types";
 import "./CheckoutPage.css";
 
 /**
- * 结算页（I17 + I31）
- * POST /buyer/orders/freight-estimate · /buyer/orders/checkout
- * 运费：按店默认运费 / 包邮门槛；券后商品 + 运费 = 应付
+ * 结算页（I17 + I31 + I33）
+ * 运费预估 · 券 · 买家备注 · 发票抬头（占位）
  */
 export function CheckoutPage() {
   const navigate = useNavigate();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [storeClaims, setStoreClaims] = useState<CouponClaim[]>([]);
   const [platformClaims, setPlatformClaims] = useState<CouponClaim[]>([]);
+  const [invoices, setInvoices] = useState<InvoiceProfile[]>([]);
   const [storeClaimId, setStoreClaimId] = useState("");
   const [platformClaimId, setPlatformClaimId] = useState("");
+  const [invoiceId, setInvoiceId] = useState("");
+  const [buyerRemark, setBuyerRemark] = useState("");
   const [freight, setFreight] = useState<FreightEstimate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
@@ -31,6 +39,12 @@ export function CheckoutPage() {
         setCart(c);
         setStoreClaims(await apiFetch<CouponClaim[]>("/api/v1/buyer/coupons/claims"));
         setPlatformClaims(await apiFetch<CouponClaim[]>("/api/v1/buyer/platform-coupons/claims"));
+        const inv = await apiFetch<InvoiceProfile[]>("/api/v1/buyer/invoice-profiles").catch(
+          () => [] as InvoiceProfile[]
+        );
+        setInvoices(inv);
+        const def = inv.find((i) => i.defaultProfile);
+        if (def) setInvoiceId(String(def.id));
         if (c.length > 0) {
           setFreight(
             await apiFetch<FreightEstimate>("/api/v1/buyer/orders/freight-estimate", {
@@ -52,9 +66,16 @@ export function CheckoutPage() {
       return;
     }
     try {
-      const body: Record<string, number> = {};
+      const body: Record<string, unknown> = {};
       if (storeClaimId) body.storeCouponClaimId = Number(storeClaimId);
       if (platformClaimId) body.platformCouponClaimId = Number(platformClaimId);
+      if (buyerRemark.trim()) body.buyerRemark = buyerRemark.trim();
+      const selected = invoices.find((i) => String(i.id) === invoiceId);
+      if (selected) {
+        body.invoiceTitle = selected.title;
+        body.invoiceTaxNo = selected.taxNo || null;
+        body.invoiceType = selected.invoiceType;
+      }
       const order = await apiFetch<OrderSummary>("/api/v1/buyer/orders/checkout", {
         method: "POST",
         json: body
@@ -143,6 +164,30 @@ export function CheckoutPage() {
                 ))}
             </select>
           </label>
+          <label>
+            订单备注
+            <input
+              value={buyerRemark}
+              onChange={(e) => setBuyerRemark(e.target.value)}
+              maxLength={256}
+              placeholder="选填，给商家看的备注"
+            />
+          </label>
+          <label>
+            发票抬头
+            <select value={invoiceId} onChange={(e) => setInvoiceId(e.target.value)}>
+              <option value="">不开票</option>
+              {invoices.map((i) => (
+                <option key={i.id} value={i.id}>
+                  [{i.invoiceType}] {i.title}
+                  {i.defaultProfile ? "（默认）" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
+          <p className="my-hint">
+            管理抬头请到 <Link to="/invoices">发票抬头</Link>（占位，无真实开票）
+          </p>
           {error ? <p className="my-error">{error}</p> : null}
           {msg ? <p className="my-ok">{msg}</p> : null}
           <button type="button" className="my-btn my-btn--primary" onClick={checkout}>

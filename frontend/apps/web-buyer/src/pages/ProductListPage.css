@@ -33,6 +33,14 @@
   margin-top: 1rem;
 }
 
+.my-list__history {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
 .my-chip {
   border: 1px solid var(--my-line);
   background: transparent;
