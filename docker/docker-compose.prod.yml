@@ -1,0 +1,63 @@
+# 美月商城 · 生产编排 profile（I34）
+# 用法：
+#   cp docker/.env.prod.example docker/.env.prod   # 填入密钥，勿提交
+#   docker compose -f docker/docker-compose.yml -f docker/docker-compose.prod.yml --env-file docker/.env.prod up -d --build
+#
+# 不入库真实密钥；JWT / 支付 / AI 一律走环境变量。
+
+services:
+  postgres:
+    # 覆盖本地弱口令：生产必须用环境变量
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-meiyue_mall}
+      POSTGRES_USER: ${POSTGRES_USER:-meiyue}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    ports: []  # 生产不对外暴露 5432（仅 compose 内网）
+
+  redis:
+    ports: []
+
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: meiyue-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-meiyue_mall}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-meiyue}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      MEIYUE_SECURITY_JWT_SECRET: ${MEIYUE_SECURITY_JWT_SECRET:?set JWT secret >=32 chars}
+      MEIYUE_SECURITY_CAPTCHA_ENABLED: ${MEIYUE_SECURITY_CAPTCHA_ENABLED:-false}
+      MEIYUE_PAYMENT_DEFAULT_CHANNEL: ${MEIYUE_PAYMENT_DEFAULT_CHANNEL:-MOCK}
+      MEIYUE_AI_PROVIDER: ${MEIYUE_AI_PROVIDER:-MOCK}
+      MEIYUE_AI_API_KEY: ${MEIYUE_AI_API_KEY:-}
+      JAVA_OPTS: ${JAVA_OPTS:--XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0}
+    ports:
+      - "${API_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q UP"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 40s
+    restart: unless-stopped
+
+  web-buyer:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile.buyer
+    container_name: meiyue-web-buyer
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${BUYER_PORT:-8088}:80"
+    restart: unless-stopped

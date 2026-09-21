@@ -1,0 +1,61 @@
+.page {
+  padding: 24px;
+  min-height: 100vh;
+  background: #f7f6f3;
+}
+
+.brand {
+  display: block;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: #5a6b66;
+}
+
+.h1 {
+  display: block;
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f3d38;
+  margin: 4px 0 8px;
+}
+
+.h2 {
+  display: block;
+  margin: 24px 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #0f3d38;
+}
+
+.muted {
+  display: block;
+  color: #5a6b66;
+  font-size: 13px;
+  margin-bottom: 12px;
+}
+
+.input {
+  background: #fff;
+  border: 1px solid rgba(15, 61, 56, 0.15);
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+}
+
+.btn {
+  background: #1a4d45 !important;
+  color: #f7f6f3 !important;
+  margin-top: 8px;
+}
+
+.btn.ghost {
+  background: transparent !important;
+  color: #1a4d45 !important;
+  border: 1px solid #1a4d45 !important;
+}
+
+.err {
+  color: #8b2e26;
+  display: block;
+  margin-bottom: 12px;
+}

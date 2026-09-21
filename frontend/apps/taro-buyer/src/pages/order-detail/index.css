@@ -1,0 +1,79 @@
+.page {
+  padding: 32px;
+}
+
+.h1 {
+  display: block;
+  font-size: 36px;
+  font-weight: 700;
+  color: #0f3d38;
+  margin-bottom: 8px;
+}
+
+.h2 {
+  display: block;
+  font-size: 30px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.section {
+  margin-top: 36px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(26, 77, 69, 0.12);
+}
+
+.line {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 28px;
+}
+
+.muted {
+  color: #5a6b66;
+}
+
+.ship {
+  margin-bottom: 16px;
+}
+
+.track {
+  margin: 8px 0 8px 12px;
+  padding-left: 12px;
+  border-left: 2px solid rgba(26, 77, 69, 0.25);
+}
+
+.track-status {
+  display: block;
+  font-weight: 600;
+  color: #0f3d38;
+  font-size: 26px;
+}
+
+.track-desc {
+  display: block;
+  font-size: 24px;
+  margin-top: 4px;
+}
+
+.picker,
+.input {
+  margin-bottom: 16px;
+  padding: 16px 20px;
+  background: #fff;
+  border: 1px solid rgba(26, 77, 69, 0.15);
+  border-radius: 12px;
+}
+
+.btn {
+  margin-top: 12px;
+  background: #1a4d45 !important;
+  color: #f7f6f3 !important;
+  border-radius: 999px !important;
+}
+
+.btn.ghost {
+  background: transparent !important;
+  color: #1a4d45 !important;
+  border: 1px solid #1a4d45 !important;
+}

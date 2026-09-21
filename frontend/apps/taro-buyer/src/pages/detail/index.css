@@ -1,0 +1,148 @@
+.page {
+  padding: 32px;
+}
+
+.hero {
+  height: 420px;
+  background: linear-gradient(145deg, #d5e0dc, #e8ece9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.gallery {
+  height: 420px;
+  margin-bottom: 24px;
+}
+
+.gallery-img {
+  width: 100%;
+  height: 420px;
+}
+
+.video-wrap {
+  margin: 24px 0;
+  padding: 0 8px;
+}
+
+.video {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.letter {
+  font-size: 96px;
+  color: rgba(15, 61, 56, 0.3);
+}
+
+.title {
+  display: block;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.price {
+  display: block;
+  color: #1a4d45;
+  font-size: 34px;
+  font-weight: 700;
+  margin-bottom: 32px;
+}
+
+.btn {
+  background: #1a4d45 !important;
+  color: #f7f6f3 !important;
+  border-radius: 999px !important;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.btn.ghost {
+  background: transparent !important;
+  color: #1a4d45 !important;
+  border: 1px solid #1a4d45 !important;
+}
+
+.empty {
+  display: block;
+  text-align: center;
+  padding: 48px 0;
+}
+
+.err {
+  color: #a33;
+}
+
+.reviews {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(26, 77, 69, 0.12);
+}
+
+.h2 {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  color: #0f3d38;
+  margin-bottom: 16px;
+}
+
+.muted {
+  display: block;
+  color: #5a6b66;
+  font-size: 24px;
+  margin-top: 8px;
+}
+
+.review {
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(26, 77, 69, 0.08);
+}
+
+.rating {
+  display: block;
+  color: #1a4d45;
+  font-weight: 700;
+  font-size: 26px;
+}
+
+.content {
+  display: block;
+  margin-top: 8px;
+  font-size: 26px;
+  line-height: 1.5;
+}
+
+.related {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(26, 77, 69, 0.12);
+}
+
+.related-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(15, 61, 56, 0.08);
+}
+
+.related-title {
+  flex: 1;
+  font-size: 28px;
+  color: #1a2e2b;
+}
+
+.related-row .price {
+  font-size: 28px;
+  margin-bottom: 0;
+}
+

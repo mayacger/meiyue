@@ -1,0 +1,9 @@
+# 依赖与构建产物
+node_modules
+dist
+apps/*/dist
+*.local
+.DS_Store
+.env
+.env.*
+.swc

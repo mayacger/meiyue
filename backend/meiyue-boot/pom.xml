@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- meiyue-boot：API 可启动应用，组装各业务模块 -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.meiyuemall</groupId>
+    <artifactId>meiyue-mall-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>meiyue-boot</artifactId>
+  <name>meiyue-boot</name>
+  <description>美月商城 API 启动模块</description>
+  <dependencies>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-common</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-identity</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-tenant</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-catalog</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-decoration</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-trade</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-payment</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-logistics</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-aftersale</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-ai-assist</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-support</artifactId></dependency>
+    <dependency><groupId>com.meiyuemall</groupId><artifactId>meiyue-platform</artifactId></dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!-- I7：Prometheus 指标抓取 -->
+    <dependency>
+      <groupId>io.micrometer</groupId>
+      <artifactId>micrometer-registry-prometheus</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-redis</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- I26：OpenAPI / Swagger UI（demo、dev profile 启用） -->
+    <dependency>
+      <groupId>org.springdoc</groupId>
+      <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+      <version>2.6.0</version>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

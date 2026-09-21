@@ -1,0 +1,17 @@
+# 构建与依赖
+target/
+node_modules/
+dist/
+
+# IDE / OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# 日志与本地密钥
+*.log
+.env
+.env.*
+!.env.example
+!.env.prod.example

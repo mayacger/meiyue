@@ -1,0 +1,16 @@
+/* I37：静态页排版 */
+.my-static {
+  max-width: 40rem;
+}
+
+.my-static h2 {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--my-ink-deep);
+}
+
+.my-static section p {
+  color: var(--my-muted);
+  line-height: 1.65;
+}

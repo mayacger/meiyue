@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- meiyue-aftersale：售后 + 48h 自动同意（I6） -->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.meiyuemall</groupId>
+    <artifactId>meiyue-mall-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>meiyue-aftersale</artifactId>
+  <name>meiyue-aftersale</name>
+  <description>美月商城售后模块</description>
+  <dependencies>
+    <dependency>
+      <groupId>com.meiyuemall</groupId>
+      <artifactId>meiyue-common</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.meiyuemall</groupId>
+      <artifactId>meiyue-trade</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.meiyuemall</groupId>
+      <artifactId>meiyue-logistics</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.meiyuemall</groupId>
+      <artifactId>meiyue-payment</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-data-jpa</artifactId>
+    </dependency>
+  </dependencies>
+</project>

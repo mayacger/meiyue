@@ -1,0 +1,6 @@
+/** 全局样式：暖白底 + 墨绿强调 */
+page {
+  background: #f7f6f3;
+  color: #1c2422;
+  font-family: -apple-system, "PingFang SC", "Noto Sans SC", sans-serif;
+}

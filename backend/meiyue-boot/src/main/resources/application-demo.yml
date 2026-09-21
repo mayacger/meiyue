@@ -1,0 +1,29 @@
+# ============================================================
+# 演示 Profile（I13 + I26 OpenAPI）
+# 启用方式（任选其一）：
+#   1) --spring.profiles.active=demo
+#   2) SPRING_PROFILES_ACTIVE=demo
+#   3) 任意 profile 下设置 meiyue.demo.enabled=true
+#
+# 作用：启动时写入示例店主/买家、示例店、上架商品、已发布装修页。
+# 类目已由 Flyway V2 预置，本 profile 不再重复插入密钥或分账配置。
+# ============================================================
+
+meiyue:
+  demo:
+    # DemoSeeder 开关（本文件随 demo profile 加载时默认开启）
+    enabled: true
+
+# I26：演示环境开放 OpenAPI
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+  show-actuator: false
+
+info:
+  app:
+    description: B2B2C 多租户电商 API（I1–I27 · demo 种子 · OpenAPI）

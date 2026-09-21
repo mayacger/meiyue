@@ -1,0 +1,27 @@
+/**
+ * 美月商城买家 PC · 设计 Token（I16 深化）
+ * 方向：清透现代电商 — 暖白/月色灰底、墨绿主色；品牌衬线仅用于店名
+ * 桌面优先；禁用紫白渐变 / 奶油衬线陶土红 / 报纸风 / 直播
+ */
+:root {
+  --my-ink: #1a4d45;
+  --my-ink-deep: #0f3d38;
+  --my-ink-soft: #2d6b61;
+  --my-accent: #c4a35a;
+  --my-accent-soft: rgba(196, 163, 90, 0.18);
+
+  --my-paper: #f7f6f3;
+  --my-mist: #e8ece9;
+  --my-fog: #d5e0dc;
+  --my-line: rgba(26, 77, 69, 0.12);
+  --my-text: #1c2422;
+  --my-muted: #5a6b66;
+  --my-danger: #a33a2f;
+
+  --my-font-brand: "Noto Serif SC", "Source Han Serif SC", "Songti SC", serif;
+  --my-font-body: "Source Sans 3", "PingFang SC", "Alibaba PuHuiTi", "Noto Sans SC", sans-serif;
+
+  --my-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --my-max: 1180px;
+  --my-section-gap: 3.5rem;
+}

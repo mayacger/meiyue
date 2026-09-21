@@ -1,0 +1,98 @@
+/**
+ * 买家地址簿页样式（I18）
+ * 布局：左表单 + 右列表；非卡片堆叠，分隔线为主
+ */
+
+.my-addr__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 2rem;
+  align-items: start;
+}
+
+.my-addr__form,
+.my-addr__list {
+  min-width: 0;
+}
+
+.my-addr__form h2,
+.my-addr__list h2 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--my-ink-deep);
+}
+
+.my-addr__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.9rem;
+  color: var(--my-muted);
+}
+
+.my-addr__form input[type="text"],
+.my-addr__form input:not([type]) {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--my-line);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--my-text);
+}
+
+.my-addr__row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.my-addr__check {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+}
+
+.my-addr__actions,
+.my-addr__ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.my-addr__list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.my-addr__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--my-line);
+}
+
+.my-addr__list p {
+  margin: 0.35rem 0 0;
+}
+
+.my-addr__badge {
+  display: inline-block;
+  margin-left: 0.5rem;
+  padding: 0.1rem 0.45rem;
+  font-size: 0.75rem;
+  color: var(--my-ink);
+  border: 1px solid var(--my-ink);
+}
+
+@media (max-width: 860px) {
+  .my-addr__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .my-addr__row {
+    grid-template-columns: 1fr;
+  }
+}

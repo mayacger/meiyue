@@ -1,0 +1,78 @@
+# ============================================================
+# 美月商城 · GitHub Actions CI（I13）
+# 目标：无真实商户密钥、不依赖外网联调的编译与关键单测
+# ============================================================
+name: CI
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ---------- 后端：打包 + 不依赖外网的关键单测 ----------
+  backend:
+    name: Backend (Maven)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+
+      - name: Package (skipTests)
+        run: mvn -B -DskipTests package
+
+      # 仅跑纯逻辑单测，不启 DB/Redis、不访问外网
+      - name: Unit tests (offline)
+        run: >
+          mvn -B -pl meiyue-trade,meiyue-payment -am test
+          -Dtest=CouponStackingRulesTest,MockPaymentChannelClientTest
+          -Dsurefire.failIfNoSpecifiedTests=false
+
+  # ---------- 前端：pnpm install + 三端 build ----------
+  frontend:
+    name: Frontend (pnpm)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # 构建买家 PC / 商家 Pro / 平台 Pro
+      - name: Build web apps (buyer/seller/admin)
+        run: pnpm build
+
+      # Taro H5（移动端）
+      - name: Build Taro H5
+        run: pnpm build:taro:h5

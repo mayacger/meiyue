@@ -1,0 +1,144 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--my-font-body);
+  color: var(--my-text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(213, 224, 220, 0.7), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(196, 163, 90, 0.12), transparent 50%),
+    var(--my-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+@keyframes my-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes my-ken-burns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+@keyframes my-soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.my-fade-up {
+  animation: my-fade-up 0.7s var(--my-ease) both;
+}
+
+.my-fade-up-delay {
+  animation: my-fade-up 0.8s var(--my-ease) 0.12s both;
+}
+
+.my-page {
+  max-width: var(--my-max);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3.5rem;
+}
+
+.my-page-title {
+  margin: 0 0 0.35rem;
+  font-family: var(--my-font-brand);
+  font-weight: 500;
+  font-size: clamp(1.6rem, 2.5vw, 2rem);
+  color: var(--my-ink-deep);
+}
+
+.my-page-lead {
+  margin: 0 0 1.5rem;
+  color: var(--my-muted);
+}
+
+.my-empty {
+  padding: 2.5rem 0;
+  color: var(--my-muted);
+  text-align: center;
+}
+
+.my-error {
+  color: var(--my-danger);
+}
+
+.my-ok {
+  color: var(--my-ink);
+}
+
+.my-muted {
+  color: var(--my-muted);
+}
+
+.my-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* I37：全站基础焦点环（键盘可达） */
+:focus-visible {
+  outline: 2px solid var(--my-ink-deep, #0f3d38);
+  outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+.my-btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--my-ink-deep, #0f3d38);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .my-fade-up,
+  .my-fade-up-delay,
+  .my-hero__plane {
+    animation: none !important;
+  }
+}

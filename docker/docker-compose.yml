@@ -1,0 +1,34 @@
+# 美月商城本地依赖（PostgreSQL + Redis）
+# 无 Docker 时可用系统包：postgresql / redis-server（见根 README）
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: meiyue-postgres
+    environment:
+      POSTGRES_DB: meiyue_mall
+      POSTGRES_USER: meiyue
+      POSTGRES_PASSWORD: meiyue
+    ports:
+      - "5432:5432"
+    volumes:
+      - meiyue_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U meiyue -d meiyue_mall"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # I9：关单/售后超时/限流/可选 AI 队列依赖 Redis
+  redis:
+    image: redis:7-alpine
+    container_name: meiyue-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  meiyue_pg_data:

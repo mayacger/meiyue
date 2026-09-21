@@ -1,0 +1,41 @@
+.my-coupons__list,
+.my-coupons__claims {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.my-coupons__list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid rgba(15, 61, 56, 0.1);
+}
+
+.my-coupons__list strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-size: 1.05rem;
+  color: var(--my-ink-deep);
+}
+
+.my-coupons__list p {
+  margin: 0;
+}
+
+.my-coupons__mine {
+  margin-top: 2.5rem;
+}
+
+.my-coupons__mine h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.1rem;
+}
+
+.my-coupons__claims li {
+  padding: 0.5rem 0;
+  color: var(--my-muted);
+  font-size: 0.9rem;
+}
