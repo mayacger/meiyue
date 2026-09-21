@@ -16,7 +16,7 @@ import type { UserProfile } from "@meiyue/types";
 
 /**
  * 平台后台 ProLayout（I16）
- * - 菜单：概览 / 入驻审核 / 平台券 / 通知 / 类目（只读） / 账号权限
+ * - 菜单：概览 / 入驻审核 / 平台券 / 通知 / 类目管理 / 账号权限
  * - 右上角展示角色 Tag + 退出
  */
 export function AdminLayout() {
@@ -48,7 +48,7 @@ export function AdminLayout() {
             { path: "/onboarding", name: "入驻审核", icon: <AuditOutlined /> },
             { path: "/coupons", name: "平台券", icon: <GiftOutlined /> },
             { path: "/notifications", name: "站内通知", icon: <BellOutlined /> },
-            { path: "/categories", name: "类目（只读）", icon: <AppstoreOutlined /> },
+            { path: "/categories", name: "类目管理", icon: <AppstoreOutlined /> },
             { path: "/account", name: "账号与权限", icon: <TeamOutlined /> }
           ]
         }}

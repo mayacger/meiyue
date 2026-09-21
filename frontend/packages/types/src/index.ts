@@ -134,3 +134,33 @@ export interface NotificationItem {
   category: string;
   read: boolean;
 }
+
+/**
+ * 买家收货地址（I18）
+ * 字段：id / receiverName / receiverPhone / province / city / district /
+ * detailAddress / defaultAddress
+ */
+export interface BuyerAddress {
+  id: number;
+  receiverName: string;
+  receiverPhone: string;
+  province: string;
+  city: string;
+  district: string;
+  detailAddress: string;
+  defaultAddress: boolean;
+}
+
+/**
+ * 平台用户目录项（I18）
+ * 字段：id / username / displayName / phone / status / roles / createdAt
+ */
+export interface AdminUserSummary {
+  id: number;
+  username: string;
+  displayName: string;
+  phone: string | null;
+  status: "ENABLED" | "DISABLED";
+  roles: string[];
+  createdAt?: string;
+}

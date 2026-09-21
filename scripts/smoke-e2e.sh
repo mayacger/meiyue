@@ -95,6 +95,33 @@ prod_id = prod["id"]
 sku_id = prod["skus"][0]["id"]
 req("POST", f"/api/v1/seller/products/{prod_id}/status", seller_token, {"status": "ON_SALE"})
 
+print("==> I18 admin categories + users")
+cats = req("GET", "/api/v1/admin/categories", admin_token)
+assert isinstance(cats, list) and len(cats) >= 1
+new_cat = req("POST", "/api/v1/admin/categories", admin_token, {
+    "name": f"冒烟类目{SUFFIX}", "parentId": None, "sortOrder": 99
+})
+req("POST", f"/api/v1/admin/categories/{new_cat['id']}/status", admin_token, {"status": "DISABLED"})
+users = req("GET", "/api/v1/admin/users", admin_token, None)
+assert any(u["username"] == buyer for u in users)
+buyers_only = req("GET", f"/api/v1/admin/users?role=BUYER", admin_token)
+assert all("BUYER" in (u.get("roles") or []) for u in buyers_only)
+
+print("==> I18 buyer addresses CRUD")
+addr = req("POST", "/api/v1/buyer/addresses", buyer_token, {
+    "receiverName": "冒烟收件人", "receiverPhone": "13900001111",
+    "province": "上海市", "city": "上海市", "district": "浦东新区",
+    "detailAddress": f"冒烟路{SUFFIX}号", "defaultAddress": True
+})
+addrs = req("GET", "/api/v1/buyer/addresses", buyer_token)
+assert any(a["id"] == addr["id"] for a in addrs)
+req("PUT", f"/api/v1/buyer/addresses/{addr['id']}", buyer_token, {
+    "receiverName": "冒烟收件人改", "receiverPhone": "13900001111",
+    "province": "上海市", "city": "上海市", "district": "浦东新区",
+    "detailAddress": f"冒烟路{SUFFIX}号-改", "defaultAddress": True
+})
+req("POST", f"/api/v1/buyer/addresses/{addr['id']}/default", buyer_token)
+
 print("==> add cart + checkout")
 req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
 order = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})

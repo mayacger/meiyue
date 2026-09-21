@@ -1,6 +1,23 @@
 # 美月商城 · CHANGELOG
 
-## [0.1.0-SNAPSHOT] · I17 体验打磨（当前 PR）
+## [0.1.0-SNAPSHOT] · I18 后端缺口 + 四端接线（当前 PR）
+
+- 后端：`/admin/categories` 创建/更新/启停；`/buyer/addresses` CRUD；`/admin/users` 列表+启停；Flyway V13
+- Admin Pro：类目可管理；账号页对接用户目录
+- 买家 PC `/addresses` + Taro 地址页对接真实 API（替换本地草稿）
+- 单测：`AdminUserServiceTest` / `CategoryUpsertRequestTest`；smoke 增加 I18 片段
+- 文档：`docs/dev-progress.md` · Context `frontend-architecture.md`
+
+### 验证
+
+```bash
+cd frontend && pnpm build && pnpm build:taro:h5
+pnpm --filter @meiyue/taro-buyer build:weapp
+```
+
+---
+
+## [0.1.0-SNAPSHOT] · I17 体验打磨
 
 - 买家 PC：售后列表 `/aftersales`、结算/订单空态统一、导航补售后入口
 - 文档：admin/taro README；进度同步 I16–I17

@@ -6,6 +6,7 @@ import com.meiyuemall.catalog.domain.Product;
 import com.meiyuemall.catalog.domain.ProductSku;
 import com.meiyuemall.catalog.domain.ProductStatus;
 import com.meiyuemall.catalog.dto.CategoryResponse;
+import com.meiyuemall.catalog.dto.CategoryUpsertRequest;
 import com.meiyuemall.catalog.dto.ProductResponse;
 import com.meiyuemall.catalog.dto.ProductUpsertRequest;
 import com.meiyuemall.catalog.dto.SkuResponse;
@@ -39,8 +40,70 @@ public class CatalogService {
     @Transactional(readOnly = true)
     public List<CategoryResponse> listCategories() {
         return categoryRepository.findByStatusOrderBySortOrderAsc(CategoryStatus.ENABLED).stream()
-                .map(c -> new CategoryResponse(c.getId(), c.getParentId(), c.getName(), c.getSortOrder()))
+                .map(this::toCategoryResponse)
                 .toList();
+    }
+
+    /** 平台管理：含禁用类目 */
+    @Transactional(readOnly = true)
+    public List<CategoryResponse> listAllCategoriesForAdmin() {
+        return categoryRepository.findAllByOrderBySortOrderAscIdAsc().stream()
+                .map(this::toCategoryResponse)
+                .toList();
+    }
+
+    @Transactional
+    @Audited(action = "CATEGORY_CREATE", resourceType = "Category")
+    public CategoryResponse createCategory(CategoryUpsertRequest request) {
+        validateParent(request.parentId());
+        Category c = new Category();
+        c.setParentId(request.parentId());
+        c.setName(request.name().trim());
+        c.setSortOrder(request.sortOrder() == null ? 0 : request.sortOrder());
+        c.setStatus(CategoryStatus.ENABLED);
+        categoryRepository.save(c);
+        return toCategoryResponse(c);
+    }
+
+    @Transactional
+    @Audited(action = "CATEGORY_UPDATE", resourceType = "Category")
+    public CategoryResponse updateCategory(Long id, CategoryUpsertRequest request) {
+        Category c = categoryRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "类目不存在"));
+        if (request.parentId() != null && request.parentId().equals(id)) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "父类目不能是自身");
+        }
+        validateParent(request.parentId());
+        c.setParentId(request.parentId());
+        c.setName(request.name().trim());
+        if (request.sortOrder() != null) {
+            c.setSortOrder(request.sortOrder());
+        }
+        return toCategoryResponse(c);
+    }
+
+    @Transactional
+    @Audited(action = "CATEGORY_STATUS", resourceType = "Category")
+    public CategoryResponse changeCategoryStatus(Long id, CategoryStatus status) {
+        Category c = categoryRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "类目不存在"));
+        c.setStatus(status);
+        return toCategoryResponse(c);
+    }
+
+    private void validateParent(Long parentId) {
+        if (parentId == null) {
+            return;
+        }
+        Category parent = categoryRepository.findById(parentId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.BAD_REQUEST, "父类目不存在"));
+        if (parent.getStatus() != CategoryStatus.ENABLED) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "父类目已禁用");
+        }
+    }
+
+    private CategoryResponse toCategoryResponse(Category c) {
+        return new CategoryResponse(c.getId(), c.getParentId(), c.getName(), c.getSortOrder(), c.getStatus());
     }
 
     @Transactional

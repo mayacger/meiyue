@@ -47,6 +47,9 @@ export function SiteShell() {
             <NavLink to="/orders" onClick={() => setOpen(false)}>
               订单
             </NavLink>
+            <NavLink to="/addresses" onClick={() => setOpen(false)}>
+              地址
+            </NavLink>
             <NavLink to="/aftersales" onClick={() => setOpen(false)}>
               售后
             </NavLink>
