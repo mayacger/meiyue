@@ -1,0 +1,49 @@
+.my-ticket__form,
+.my-ticket__list {
+  margin-bottom: 2rem;
+}
+
+.my-ticket__form h2,
+.my-ticket__list h2 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  color: var(--my-ink-deep);
+}
+
+.my-ticket__form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.85rem;
+  color: var(--my-muted);
+  font-size: 0.9rem;
+}
+
+.my-ticket__form input,
+.my-ticket__form select,
+.my-ticket__form textarea {
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--my-line);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--my-text);
+}
+
+.my-ticket__list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.my-ticket__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--my-line);
+}
+
+.my-ticket__list p {
+  margin: 0.4rem 0 0;
+  line-height: 1.5;
+}

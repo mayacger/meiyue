@@ -95,6 +95,13 @@ prod_id = prod["id"]
 sku_id = prod["skus"][0]["id"]
 req("POST", f"/api/v1/seller/products/{prod_id}/status", seller_token, {"status": "ON_SALE"})
 
+print("==> I20 inventory + dashboards")
+inv = req("GET", "/api/v1/seller/inventory", seller_token)
+assert any(x["skuId"] == sku_id for x in inv)
+req("POST", f"/api/v1/seller/inventory/skus/{sku_id}/stock", seller_token, {"stockQty": 18})
+req("GET", "/api/v1/seller/dashboard", seller_token)
+req("GET", "/api/v1/admin/dashboard", admin_token)
+
 print("==> I18 admin categories + users")
 cats = req("GET", "/api/v1/admin/categories", admin_token)
 assert isinstance(cats, list) and len(cats) >= 1

@@ -75,7 +75,10 @@ public class SecurityConfig {
                         .hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
                         .requestMatchers(
                                 SecurityConstants.API_PREFIX + "/seller/products",
-                                SecurityConstants.API_PREFIX + "/seller/products/**"
+                                SecurityConstants.API_PREFIX + "/seller/products/**",
+                                SecurityConstants.API_PREFIX + "/seller/inventory",
+                                SecurityConstants.API_PREFIX + "/seller/inventory/**",
+                                SecurityConstants.API_PREFIX + "/seller/dashboard"
                         ).hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
                         .requestMatchers(
                                 SecurityConstants.API_PREFIX + "/seller/decoration",
@@ -95,7 +98,9 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/seller/coupons",
                                 SecurityConstants.API_PREFIX + "/seller/coupons/**",
                                 SecurityConstants.API_PREFIX + "/seller/reviews",
-                                SecurityConstants.API_PREFIX + "/seller/reviews/**"
+                                SecurityConstants.API_PREFIX + "/seller/reviews/**",
+                                SecurityConstants.API_PREFIX + "/seller/tickets",
+                                SecurityConstants.API_PREFIX + "/seller/tickets/**"
                         ).hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
                         .requestMatchers(SecurityConstants.API_PREFIX + "/seller/onboarding/**")
                         .authenticated()

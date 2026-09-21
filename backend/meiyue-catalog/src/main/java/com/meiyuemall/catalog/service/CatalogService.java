@@ -7,11 +7,14 @@ import com.meiyuemall.catalog.domain.ProductSku;
 import com.meiyuemall.catalog.domain.ProductStatus;
 import com.meiyuemall.catalog.dto.CategoryResponse;
 import com.meiyuemall.catalog.dto.CategoryUpsertRequest;
+import com.meiyuemall.catalog.dto.InventorySkuResponse;
 import com.meiyuemall.catalog.dto.ProductResponse;
 import com.meiyuemall.catalog.dto.ProductUpsertRequest;
 import com.meiyuemall.catalog.dto.SkuResponse;
+import com.meiyuemall.catalog.dto.StockAdjustRequest;
 import com.meiyuemall.catalog.repo.CategoryRepository;
 import com.meiyuemall.catalog.repo.ProductRepository;
+import com.meiyuemall.catalog.repo.ProductSkuRepository;
 import com.meiyuemall.common.audit.Audited;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
@@ -31,10 +34,16 @@ public class CatalogService {
 
     private final CategoryRepository categoryRepository;
     private final ProductRepository productRepository;
+    private final ProductSkuRepository productSkuRepository;
 
-    public CatalogService(CategoryRepository categoryRepository, ProductRepository productRepository) {
+    public CatalogService(
+            CategoryRepository categoryRepository,
+            ProductRepository productRepository,
+            ProductSkuRepository productSkuRepository
+    ) {
         this.categoryRepository = categoryRepository;
         this.productRepository = productRepository;
+        this.productSkuRepository = productSkuRepository;
     }
 
     @Transactional(readOnly = true)
@@ -229,6 +238,48 @@ public class CatalogService {
             throw new BusinessException(ErrorCode.NOT_FOUND, "商品未上架");
         }
         return toResponse(product);
+    }
+
+    /**
+     * I20：本店全部 SKU 库存列表。
+     */
+    @Transactional(readOnly = true)
+    public List<InventorySkuResponse> listInventory() {
+        Long tenantId = requireSellerTenant();
+        return productSkuRepository.findByTenantIdWithProduct(tenantId).stream()
+                .map(s -> new InventorySkuResponse(
+                        s.getId(),
+                        s.getProduct().getId(),
+                        s.getProduct().getTitle(),
+                        s.getSkuCode(),
+                        s.getSpecText(),
+                        s.getPriceCents(),
+                        s.getStockQty(),
+                        s.getProduct().getStatus().name()
+                ))
+                .toList();
+    }
+
+    /**
+     * I20：将 SKU 库存设为绝对值。
+     */
+    @Transactional
+    @Audited(action = "SKU_STOCK_ADJUST", resourceType = "ProductSku")
+    public InventorySkuResponse adjustStock(Long skuId, StockAdjustRequest request) {
+        Long tenantId = requireSellerTenant();
+        ProductSku sku = productSkuRepository.findByIdAndTenantIdWithProduct(skuId, tenantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "SKU 不存在"));
+        sku.setStockQty(request.stockQty());
+        return new InventorySkuResponse(
+                sku.getId(),
+                sku.getProduct().getId(),
+                sku.getProduct().getTitle(),
+                sku.getSkuCode(),
+                sku.getSpecText(),
+                sku.getPriceCents(),
+                sku.getStockQty(),
+                sku.getProduct().getStatus().name()
+        );
     }
 
     private void apply(Product product, ProductUpsertRequest request, Long tenantId) {

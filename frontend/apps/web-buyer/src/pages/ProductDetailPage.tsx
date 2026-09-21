@@ -12,18 +12,22 @@ interface Review {
 }
 
 /**
- * 商品详情
+ * 商品详情（I20 视觉打磨）
  * GET /products/:id · /products/:id/reviews · POST 加购
+ * 加载态 / 空评价 / 品牌排版
  */
 export function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState<ProductSummary | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
     Promise.all([
       fetch(`/api/v1/products/${id}`).then((r) => r.json()),
       fetch(`/api/v1/products/${id}/reviews`).then((r) => r.json())
@@ -33,7 +37,8 @@ export function ProductDetailPage() {
         setProduct(prod.data);
         if (rev.success) setReviews(rev.data);
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "加载失败"));
+      .catch((err) => setError(err instanceof Error ? err.message : "加载失败"))
+      .finally(() => setLoading(false));
   }, [id]);
 
   async function addToCart() {
@@ -60,42 +65,62 @@ export function ProductDetailPage() {
   return (
     <article className="my-detail">
       <p className="my-detail__crumb">
-        <Link to="/products">全部商品</Link> / 详情
+        <Link to="/products">全部商品</Link>
+        <span aria-hidden> / </span>
+        <span>详情</span>
       </p>
+      {loading ? (
+        <div className="my-detail__loading my-fade-up" aria-live="polite">
+          <span className="my-state__pulse" />
+          正在展开商品…
+        </div>
+      ) : null}
       {error ? <p className="my-error">{error}</p> : null}
       {msg ? <p className="my-ok">{msg}</p> : null}
+      {!loading && !product && !error ? (
+        <div className="my-empty">
+          商品不存在或已下架 · <Link to="/products">返回列表</Link>
+        </div>
+      ) : null}
       {product ? (
         <div className="my-detail__grid my-fade-up">
           <div className="my-detail__visual" aria-hidden>
-            <span>{product.title.slice(0, 1)}</span>
+            <span className="my-detail__letter">{product.title.slice(0, 1)}</span>
+            <span className="my-detail__brand-mark">美月</span>
           </div>
           <div className="my-detail__info">
+            <p className="my-detail__eyebrow">meiyuemall</p>
             <h1>{product.title}</h1>
             <p className="my-detail__price">¥{price}</p>
             <p className="my-detail__sub">{product.subtitle || "精选好物 · 美月履约"}</p>
-            <button type="button" className="my-btn my-btn--primary" onClick={addToCart}>
-              加入购物车
-            </button>
-            <Link to="/cart" className="my-detail__cart-link">
-              查看购物车
-            </Link>
+            <div className="my-detail__actions">
+              <button type="button" className="my-btn my-btn--primary" onClick={addToCart}>
+                加入购物车
+              </button>
+              <Link to="/cart" className="my-detail__cart-link">
+                查看购物车
+              </Link>
+            </div>
           </div>
         </div>
       ) : null}
-      <section className="my-detail__reviews">
-        <h2>买家评价{reviews.length > 0 ? `（${reviews.length}）` : ""}</h2>
-        {reviews.length === 0 ? (
-          <p className="my-muted">暂无评价，确认收货后可在订单详情提交</p>
-        ) : null}
-        <ul>
-          {reviews.map((r) => (
-            <li key={r.id}>
-              <strong>★{r.rating}</strong> {r.content}
-              {r.sellerReply ? <div className="my-muted">商家回复：{r.sellerReply}</div> : null}
-            </li>
-          ))}
-        </ul>
-      </section>
+      {!loading ? (
+        <section className="my-detail__reviews my-fade-up">
+          <h2>买家评价{reviews.length > 0 ? ` · ${reviews.length}` : ""}</h2>
+          {reviews.length === 0 ? (
+            <p className="my-muted my-detail__empty-reviews">暂无评价，确认收货后可在订单详情提交</p>
+          ) : null}
+          <ul>
+            {reviews.map((r) => (
+              <li key={r.id}>
+                <strong>★{r.rating}</strong>
+                <span>{r.content}</span>
+                {r.sellerReply ? <div className="my-muted">商家回复：{r.sellerReply}</div> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
     </article>
   );
 }

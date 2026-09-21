@@ -9,6 +9,7 @@ import { CouponsPage } from "./pages/CouponsPage";
 import { NotificationsPage } from "./pages/NotificationsPage";
 import { CategoriesPage } from "./pages/CategoriesPage";
 import { AccountPage } from "./pages/AccountPage";
+import { TicketsPage } from "./pages/TicketsPage";
 
 /** 未登录跳转登录页 */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -19,8 +20,8 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 /**
- * 平台后台路由（I16）
- * /login · /dashboard · /onboarding · /coupons · /notifications · /categories · /account
+ * 平台后台路由（I21）
+ * /login · /dashboard · … · /tickets · /account
  */
 export function App() {
   return (
@@ -39,6 +40,7 @@ export function App() {
         <Route path="onboarding" element={<OnboardingPage />} />
         <Route path="coupons" element={<CouponsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="tickets" element={<TicketsPage />} />
         <Route path="categories" element={<CategoriesPage />} />
         <Route path="account" element={<AccountPage />} />
       </Route>

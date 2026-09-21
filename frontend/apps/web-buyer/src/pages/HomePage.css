@@ -98,6 +98,36 @@
   border-radius: 40% 60% 55% 45% / 45% 40% 60% 55%;
 }
 
+.my-hero__orbit {
+  position: absolute;
+  width: 42%;
+  aspect-ratio: 1;
+  right: 12%;
+  bottom: 18%;
+  border-radius: 50%;
+  border: 1px solid rgba(247, 246, 243, 0.22);
+  animation: my-soft-pulse 4.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.my-state {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: var(--my-max);
+  margin: 1.5rem auto 0;
+  padding: 0 1.25rem;
+  color: var(--my-muted);
+}
+
+.my-state__pulse {
+  width: 0.65rem;
+  height: 0.65rem;
+  border-radius: 50%;
+  background: var(--my-ink);
+  animation: my-soft-pulse 1.4s ease-in-out infinite;
+}
+
 .my-promise {
   max-width: var(--my-max);
   margin: 1rem auto 0;

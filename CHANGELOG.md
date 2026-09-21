@@ -1,6 +1,23 @@
 # 美月商城 · CHANGELOG
 
-## [0.1.0-SNAPSHOT] · I19 搜索/评价/通知打磨（当前 PR）
+## [0.1.0-SNAPSHOT] · I20/I21 经营概览·库存·工单（当前 PR）
+
+- Seller：经营概览 `/seller/dashboard`；库存管理 `/seller/inventory`；工单；评价待回复筛选
+- Admin：运营概览 `/admin/dashboard`；客服工单
+- Buyer PC：首页/详情加载空态与品牌排版；客服工单 `/tickets`
+- Flyway V14 工单表；`scripts/smoke-i18.sh`；smoke-e2e 补库存/概览
+
+### 验证
+
+```bash
+cd backend && mvn -q -DskipTests package
+cd frontend && pnpm build && pnpm build:taro:h5
+pnpm --filter @meiyue/taro-buyer build:weapp
+```
+
+---
+
+## [0.1.0-SNAPSHOT] · I19 搜索/评价/通知打磨
 
 - 买家 PC：商品列表类目芯片筛选、`/notifications` 通知箱
 - Taro：首页搜索、分类筛商品、详情评价、订单评价、通知页

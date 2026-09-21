@@ -2,8 +2,10 @@ package com.meiyuemall.catalog.web;
 
 import com.meiyuemall.catalog.domain.ProductStatus;
 import com.meiyuemall.catalog.dto.CategoryResponse;
+import com.meiyuemall.catalog.dto.InventorySkuResponse;
 import com.meiyuemall.catalog.dto.ProductResponse;
 import com.meiyuemall.catalog.dto.ProductUpsertRequest;
+import com.meiyuemall.catalog.dto.StockAdjustRequest;
 import com.meiyuemall.catalog.service.CatalogService;
 import com.meiyuemall.common.security.SecurityConstants;
 import com.meiyuemall.common.web.ApiResponse;
@@ -82,5 +84,22 @@ public class CatalogController {
     public ApiResponse<ProductResponse> status(@PathVariable Long id, @RequestBody Map<String, String> body) {
         ProductStatus status = ProductStatus.valueOf(body.getOrDefault("status", "DRAFT"));
         return ApiResponse.ok(catalogService.changeStatus(id, status));
+    }
+
+    /** I20：本店 SKU 库存列表 */
+    @GetMapping(SecurityConstants.API_PREFIX + "/seller/inventory")
+    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    public ApiResponse<List<InventorySkuResponse>> inventory() {
+        return ApiResponse.ok(catalogService.listInventory());
+    }
+
+    /** I20：调整 SKU 库存为目标值 */
+    @PostMapping(SecurityConstants.API_PREFIX + "/seller/inventory/skus/{skuId}/stock")
+    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    public ApiResponse<InventorySkuResponse> adjustStock(
+            @PathVariable Long skuId,
+            @Valid @RequestBody StockAdjustRequest request
+    ) {
+        return ApiResponse.ok(catalogService.adjustStock(skuId, request));
     }
 }
