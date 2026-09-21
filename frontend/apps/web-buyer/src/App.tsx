@@ -18,10 +18,12 @@ import { BrowseHistoryPage } from "./pages/BrowseHistoryPage";
 import { CouponsPage } from "./pages/CouponsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { InvoicePage } from "./pages/InvoicePage";
+import { AboutPage } from "./pages/AboutPage";
+import { HelpPage } from "./pages/HelpPage";
 
 /**
- * 买家 PC 路由（I24 + I30 + I33）
- * /invoices 发票抬头 · /browse-history · …
+ * 买家 PC 路由（I24 + I30 + I33 + I37）
+ * /about · /help 静态页 · /invoices · …
  */
 export function App() {
   return (
@@ -44,6 +46,8 @@ export function App() {
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/tickets" element={<TicketsPage />} />
         <Route path="/aftersales" element={<AftersalesPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/help" element={<HelpPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

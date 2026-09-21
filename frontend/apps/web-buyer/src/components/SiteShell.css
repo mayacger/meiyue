@@ -93,6 +93,23 @@
   color: var(--my-muted);
 }
 
+.my-footer__nav {
+  display: flex;
+  gap: 1.25rem;
+  margin-top: 0.75rem;
+}
+
+.my-footer__nav a {
+  color: var(--my-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.my-footer__nav a:focus-visible {
+  outline: 2px solid var(--my-ink-deep);
+  outline-offset: 3px;
+}
+
 @media (max-width: 760px) {
   .my-nav-toggle {
     display: inline-flex;

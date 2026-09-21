@@ -10,29 +10,43 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository extends JpaRepository<Product, Long> {
-    List<Product> findByTenantIdOrderByUpdatedAtDesc(Long tenantId);
-    List<Product> findByTenantIdAndStatusOrderByUpdatedAtDesc(Long tenantId, ProductStatus status);
-    Optional<Product> findByIdAndTenantId(Long id, Long tenantId);
-    List<Product> findByStatusOrderByUpdatedAtDesc(ProductStatus status);
+    /** 本店未删除商品（默认列表） */
+    List<Product> findByTenantIdAndDeletedAtIsNullOrderByUpdatedAtDesc(Long tenantId);
 
-    /** I30：同店在售（排除自身） */
-    List<Product> findByTenantIdAndStatusAndIdNotOrderByUpdatedAtDesc(
+    List<Product> findByTenantIdAndStatusAndDeletedAtIsNullOrderByUpdatedAtDesc(
+            Long tenantId, ProductStatus status
+    );
+
+    /** 本店回收站 */
+    List<Product> findByTenantIdAndDeletedAtIsNotNullOrderByUpdatedAtDesc(Long tenantId);
+
+    /** 平台回收站治理 */
+    List<Product> findByDeletedAtIsNotNullOrderByUpdatedAtDesc();
+
+    Optional<Product> findByIdAndTenantId(Long id, Long tenantId);
+
+    Optional<Product> findByIdAndTenantIdAndDeletedAtIsNull(Long id, Long tenantId);
+
+    List<Product> findByStatusAndDeletedAtIsNullOrderByUpdatedAtDesc(ProductStatus status);
+
+    /** I30：同店在售（排除自身、已删） */
+    List<Product> findByTenantIdAndStatusAndIdNotAndDeletedAtIsNullOrderByUpdatedAtDesc(
             Long tenantId, ProductStatus status, Long id
     );
 
-    /** I30：同类目在售（排除自身） */
-    List<Product> findByCategoryIdAndStatusAndIdNotOrderByUpdatedAtDesc(
+    /** I30：同类目在售（排除自身、已删） */
+    List<Product> findByCategoryIdAndStatusAndIdNotAndDeletedAtIsNullOrderByUpdatedAtDesc(
             Long categoryId, ProductStatus status, Long id
     );
 
     /**
-     * I10 基础搜索：标题 / 副标题 / 类目名 LIKE；可选精确类目过滤。
-     * 不上 OpenSearch；类目名通过 left join Category 匹配关键词。
+     * I10 基础搜索：标题 / 副标题 / 类目名 LIKE；排除软删。
      */
     @Query("""
             select distinct p from Product p
             left join com.meiyuemall.catalog.domain.Category c on c.id = p.categoryId
             where p.status = com.meiyuemall.catalog.domain.ProductStatus.ON_SALE
+              and p.deletedAt is null
               and (:categoryId is null or p.categoryId = :categoryId)
               and (
                    :q is null or :q = ''

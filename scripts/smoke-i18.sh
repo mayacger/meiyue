@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================
-# 美月商城 · I18–I35 轻量冒烟
+# 美月商城 · I18–I38 轻量冒烟
 # 覆盖：类目 / 地址簿 / 用户 / 库存 / 概览 / 改密资料 / 审计 / 批量上下架 /
 #       库存预警 / 通知 / 员工 / OpenAPI / series / 草稿 / Banner / 结算 /
 #       凭证图+退货物流 / 相关推荐 / 足迹 / 评价审核 / 运费模板 /
@@ -329,8 +329,26 @@ assert "https://cdn.example.com/a.jpg" in (pd.get("galleryImageUrls") or [])
 print("==> I35 captcha (off by default)")
 assert req("GET", "/api/v1/auth/captcha").get("enabled") is False
 
+print("==> I36 soft-delete + sales CSV")
+trash = req("POST", "/api/v1/seller/products", seller_token, {
+    "categoryId": cat_id, "title": f"回收{SUFFIX}", "subtitle": "d",
+    "detailHtml": "<p>d</p>",
+    "skus": [{"skuCode": f"DEL-{SUFFIX}", "specText": "默认", "priceCents": 100, "stockQty": 1}]
+})
+req("DELETE", f"/api/v1/seller/products/{trash['id']}", seller_token)
+assert any(p["id"] == trash["id"] for p in req("GET", "/api/v1/seller/products/deleted", seller_token))
+req("POST", f"/api/v1/seller/products/{trash['id']}/restore", seller_token)
+req("GET", "/api/v1/admin/products/deleted", admin_token)
+import urllib.request as _ur2
+rh = {"Authorization": f"Bearer {seller_token}"}
+with _ur2.urlopen(_ur2.Request(BASE + "/api/v1/seller/dashboard/sales-report.csv?grain=day&periods=2", headers=rh)) as resp:
+    assert b"gmvCents" in resp.read()
+rh2 = {"Authorization": f"Bearer {admin_token}"}
+with _ur2.urlopen(_ur2.Request(BASE + "/api/v1/admin/dashboard/sales-report.csv?grain=week&periods=1", headers=rh2)) as resp:
+    assert b"refundCents" in resp.read()
+
 print("")
-print("SMOKE I18–I35 PASSED")
+print("SMOKE I18–I38 PASSED")
 print(f"  seller={seller} buyer={buyer} staff={staff_user} sku={sku_id} cat={cat['id']}")
 PY
 

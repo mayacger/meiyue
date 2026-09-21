@@ -108,6 +108,8 @@ export interface ProductSummary {
   promoVideoUrl?: string | null;
   /** I34：图集 URL 列表 */
   galleryImageUrls?: string[];
+  /** I36：软删时间 */
+  deletedAt?: string | null;
 }
 
 /** 购物车行 */

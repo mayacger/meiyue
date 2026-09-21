@@ -43,6 +43,9 @@ public class Product {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     private ProductStatus status = ProductStatus.DRAFT;
+    /** I36：软删时间；非空表示回收站 */
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
     @Column(name = "updated_at", nullable = false)
@@ -86,6 +89,8 @@ public class Product {
     }
     public ProductStatus getStatus() { return status; }
     public void setStatus(ProductStatus status) { this.status = status; }
+    public Instant getDeletedAt() { return deletedAt; }
+    public void setDeletedAt(Instant deletedAt) { this.deletedAt = deletedAt; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public List<ProductSku> getSkus() { return skus; }

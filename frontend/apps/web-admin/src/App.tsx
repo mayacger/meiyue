@@ -15,6 +15,7 @@ import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { BannersPage } from "./pages/BannersPage";
 import { SettlementsPage } from "./pages/SettlementsPage";
 import { ReviewsPage } from "./pages/ReviewsPage";
+import { ProductsDeletedPage } from "./pages/ProductsDeletedPage";
 
 /** 未登录跳转登录页 */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -47,6 +48,7 @@ export function App() {
         <Route path="banners" element={<BannersPage />} />
         <Route path="settlements" element={<SettlementsPage />} />
         <Route path="reviews" element={<ReviewsPage />} />
+        <Route path="products-deleted" element={<ProductsDeletedPage />} />
         <Route path="platform-config" element={<PlatformConfigPage />} />
         <Route path="audit-logs" element={<AuditLogsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />

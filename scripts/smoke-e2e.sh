@@ -387,6 +387,33 @@ print("==> I35 captcha challenge (default off)")
 cap = req("GET", "/api/v1/auth/captcha")
 assert cap.get("enabled") is False, cap
 
+print("==> I36 soft-delete + recycle + sales CSV")
+# 另建商品做软删，避免影响后续售后用的主商品
+trash = req("POST", "/api/v1/seller/products", seller_token, {
+    "categoryId": cat_id, "title": f"回收站货{SUFFIX}", "subtitle": "del",
+    "detailHtml": "<p>d</p>",
+    "skus": [{"skuCode": f"DEL-{SUFFIX}", "specText": "默认", "priceCents": 100, "stockQty": 1}]
+})
+tid = trash["id"]
+req("DELETE", f"/api/v1/seller/products/{tid}", seller_token)
+mine = req("GET", "/api/v1/seller/products", seller_token)
+assert all(p["id"] != tid for p in mine)
+deleted = req("GET", "/api/v1/seller/products/deleted", seller_token)
+assert any(p["id"] == tid for p in deleted)
+req("POST", f"/api/v1/seller/products/{tid}/restore", seller_token)
+admin_del = req("GET", "/api/v1/admin/products/deleted", admin_token)
+assert isinstance(admin_del, list)
+# 销售报表 CSV（非 ApiResponse）
+import urllib.request as _ur
+for path in (
+    "/api/v1/seller/dashboard/sales-report.csv?grain=day&periods=3",
+    "/api/v1/admin/dashboard/sales-report.csv?grain=week&periods=2",
+):
+    r = _ur.Request(BASE + path, headers={"Authorization": f"Bearer {seller_token if 'seller' in path else admin_token}"})
+    with _ur.urlopen(r) as resp:
+        body = resp.read().decode()
+    assert "period,orderCount,gmvCents,refundCents" in body, body[:200]
+
 print("==> aftersale REFUND_ONLY (MOCK channel refund)")
 req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
 order2 = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})

@@ -29,12 +29,14 @@ export function SiteShell() {
           <button
             type="button"
             className="my-nav-toggle"
-            aria-label="菜单"
+            aria-label="打开或关闭主导航菜单"
+            aria-expanded={open}
+            aria-controls="my-primary-nav"
             onClick={() => setOpen((v) => !v)}
           >
             菜单
           </button>
-          <nav className={`my-nav ${open ? "is-open" : ""}`}>
+          <nav id="my-primary-nav" className={`my-nav ${open ? "is-open" : ""}`} aria-label="主导航">
             <NavLink to="/" end onClick={() => setOpen(false)}>
               首页
             </NavLink>
@@ -93,6 +95,11 @@ export function SiteShell() {
         <div className="my-footer__inner">
           <p className="my-brand__mark">美月商城</p>
           <p>多商家好物 · 完整履约 · 不做直播</p>
+          <nav className="my-footer__nav" aria-label="页脚导航">
+            <Link to="/about">关于</Link>
+            <Link to="/help">帮助</Link>
+            <Link to="/products">逛逛</Link>
+          </nav>
         </div>
       </footer>
     </div>

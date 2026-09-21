@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { PageContainer, ProCard, StatisticCard } from "@ant-design/pro-components";
-import { App, List, Spin, Typography } from "antd";
+import { App, Button, List, Space, Spin, Typography } from "antd";
 import { Link } from "react-router-dom";
 import {
   Bar,
@@ -12,7 +12,7 @@ import {
   XAxis,
   YAxis
 } from "recharts";
-import { apiFetch } from "@meiyue/api";
+import { apiFetch, downloadAuthenticated } from "@meiyue/api";
 import type { OnboardingApplication } from "@meiyue/types";
 
 /**
@@ -43,11 +43,31 @@ interface DashboardSeries {
 }
 
 export function DashboardPage() {
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [stats, setStats] = useState<AdminDashboard | null>(null);
   const [pending, setPending] = useState<OnboardingApplication[]>([]);
   const [series, setSeries] = useState<DayPoint[]>([]);
   const [loading, setLoading] = useState(true);
+
+  /** I36：平台销售汇总 CSV */
+  function exportSales(grain: "day" | "week", periods: number) {
+    modal.confirm({
+      title: grain === "day" ? "导出近7日平台汇总？" : "导出近4周平台汇总？",
+      content: "含全站订单量、GMV、退款；请妥善保管。",
+      okText: "确认导出",
+      onOk: async () => {
+        try {
+          await downloadAuthenticated(
+            `/api/v1/admin/dashboard/sales-report.csv?grain=${grain}&periods=${periods}`,
+            `admin-sales-${grain}.csv`
+          );
+          message.success("已导出平台销售汇总");
+        } catch (err) {
+          message.error(err instanceof Error ? err.message : "导出失败");
+        }
+      }
+    });
+  }
 
   useEffect(() => {
     (async () => {
@@ -83,7 +103,18 @@ export function DashboardPage() {
   }
 
   return (
-    <PageContainer header={{ title: "运营概览", subTitle: "美月商城平台后台 · 近7日趋势 · 无直播" }}>
+    <PageContainer
+      header={{
+        title: "运营概览",
+        subTitle: "美月商城平台后台 · 近7日趋势 · 无直播",
+        extra: (
+          <Space>
+            <Button onClick={() => exportSales("day", 7)}>导出日报 CSV</Button>
+            <Button onClick={() => exportSales("week", 4)}>导出周报 CSV</Button>
+          </Space>
+        )
+      }}
+    >
       <StatisticCard.Group>
         <StatisticCard
           statistic={{ title: "待审入驻", value: stats?.pendingOnboardingCount ?? 0 }}

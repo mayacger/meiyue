@@ -84,6 +84,13 @@ public class CatalogController {
         return ApiResponse.ok(catalogService.listDrafts());
     }
 
+    /** I36：回收站 */
+    @GetMapping(SecurityConstants.API_PREFIX + "/seller/products/deleted")
+    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    public ApiResponse<List<ProductResponse>> deleted() {
+        return ApiResponse.ok(catalogService.listDeleted());
+    }
+
     @PostMapping(SecurityConstants.API_PREFIX + "/seller/products")
     @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
     public ApiResponse<ProductResponse> create(@Valid @RequestBody ProductUpsertRequest request) {
@@ -94,6 +101,20 @@ public class CatalogController {
     @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
     public ApiResponse<ProductResponse> update(@PathVariable Long id, @Valid @RequestBody ProductUpsertRequest request) {
         return ApiResponse.ok(catalogService.update(id, request));
+    }
+
+    /** I36：软删 */
+    @DeleteMapping(SecurityConstants.API_PREFIX + "/seller/products/{id}")
+    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    public ApiResponse<ProductResponse> softDelete(@PathVariable Long id) {
+        return ApiResponse.ok(catalogService.softDelete(id));
+    }
+
+    /** I36：恢复 */
+    @PostMapping(SecurityConstants.API_PREFIX + "/seller/products/{id}/restore")
+    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    public ApiResponse<ProductResponse> restore(@PathVariable Long id) {
+        return ApiResponse.ok(catalogService.restore(id));
     }
 
     @PostMapping(SecurityConstants.API_PREFIX + "/seller/products/{id}/status")

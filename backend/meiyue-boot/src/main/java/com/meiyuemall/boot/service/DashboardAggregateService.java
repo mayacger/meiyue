@@ -27,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.temporal.TemporalAdjusters;
+import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -99,7 +101,7 @@ public class DashboardAggregateService {
         long sellers = users.stream().filter(u -> u.getRoles().contains(RoleCode.SELLER_OWNER)).count();
         long categories = categoryRepository.findByStatusOrderBySortOrderAsc(CategoryStatus.ENABLED).size();
         long coupons = platformCouponRepository.count();
-        long onSale = productRepository.findByStatusOrderByUpdatedAtDesc(ProductStatus.ON_SALE).size();
+        long onSale = productRepository.findByStatusAndDeletedAtIsNullOrderByUpdatedAtDesc(ProductStatus.ON_SALE).size();
         return new AdminDashboardResponse(pendingOnboarding, buyers, sellers, categories, coupons, onSale);
     }
 
@@ -126,6 +128,62 @@ public class DashboardAggregateService {
         });
     }
 
+    /**
+     * I36：商家销售报表 CSV（按日或周；含订单量/GMV/退款）。
+     * @param grain day|week
+     * @param periods 回溯期数（日=天数，周=周数），1–90
+     */
+    @Transactional(readOnly = true)
+    public String exportSellerSalesCsv(String grain, int periods) {
+        Long tenantId = requireSellerTenant();
+        return buildSalesCsv(grain, periods, (from, to) -> new long[]{
+                orderRepository.countPaidTodayForSeller(tenantId, from, to),
+                orderRepository.sumSalesCentsTodayForSeller(tenantId, from, to),
+                aftersaleRepository.sumClosedRefundCentsForSeller(tenantId, from, to)
+        });
+    }
+
+    /** I36：平台销售汇总 CSV */
+    @Transactional(readOnly = true)
+    public String exportAdminSalesCsv(String grain, int periods) {
+        return buildSalesCsv(grain, periods, (from, to) -> new long[]{
+                orderRepository.countPaidBetween(from, to),
+                orderRepository.sumSalesCentsBetween(from, to),
+                aftersaleRepository.sumClosedRefundCentsBetween(from, to)
+        });
+    }
+
+    private String buildSalesCsv(String grain, int periods, SalesAggregator agg) {
+        String g = grain == null ? "day" : grain.trim().toLowerCase();
+        int n = Math.min(Math.max(periods, 1), 90);
+        LocalDate today = LocalDate.now(ZONE);
+        StringBuilder sb = new StringBuilder();
+        sb.append('\uFEFF');
+        sb.append("period,orderCount,gmvCents,refundCents\n");
+        if ("week".equals(g)) {
+            // 以周一为一周起点，回溯 n 周（含本周）
+            LocalDate thisMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            for (int i = n - 1; i >= 0; i--) {
+                LocalDate start = thisMonday.minusWeeks(i);
+                LocalDate end = start.plusWeeks(1);
+                Instant from = start.atStartOfDay(ZONE).toInstant();
+                Instant to = end.atStartOfDay(ZONE).toInstant();
+                long[] v = agg.aggregate(from, to);
+                sb.append(start).append("/").append(end.minusDays(1)).append(',')
+                        .append(v[0]).append(',').append(v[1]).append(',').append(v[2]).append('\n');
+            }
+        } else {
+            for (int i = n - 1; i >= 0; i--) {
+                LocalDate d = today.minusDays(i);
+                Instant from = d.atStartOfDay(ZONE).toInstant();
+                Instant to = d.plusDays(1).atStartOfDay(ZONE).toInstant();
+                long[] v = agg.aggregate(from, to);
+                sb.append(d).append(',').append(v[0]).append(',').append(v[1]).append(',').append(v[2]).append('\n');
+            }
+        }
+        return sb.toString();
+    }
+
     private DashboardSeriesResponse buildSeries(int days, DayAggregator agg) {
         int n = Math.min(Math.max(days, 1), 30);
         LocalDate today = LocalDate.now(ZONE);
@@ -142,6 +200,11 @@ public class DashboardAggregateService {
 
     @FunctionalInterface
     private interface DayAggregator {
+        long[] aggregate(Instant from, Instant to);
+    }
+
+    @FunctionalInterface
+    private interface SalesAggregator {
         long[] aggregate(Instant from, Instant to);
     }
 

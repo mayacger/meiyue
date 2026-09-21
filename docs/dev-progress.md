@@ -1,6 +1,6 @@
 # 美月商城 · 开发进度（用户可读）
 
-> 状态：**I1 → I35 完成**（C19）  
+> 状态：**I1 → I38 完成**（C19；I38 为收敛清单）  
 > 分支：`cursor/meiyue-mall-scaffold-9727` · PR #1  
 
 ## 验证
@@ -15,11 +15,10 @@ pnpm build:taro:h5 && pnpm --filter @meiyue/taro-buyer build:weapp
 
 ## 最近交付
 
-- **I35**：登录图形验证码占位（`MEIYUE_SECURITY_CAPTCHA_ENABLED`，默认关）；改密/导出二次确认；CHANGELOG 汇总 I30–I35
-- **I34**：生产 Dockerfile / compose prod / `docs/deploy.md`；商品图集 + 推广视频；Buyer PC + Taro + Seller 接入；Flyway V20
-- **I33**：发票抬头 CRUD；下单备注与发票快照；Flyway V19
-- **I32**：未支付取消释放库存；签收后 N 天自动确认；搜索历史；Flyway V18
-- **I31**：店铺运费 / 包邮门槛；结算运费展示
-- **I30**：相关推荐；浏览足迹；评价审核
+- **I38**：`docs/credentials-backlog.md` 待密钥联调清单；暂停大功能
+- **I37**：Buyer 焦点/aria、页脚关于/帮助；Taro 主包优化说明
+- **I36**：商品软删/回收站（Seller+Admin）；销售日/周 CSV；Flyway V21
+- **I35**：登录验证码开关；改密/导出二次确认
+- **I34**：生产镜像/compose；商品图集与推广视频
 
-详见 [i34-i35-capabilities.md](./i34-i35-capabilities.md)、[i33-capabilities.md](./i33-capabilities.md)、[i32-capabilities.md](./i32-capabilities.md)、[i30-i31-capabilities.md](./i30-i31-capabilities.md)、[deploy.md](./deploy.md)。
+详见 [i36-i38-capabilities.md](./i36-i38-capabilities.md)、[credentials-backlog.md](./credentials-backlog.md)、[taro-bundle.md](./taro-bundle.md)、[i34-i35-capabilities.md](./i34-i35-capabilities.md)、[deploy.md](./deploy.md)。

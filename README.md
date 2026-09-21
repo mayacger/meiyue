@@ -3,7 +3,23 @@
 > B2B2C 多租户电商平台 · 中国大陆 · 工程标识 `meiyue-mall`  
 > 仓库：`mayacger/meiyue`（前后端同仓）  
 > 规划定稿：见项目 Context 中 `ecommerce-platform-plan.md` **v1.2**  
-> 进度：`docs/dev-progress.md`（**I1→I14**；C19+C20；前端四端见 `frontend/README.md`）
+> 进度：`docs/dev-progress.md`（**I1→I38**；C19；能力地图见下）
+
+---
+
+## 能力地图（至 I38）
+
+| 迭代 | 能力 |
+|------|------|
+| I1–I14 | IAM/租户、目录、交易支付、物流售后、AI 占位、质量加固 |
+| I15–I21 | 四端前端、概览/库存/工单 |
+| I22–I29 | 收藏店铺、审计、Banner、结算、售后凭证 |
+| I30–I33 | 推荐足迹、运费、取消/自动确认、发票备注 |
+| I34–I35 | 生产部署、图集视频、验证码/二次确认 |
+| I36–I37 | 商品回收站、销售报表 CSV、无障碍/静态页/Taro 体积 |
+| I38 | `docs/credentials-backlog.md` 密钥联调清单（收敛） |
+
+**不做**：直播、真实分账打款、真实开票对接。
 
 ---
 

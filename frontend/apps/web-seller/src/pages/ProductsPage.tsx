@@ -37,13 +37,13 @@ interface MediaAsset {
  */
 export function ProductsPage() {
   const actionRef = useRef<ActionType>();
-  const { message } = App.useApp();
+  const { message, modal } = App.useApp();
   const [categories, setCategories] = useState<Category[]>([]);
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   /** I25：批量上下架选中行 */
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
-  /** I27：全部 | 草稿箱 */
-  const [tab, setTab] = useState<"all" | "drafts">("all");
+  /** I27/I36：全部 | 草稿箱 | 回收站 */
+  const [tab, setTab] = useState<"all" | "drafts" | "deleted">("all");
 
   useEffect(() => {
     apiFetch<Category[]>("/api/v1/categories").then(setCategories).catch(() => undefined);
@@ -110,7 +110,23 @@ export function ProductsPage() {
       title: "操作",
       valueType: "option",
       width: 320,
-      render: (_, r) => (
+      render: (_, r) =>
+        tab === "deleted" ? (
+          <Button
+            type="link"
+            onClick={async () => {
+              try {
+                await apiFetch(`/api/v1/seller/products/${r.id}/restore`, { method: "POST" });
+                message.success("已恢复（仍为下架，请手动上架）");
+                actionRef.current?.reload();
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "恢复失败");
+              }
+            }}
+          >
+            恢复
+          </Button>
+        ) : (
         <Space wrap>
           <ModalForm
             title={`编辑商品 #${r.id}`}
@@ -248,19 +264,42 @@ export function ProductsPage() {
           >
             下架
           </Button>
+          <Button
+            type="link"
+            danger
+            onClick={() => {
+              modal.confirm({
+                title: `移入回收站 #${r.id}？`,
+                content: "软删后默认列表不可见，可在回收站恢复。",
+                okText: "移入回收站",
+                onOk: async () => {
+                  try {
+                    await apiFetch(`/api/v1/seller/products/${r.id}`, { method: "DELETE" });
+                    message.success("已移入回收站");
+                    actionRef.current?.reload();
+                  } catch (err) {
+                    message.error(err instanceof Error ? err.message : "删除失败");
+                  }
+                }
+              });
+            }}
+          >
+            删除
+          </Button>
         </Space>
-      )
+        )
     }
   ];
 
   return (
-    <PageContainer header={{ title: "商品管理", subTitle: "SPU/SKU · 草稿箱 · 批量上下架 · 封面素材" }}>
+    <PageContainer header={{ title: "商品管理", subTitle: "SPU/SKU · 草稿箱 · 回收站 · 批量上下架" }}>
       <Tabs
         activeKey={tab}
-        onChange={(k) => setTab(k as "all" | "drafts")}
+        onChange={(k) => setTab(k as "all" | "drafts" | "deleted")}
         items={[
           { key: "all", label: "全部商品" },
-          { key: "drafts", label: "草稿箱" }
+          { key: "drafts", label: "草稿箱" },
+          { key: "deleted", label: "回收站" }
         ]}
         style={{ marginBottom: 8 }}
       />
@@ -269,11 +308,18 @@ export function ProductsPage() {
         rowKey="id"
         search={false}
         columns={columns}
-        rowSelection={{
-          selectedRowKeys,
-          onChange: setSelectedRowKeys
-        }}
-        toolBarRender={() => [
+        rowSelection={
+          tab === "deleted"
+            ? false
+            : {
+                selectedRowKeys,
+                onChange: setSelectedRowKeys
+              }
+        }
+        toolBarRender={() =>
+          tab === "deleted"
+            ? []
+            : [
           <Button key="on" disabled={!selectedRowKeys.length} onClick={() => batchStatus("ON_SALE")}>
             批量上架
           </Button>,
@@ -353,13 +399,16 @@ export function ProductsPage() {
             <ProFormDigit name="stock" label="库存" initialValue={10} min={0} rules={[{ required: true }]} />
             <ProFormTextArea name="detailHtml" label="详情 HTML" />
           </ModalForm>
-        ]}
+            ]
+        }
         params={{ tab }}
         request={async () => {
           const path =
             tab === "drafts"
               ? "/api/v1/seller/products/drafts"
-              : "/api/v1/seller/products";
+              : tab === "deleted"
+                ? "/api/v1/seller/products/deleted"
+                : "/api/v1/seller/products";
           const data = await apiFetch<ProductSummary[]>(path);
           return { data, success: true, total: data.length };
         }}

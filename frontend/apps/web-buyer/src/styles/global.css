@@ -119,6 +119,22 @@ img {
   transform: none !important;
 }
 
+/* I37：全站基础焦点环（键盘可达） */
+:focus-visible {
+  outline: 2px solid var(--my-ink-deep, #0f3d38);
+  outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+.my-btn:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--my-ink-deep, #0f3d38);
+  outline-offset: 2px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .my-fade-up,
   .my-fade-up-delay,

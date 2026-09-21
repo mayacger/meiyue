@@ -14,7 +14,8 @@ import {
   FileSearchOutlined,
   PictureOutlined,
   AccountBookOutlined,
-  CommentOutlined
+  CommentOutlined,
+  DeleteOutlined
 } from "@ant-design/icons";
 import { Dropdown, Space, Tag } from "antd";
 import { apiFetch, setToken } from "@meiyue/api";
@@ -55,6 +56,7 @@ export function AdminLayout() {
             { path: "/banners", name: "首页 Banner", icon: <PictureOutlined /> },
             { path: "/settlements", name: "结算汇总", icon: <AccountBookOutlined /> },
             { path: "/reviews", name: "评价审核", icon: <CommentOutlined /> },
+            { path: "/products-deleted", name: "商品回收站", icon: <DeleteOutlined /> },
             { path: "/platform-config", name: "运营配置", icon: <SettingOutlined /> },
             { path: "/audit-logs", name: "审计日志", icon: <FileSearchOutlined /> },
             { path: "/notifications", name: "站内通知", icon: <BellOutlined /> },

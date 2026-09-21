@@ -1,6 +1,34 @@
 # 美月商城 · CHANGELOG
 
-## [0.1.0-SNAPSHOT] · I34/I35 部署·多媒体·验证码（当前 PR）
+## [0.1.0-SNAPSHOT] · I36–I38 软删·报表·无障碍·收敛（当前 PR）
+
+### I36
+
+- 商品软删：`deleted_at`（Flyway **V21**）；Seller 回收站/恢复；列表默认排除；Admin 治理页
+- 销售报表 CSV：Seller/Admin `dashboard/sales-report.csv?grain=day|week`（订单量/GMV/退款）
+
+### I37
+
+- Buyer PC：`:focus-visible`、导航 aria、页脚 `/about` `/help`
+- Taro：`optimizeMainPackage` + `docs/taro-bundle.md` 分包说明
+
+### I38
+
+- `docs/credentials-backlog.md`：支付/JWT/AI/面单待密钥联调清单；暂停大功能
+
+### 验证
+
+```bash
+cd backend && mvn -q -DskipTests package
+cd frontend && pnpm build && pnpm build:taro:h5
+pnpm --filter @meiyue/taro-buyer build:weapp
+BASE_URL=http://localhost:8080 ./scripts/smoke-e2e.sh
+BASE_URL=http://localhost:8080 ./scripts/smoke-i18.sh
+```
+
+---
+
+## [0.1.0-SNAPSHOT] · I34/I35 部署·多媒体·验证码
 
 ### I34 生产部署底座
 

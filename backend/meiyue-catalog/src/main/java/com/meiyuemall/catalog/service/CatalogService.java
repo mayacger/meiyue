@@ -24,6 +24,7 @@ import com.meiyuemall.common.security.SecurityUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -136,8 +137,7 @@ public class CatalogService {
     @Audited(action = "PRODUCT_UPDATE", resourceType = "Product")
     public ProductResponse update(Long productId, ProductUpsertRequest request) {
         Long tenantId = requireSellerTenant();
-        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        Product product = requireActiveProduct(productId, tenantId);
         // 更新时按 skuCode 原地合并，避免 clear+insert 撞唯一约束并破坏已有订单/购物车引用
         apply(product, request, tenantId, true);
         productRepository.save(product);
@@ -148,8 +148,7 @@ public class CatalogService {
     @Audited(action = "PRODUCT_STATUS", resourceType = "Product")
     public ProductResponse changeStatus(Long productId, ProductStatus status) {
         Long tenantId = requireSellerTenant();
-        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        Product product = requireActiveProduct(productId, tenantId);
         if (status == ProductStatus.ON_SALE && product.getSkus().isEmpty()) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "无 SKU 不可上架");
         }
@@ -167,8 +166,7 @@ public class CatalogService {
         ProductStatus status = ProductStatus.valueOf(request.status());
         List<ProductResponse> result = new ArrayList<>();
         for (Long productId : request.productIds()) {
-            Product product = productRepository.findByIdAndTenantId(productId, tenantId)
-                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在: " + productId));
+            Product product = requireActiveProduct(productId, tenantId);
             if (status == ProductStatus.ON_SALE && product.getSkus().isEmpty()) {
                 throw new BusinessException(ErrorCode.BAD_REQUEST, "商品 " + productId + " 无 SKU 不可上架");
             }
@@ -179,14 +177,72 @@ public class CatalogService {
     }
 
     /**
+     * I36：软删入回收站（同时下架）。
+     */
+    @Transactional
+    @Audited(action = "PRODUCT_SOFT_DELETE", resourceType = "Product")
+    public ProductResponse softDelete(Long productId) {
+        Long tenantId = requireSellerTenant();
+        Product product = requireActiveProduct(productId, tenantId);
+        product.setStatus(ProductStatus.OFF_SALE);
+        product.setDeletedAt(Instant.now());
+        return toResponse(product);
+    }
+
+    /**
+     * I36：从回收站恢复（保持 OFF_SALE，需手动上架）。
+     */
+    @Transactional
+    @Audited(action = "PRODUCT_RESTORE", resourceType = "Product")
+    public ProductResponse restore(Long productId) {
+        Long tenantId = requireSellerTenant();
+        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        if (product.getDeletedAt() == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "商品不在回收站");
+        }
+        product.setDeletedAt(null);
+        return toResponse(product);
+    }
+
+    /** I36：本店回收站 */
+    @Transactional(readOnly = true)
+    public List<ProductResponse> listDeleted() {
+        Long tenantId = requireSellerTenant();
+        return productRepository.findByTenantIdAndDeletedAtIsNotNullOrderByUpdatedAtDesc(tenantId).stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /** I36：平台回收站治理列表 */
+    @Transactional(readOnly = true)
+    public List<ProductResponse> adminListDeleted() {
+        return productRepository.findByDeletedAtIsNotNullOrderByUpdatedAtDesc().stream()
+                .map(this::toResponse)
+                .toList();
+    }
+
+    /** I36：平台代恢复 */
+    @Transactional
+    @Audited(action = "ADMIN_PRODUCT_RESTORE", resourceType = "Product")
+    public ProductResponse adminRestore(Long productId) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        if (product.getDeletedAt() == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "商品不在回收站");
+        }
+        product.setDeletedAt(null);
+        return toResponse(product);
+    }
+
+    /**
      * I8：将已审核素材挂到商品封面（AI 或人工流程共用）。
      */
     @Transactional
     @Audited(action = "PRODUCT_ATTACH_COVER", resourceType = "Product")
     public ProductResponse attachCover(Long productId, Long assetId, String coverUrl) {
         Long tenantId = requireSellerTenant();
-        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        Product product = requireActiveProduct(productId, tenantId);
         product.setCoverAssetId(assetId);
         product.setCoverImageUrl(coverUrl);
         return toResponse(product);
@@ -199,8 +255,7 @@ public class CatalogService {
     @Audited(action = "PRODUCT_APPLY_DETAIL", resourceType = "Product")
     public ProductResponse applyDetailHtml(Long productId, String detailHtml) {
         Long tenantId = requireSellerTenant();
-        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        Product product = requireActiveProduct(productId, tenantId);
         product.setDetailHtml(detailHtml);
         return toResponse(product);
     }
@@ -220,8 +275,7 @@ public class CatalogService {
      */
     @Transactional
     public ProductResponse attachPromoVideoInternal(Long tenantId, Long productId, Long assetId, String videoUrl) {
-        Product product = productRepository.findByIdAndTenantId(productId, tenantId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        Product product = requireActiveProduct(productId, tenantId);
         product.setPromoVideoAssetId(assetId);
         product.setPromoVideoUrl(videoUrl);
         return toResponse(product);
@@ -230,7 +284,7 @@ public class CatalogService {
     @Transactional(readOnly = true)
     public List<ProductResponse> listMine() {
         Long tenantId = requireSellerTenant();
-        return productRepository.findByTenantIdOrderByUpdatedAtDesc(tenantId).stream()
+        return productRepository.findByTenantIdAndDeletedAtIsNullOrderByUpdatedAtDesc(tenantId).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -239,13 +293,13 @@ public class CatalogService {
     @Transactional(readOnly = true)
     public List<ProductResponse> listDrafts() {
         Long tenantId = requireSellerTenant();
-        return productRepository.findByTenantIdAndStatusOrderByUpdatedAtDesc(tenantId, ProductStatus.DRAFT)
+        return productRepository.findByTenantIdAndStatusAndDeletedAtIsNullOrderByUpdatedAtDesc(tenantId, ProductStatus.DRAFT)
                 .stream().map(this::toResponse).toList();
     }
 
     @Transactional(readOnly = true)
     public List<ProductResponse> listOnSale() {
-        return productRepository.findByStatusOrderByUpdatedAtDesc(ProductStatus.ON_SALE).stream()
+        return productRepository.findByStatusAndDeletedAtIsNullOrderByUpdatedAtDesc(ProductStatus.ON_SALE).stream()
                 .map(this::toResponse)
                 .toList();
     }
@@ -261,7 +315,7 @@ public class CatalogService {
 
     @Transactional(readOnly = true)
     public List<ProductResponse> listOnSaleByTenant(Long tenantId) {
-        return productRepository.findByTenantIdAndStatusOrderByUpdatedAtDesc(tenantId, ProductStatus.ON_SALE)
+        return productRepository.findByTenantIdAndStatusAndDeletedAtIsNullOrderByUpdatedAtDesc(tenantId, ProductStatus.ON_SALE)
                 .stream().map(this::toResponse).toList();
     }
 
@@ -269,7 +323,7 @@ public class CatalogService {
     public ProductResponse getOnSale(Long productId) {
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
-        if (product.getStatus() != ProductStatus.ON_SALE) {
+        if (product.getDeletedAt() != null || product.getStatus() != ProductStatus.ON_SALE) {
             throw new BusinessException(ErrorCode.NOT_FOUND, "商品未上架");
         }
         return toResponse(product);
@@ -286,7 +340,7 @@ public class CatalogService {
         List<Product> result = new ArrayList<>();
         java.util.LinkedHashSet<Long> seen = new java.util.LinkedHashSet<>();
         seen.add(productId);
-        for (Product p : productRepository.findByTenantIdAndStatusAndIdNotOrderByUpdatedAtDesc(
+        for (Product p : productRepository.findByTenantIdAndStatusAndIdNotAndDeletedAtIsNullOrderByUpdatedAtDesc(
                 seed.getTenantId(), ProductStatus.ON_SALE, productId)) {
             if (seen.add(p.getId())) {
                 result.add(p);
@@ -296,7 +350,7 @@ public class CatalogService {
             }
         }
         if (result.size() < n && seed.getCategoryId() != null) {
-            for (Product p : productRepository.findByCategoryIdAndStatusAndIdNotOrderByUpdatedAtDesc(
+            for (Product p : productRepository.findByCategoryIdAndStatusAndIdNotAndDeletedAtIsNullOrderByUpdatedAtDesc(
                     seed.getCategoryId(), ProductStatus.ON_SALE, productId)) {
                 if (seen.add(p.getId())) {
                     result.add(p);
@@ -431,6 +485,12 @@ public class CatalogService {
         return principal.getTenantId();
     }
 
+    /** I36：未删除商品；已删视为不存在 */
+    private Product requireActiveProduct(Long productId, Long tenantId) {
+        return productRepository.findByIdAndTenantIdAndDeletedAtIsNull(productId, tenantId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+    }
+
     /**
      * I22：公开商品视图（收藏列表等复用；不含商家私有字段差异）。
      */
@@ -455,6 +515,7 @@ public class CatalogService {
                 product.getPromoVideoAssetId(),
                 product.getGalleryImageUrls() == null ? List.of() : List.copyOf(product.getGalleryImageUrls()),
                 product.getStatus().name(),
+                product.getDeletedAt(),
                 skus,
                 product.getUpdatedAt()
         );

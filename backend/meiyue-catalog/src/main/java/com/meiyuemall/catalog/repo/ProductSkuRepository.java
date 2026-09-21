@@ -28,10 +28,10 @@ public interface ProductSkuRepository extends JpaRepository<ProductSku, Long> {
             @Param("tenantId") Long tenantId
     );
 
-    /** 库存页：带商品标题 */
+    /** 库存页：带商品标题（排除软删商品） */
     @Query("""
             select s from ProductSku s join fetch s.product p
-            where s.tenantId = :tenantId
+            where s.tenantId = :tenantId and p.deletedAt is null
             order by p.id asc, s.id asc
             """)
     List<ProductSku> findByTenantIdWithProduct(@Param("tenantId") Long tenantId);

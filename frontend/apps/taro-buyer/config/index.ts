@@ -30,6 +30,10 @@ export default defineConfig<"vite">(async (merge) => {
       "@": path.resolve(__dirname, "..", "src")
     },
     mini: {
+      /** I37：主包体积优化（自动将异步页面下沉） */
+      optimizeMainPackage: {
+        enable: true
+      },
       postcss: {
         pxtransform: { enable: true, config: {} },
         cssModules: { enable: false }
