@@ -25,7 +25,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * 商品目录服务：商家 CRUD + 上下架；买家只读已上架。
@@ -123,7 +127,7 @@ public class CatalogService {
         Long tenantId = requireSellerTenant();
         Product product = new Product();
         product.setTenantId(tenantId);
-        apply(product, request, tenantId);
+        apply(product, request, tenantId, false);
         productRepository.save(product);
         return toResponse(product);
     }
@@ -134,8 +138,8 @@ public class CatalogService {
         Long tenantId = requireSellerTenant();
         Product product = productRepository.findByIdAndTenantId(productId, tenantId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
-        product.getSkus().clear();
-        apply(product, request, tenantId);
+        // 更新时按 skuCode 原地合并，避免 clear+insert 撞唯一约束并破坏已有订单/购物车引用
+        apply(product, request, tenantId, true);
         productRepository.save(product);
         return toResponse(product);
     }
@@ -360,7 +364,7 @@ public class CatalogService {
         );
     }
 
-    private void apply(Product product, ProductUpsertRequest request, Long tenantId) {
+    private void apply(Product product, ProductUpsertRequest request, Long tenantId, boolean mergeSkus) {
         product.setCategoryId(request.categoryId());
         product.setTitle(request.title().trim());
         product.setSubtitle(request.subtitle());
@@ -382,15 +386,40 @@ public class CatalogService {
         if (request.promoVideoUrl() != null) {
             product.setPromoVideoUrl(request.promoVideoUrl().isBlank() ? null : request.promoVideoUrl().trim());
         }
-        for (ProductUpsertRequest.SkuRequest skuReq : request.skus()) {
-            ProductSku sku = new ProductSku();
-            sku.setTenantId(tenantId);
-            sku.setProduct(product);
-            sku.setSkuCode(skuReq.skuCode().trim());
-            sku.setSpecText(skuReq.specText());
-            sku.setPriceCents(skuReq.priceCents());
-            sku.setStockQty(skuReq.stockQty());
-            product.getSkus().add(sku);
+        if (mergeSkus) {
+            // 按 skuCode 合并：已有则改价/库存/规格，缺失则新增，请求外的旧 SKU 移除
+            Map<String, ProductSku> existing = new HashMap<>();
+            for (ProductSku sku : product.getSkus()) {
+                existing.put(sku.getSkuCode(), sku);
+            }
+            Set<String> keep = new HashSet<>();
+            for (ProductUpsertRequest.SkuRequest skuReq : request.skus()) {
+                String code = skuReq.skuCode().trim();
+                keep.add(code);
+                ProductSku sku = existing.get(code);
+                if (sku == null) {
+                    sku = new ProductSku();
+                    sku.setTenantId(tenantId);
+                    sku.setProduct(product);
+                    sku.setSkuCode(code);
+                    product.getSkus().add(sku);
+                }
+                sku.setSpecText(skuReq.specText());
+                sku.setPriceCents(skuReq.priceCents());
+                sku.setStockQty(skuReq.stockQty());
+            }
+            product.getSkus().removeIf(s -> !keep.contains(s.getSkuCode()));
+        } else {
+            for (ProductUpsertRequest.SkuRequest skuReq : request.skus()) {
+                ProductSku sku = new ProductSku();
+                sku.setTenantId(tenantId);
+                sku.setProduct(product);
+                sku.setSkuCode(skuReq.skuCode().trim());
+                sku.setSpecText(skuReq.specText());
+                sku.setPriceCents(skuReq.priceCents());
+                sku.setStockQty(skuReq.stockQty());
+                product.getSkus().add(sku);
+            }
         }
     }
 
