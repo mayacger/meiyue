@@ -1,6 +1,24 @@
 # 美月商城 · CHANGELOG
 
-## [0.1.0-SNAPSHOT] · I13 工程化收尾（当前 PR）
+## [0.1.0-SNAPSHOT] · I14 前端架构重建（当前 PR）
+
+### 前端四端（C20）
+
+- **web-admin / web-seller**：Ant Design Pro Components（ProLayout / ProTable / ProForm）
+- **web-buyer**：设计向 PC 商城（墨绿主色、品牌全宽英雄；非 Pro 后台）
+- **taro-buyer**：Taro 4 + React，目标 H5 + 微信小程序；`build:h5` 通过
+- CI：`pnpm build`（三端 Web）+ `pnpm build:taro:h5`
+- 文档：`frontend/README.md`、各 app README；Context `frontend-architecture.md`
+
+### 验证
+
+```bash
+cd frontend && pnpm install && pnpm build && pnpm build:taro:h5
+```
+
+---
+
+## [0.1.0-SNAPSHOT] · I13 工程化收尾
 
 ### 新增
 

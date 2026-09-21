@@ -2,35 +2,42 @@
 
 ## 入口
 
-| 应用 | 包名 | 本地端口 | 规划路径 |
-|------|------|----------|----------|
-| 买家商城 | `@meiyue/web-buyer` | 5173 | `/` |
-| 商家后台 | `@meiyue/web-seller` | 5174 | `/seller` |
-| 平台后台 | `@meiyue/web-admin` | 5175 | `/admin` |
+| 应用 | 包名 | 本地端口 | 技术 |
+|------|------|----------|------|
+| 买家 PC | `@meiyue/web-buyer` | 5173 | React + 自研设计系统（非 Pro） |
+| 商家后台 | `@meiyue/web-seller` | 5174 | Ant Design Pro Components |
+| 平台后台 | `@meiyue/web-admin` | 5175 | Ant Design Pro Components |
+| 买家移动 | `@meiyue/taro-buyer` | 10086 (H5) | **Taro 4** · H5 + 微信小程序 |
 
-共享包：`@meiyue/ui`（页面壳）、`@meiyue/types`（API 类型占位）。
+共享包：`@meiyue/api`、`@meiyue/types`、`@meiyue/ui`。
+
+详档：仓库外 store `docs/frontend-architecture.md`；各 app 内 `README.md`。
 
 ## 关系图
 
 ```text
 frontend/
-  apps/web-buyer  ──depends──► packages/ui + packages/types
-  apps/web-seller ──depends──► packages/ui + packages/types
-  apps/web-admin  ──depends──► packages/ui + packages/types
+  apps/web-admin   ──Pro──► antd + pro-components + api/types
+  apps/web-seller  ──Pro──► antd + pro-components + api/types
+  apps/web-buyer   ──设计向──► api/types（无 antd Pro）
+  apps/taro-buyer  ──Taro──► types + Taro.request
          │
-         └── vite proxy /api → http://localhost:8080 (meiyue-boot)
+         └── 开发代理 /api → http://localhost:8080
 ```
 
 ## 本地启动
 
 ```bash
-# 需要 Node >= 20、pnpm >= 9
 cd frontend
 pnpm install
-pnpm --filter @meiyue/web-buyer build   # 验证构建
-pnpm dev:buyer                          # 开发模式
+pnpm build                 # CI：admin / seller / buyer
+pnpm build:taro:h5         # Taro H5（可选）
+pnpm dev:buyer             # PC 商城
+pnpm dev:seller            # 商家 Pro
+pnpm dev:admin             # 平台 Pro
+pnpm dev:taro:h5           # 移动 H5
 ```
 
-## 说明文档约定
+## 品牌
 
-每页/功能后续在对应 `apps/*/src/pages` 旁或 `packages/domain-docs` 补充：入口、关系图、状态、验收标准。
+美月商城 / meiyuemall · **无直播**

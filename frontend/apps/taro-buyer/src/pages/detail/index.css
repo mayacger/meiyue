@@ -1,0 +1,42 @@
+.page {
+  padding: 32px;
+}
+
+.hero {
+  height: 420px;
+  background: linear-gradient(145deg, #d5e0dc, #e8ece9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 32px;
+}
+
+.letter {
+  font-size: 96px;
+  color: rgba(15, 61, 56, 0.3);
+}
+
+.title {
+  display: block;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
+}
+
+.price {
+  display: block;
+  color: #1a4d45;
+  font-size: 34px;
+  font-weight: 700;
+  margin-bottom: 32px;
+}
+
+.btn {
+  background: #1a4d45 !important;
+  color: #f7f6f3 !important;
+  border-radius: 999px !important;
+}
+
+.err {
+  color: #a33;
+}

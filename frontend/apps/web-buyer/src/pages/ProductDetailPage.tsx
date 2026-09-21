@@ -1,20 +1,26 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { PageShell } from "@meiyue/ui";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { apiFetch, getToken } from "@meiyue/api";
+import type { ProductSummary } from "@meiyue/types";
+import "./ProductDetailPage.css";
 
 interface Review {
   id: number;
   rating: number;
   content: string;
   sellerReply: string | null;
-  createdAt: string;
 }
 
-/** 商品详情 + 公开评价列表（I10） */
+/**
+ * 商品详情
+ * GET /products/:id · /products/:id/reviews · POST 加购
+ */
 export function ProductDetailPage() {
   const { id } = useParams();
-  const [data, setData] = useState<Record<string, unknown> | null>(null);
+  const navigate = useNavigate();
+  const [product, setProduct] = useState<ProductSummary | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -24,30 +30,70 @@ export function ProductDetailPage() {
     ])
       .then(([prod, rev]) => {
         if (!prod.success) throw new Error(prod.message);
-        setData(prod.data);
+        setProduct(prod.data);
         if (rev.success) setReviews(rev.data);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "加载失败"));
   }, [id]);
 
+  async function addToCart() {
+    if (!getToken()) {
+      navigate("/login");
+      return;
+    }
+    const skuId = product?.skus[0]?.id;
+    if (!skuId) return;
+    setError(null);
+    try {
+      await apiFetch("/api/v1/buyer/cart/items", {
+        method: "POST",
+        json: { skuId, quantity: 1 }
+      });
+      setMsg("已加入购物车");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "加购失败");
+    }
+  }
+
+  const price = ((product?.skus[0]?.priceCents ?? 0) / 100).toFixed(2);
+
   return (
-    <PageShell title="商品详情" subtitle={`商品 #${id}`}>
-      <p><Link to="/">返回首页</Link></p>
-      {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
-      {data ? <pre>{JSON.stringify(data, null, 2)}</pre> : null}
-      <section>
+    <article className="my-detail">
+      <p className="my-detail__crumb">
+        <Link to="/products">全部商品</Link> / 详情
+      </p>
+      {error ? <p className="my-error">{error}</p> : null}
+      {msg ? <p className="my-ok">{msg}</p> : null}
+      {product ? (
+        <div className="my-detail__grid my-fade-up">
+          <div className="my-detail__visual" aria-hidden>
+            <span>{product.title.slice(0, 1)}</span>
+          </div>
+          <div className="my-detail__info">
+            <h1>{product.title}</h1>
+            <p className="my-detail__price">¥{price}</p>
+            <p className="my-detail__sub">{product.subtitle || "精选好物 · 美月履约"}</p>
+            <button type="button" className="my-btn my-btn--primary" onClick={addToCart}>
+              加入购物车
+            </button>
+            <Link to="/cart" className="my-detail__cart-link">
+              查看购物车
+            </Link>
+          </div>
+        </div>
+      ) : null}
+      <section className="my-detail__reviews">
         <h2>买家评价</h2>
-        {reviews.length === 0 ? <p>暂无评价</p> : null}
+        {reviews.length === 0 ? <p className="my-muted">暂无评价</p> : null}
         <ul>
           {reviews.map((r) => (
-            <li key={r.id} style={{ marginBottom: 8 }}>
-              ★{r.rating} · {r.content}
-              {r.sellerReply ? <div style={{ color: "#555" }}>商家回复：{r.sellerReply}</div> : null}
-              <small>{r.createdAt}</small>
+            <li key={r.id}>
+              <strong>★{r.rating}</strong> {r.content}
+              {r.sellerReply ? <div className="my-muted">商家回复：{r.sellerReply}</div> : null}
             </li>
           ))}
         </ul>
       </section>
-    </PageShell>
+    </article>
   );
 }

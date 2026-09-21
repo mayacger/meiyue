@@ -1,0 +1,43 @@
+/**
+ * 全局页面配置：Tab 首页/分类/购物车/我的；详情为二级页
+ */
+export default defineAppConfig({
+  pages: [
+    "pages/index/index",
+    "pages/category/index",
+    "pages/cart/index",
+    "pages/mine/index",
+    "pages/detail/index"
+  ],
+  window: {
+    backgroundTextStyle: "light",
+    navigationBarBackgroundColor: "#0F3D38",
+    navigationBarTitleText: "美月商城",
+    navigationBarTextStyle: "white",
+    backgroundColor: "#F7F6F3"
+  },
+  tabBar: {
+    color: "#5A6B66",
+    selectedColor: "#1A4D45",
+    backgroundColor: "#F7F6F3",
+    borderStyle: "black",
+    list: [
+      {
+        pagePath: "pages/index/index",
+        text: "首页"
+      },
+      {
+        pagePath: "pages/category/index",
+        text: "分类"
+      },
+      {
+        pagePath: "pages/cart/index",
+        text: "购物车"
+      },
+      {
+        pagePath: "pages/mine/index",
+        text: "我的"
+      }
+    ]
+  }
+});

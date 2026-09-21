@@ -1,50 +1,71 @@
-import { FormEvent, useState } from "react";
+import { LockOutlined, UserOutlined } from "@ant-design/icons";
+import { LoginForm, ProFormText } from "@ant-design/pro-components";
+import { App, Typography } from "antd";
 import { useNavigate } from "react-router-dom";
 import { apiFetch, setToken } from "@meiyue/api";
 import type { AuthResult } from "@meiyue/types";
-import { PageShell } from "@meiyue/ui";
 
-/** 平台管理员登录（种子：admin / admin123） */
+/**
+ * 平台登录页（Pro LoginForm）
+ * 种子账号：admin / admin123；校验 PLATFORM_ADMIN 角色
+ */
 export function LoginPage() {
-  const nav = useNavigate();
-  const [username, setUsername] = useState("admin");
-  const [password, setPassword] = useState("admin123");
-  const [error, setError] = useState<string | null>(null);
-
-  async function onSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    try {
-      const data = await apiFetch<AuthResult>("/api/v1/auth/login", {
-        method: "POST",
-        json: { username, password }
-      });
-      if (!data.user.roles.includes("PLATFORM_ADMIN")) {
-        setToken(null);
-        setError("该账号不是平台管理员");
-        return;
-      }
-      setToken(data.accessToken);
-      nav("/");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "登录失败");
-    }
-  }
+  const navigate = useNavigate();
+  const { message } = App.useApp();
 
   return (
-    <PageShell title="平台登录" subtitle="美月商城运营后台">
-      <form onSubmit={onSubmit} style={{ display: "grid", gap: 12, maxWidth: 360 }}>
-        <label>
-          用户名
-          <input value={username} onChange={(e) => setUsername(e.target.value)} required />
-        </label>
-        <label>
-          密码
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-        </label>
-        {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
-        <button type="submit">登录</button>
-      </form>
-    </PageShell>
+    <div
+      style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(160deg, #E8ECE9 0%, #F7F6F3 45%, #D5E0DC 100%)"
+      }}
+    >
+      <LoginForm
+        title="美月商城"
+        subTitle="平台运营后台"
+        onFinish={async (values) => {
+          try {
+            const data = await apiFetch<AuthResult>("/api/v1/auth/login", {
+              method: "POST",
+              json: {
+                username: values.username,
+                password: values.password
+              }
+            });
+            if (!data.user.roles.includes("PLATFORM_ADMIN")) {
+              setToken(null);
+              message.error("该账号不是平台管理员");
+              return;
+            }
+            setToken(data.accessToken);
+            message.success("登录成功");
+            navigate("/onboarding");
+          } catch (err) {
+            message.error(err instanceof Error ? err.message : "登录失败");
+          }
+        }}
+      >
+        <Typography.Paragraph type="secondary" style={{ textAlign: "center" }}>
+          演示账号 admin / admin123
+        </Typography.Paragraph>
+        <ProFormText
+          name="username"
+          fieldProps={{ size: "large", prefix: <UserOutlined /> }}
+          placeholder="用户名"
+          initialValue="admin"
+          rules={[{ required: true, message: "请输入用户名" }]}
+        />
+        <ProFormText.Password
+          name="password"
+          fieldProps={{ size: "large", prefix: <LockOutlined /> }}
+          placeholder="密码"
+          initialValue="admin123"
+          rules={[{ required: true, message: "请输入密码" }]}
+        />
+      </LoginForm>
+    </div>
   );
 }

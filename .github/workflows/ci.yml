@@ -69,6 +69,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # 构建买家 / 商家 / 平台三端（package.json scripts.build）
-      - name: Build all apps
+      # 构建买家 PC / 商家 Pro / 平台 Pro
+      - name: Build web apps (buyer/seller/admin)
         run: pnpm build
+
+      # Taro H5（移动端）
+      - name: Build Taro H5
+        run: pnpm build:taro:h5

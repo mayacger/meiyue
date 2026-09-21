@@ -1,16 +1,15 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
+import React from "react";
+import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import { App } from "./App";
+import "./styles/tokens.css";
+import "./styles/global.css";
 
-/**
- * 买家商城 入口
- * 挂载点：index.html #root
- */
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+/** 买家 PC 入口 */
+ReactDOM.createRoot(document.getElementById("root")!).render(
+  <React.StrictMode>
     <BrowserRouter>
       <App />
     </BrowserRouter>
-  </StrictMode>
+  </React.StrictMode>
 );

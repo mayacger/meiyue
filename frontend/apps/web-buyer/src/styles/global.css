@@ -1,0 +1,67 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--my-font-body);
+  color: var(--my-text);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(213, 224, 220, 0.7), transparent 55%),
+    radial-gradient(900px 500px at 90% 0%, rgba(196, 163, 90, 0.12), transparent 50%),
+    var(--my-paper);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+/* 入场动效：克制 fade-up */
+@keyframes my-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes my-ken-burns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.06);
+  }
+}
+
+.my-fade-up {
+  animation: my-fade-up 0.7s var(--my-ease) both;
+}
+
+.my-fade-up-delay {
+  animation: my-fade-up 0.8s var(--my-ease) 0.12s both;
+}

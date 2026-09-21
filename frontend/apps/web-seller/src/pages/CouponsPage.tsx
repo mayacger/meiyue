@@ -1,77 +1,88 @@
-import { FormEvent, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useRef } from "react";
+import type { ActionType, ProColumns } from "@ant-design/pro-components";
+import {
+  ModalForm,
+  PageContainer,
+  ProFormDigit,
+  ProFormText,
+  ProTable
+} from "@ant-design/pro-components";
+import { App, Button, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
-import { PageShell } from "@meiyue/ui";
+import type { CouponSummary } from "@meiyue/types";
 
-interface Coupon {
-  id: number;
-  code: string;
-  title: string;
-  discountCents: number;
-  minSpendCents: number;
-  totalQuota: number;
-  claimedCount: number;
-  status: string;
-}
-
-/** 商家店券 */
+/** 店券：与平台券互斥 */
 export function CouponsPage() {
-  const [list, setList] = useState<Coupon[]>([]);
-  const [code, setCode] = useState("WELCOME10");
-  const [title, setTitle] = useState("新人减10元");
-  const [discountYuan, setDiscountYuan] = useState("10");
-  const [minYuan, setMinYuan] = useState("50");
-  const [quota, setQuota] = useState("100");
-  const [error, setError] = useState<string | null>(null);
+  const actionRef = useRef<ActionType>();
+  const { message } = App.useApp();
 
-  async function reload() {
-    setList(await apiFetch<Coupon[]>("/api/v1/seller/coupons"));
-  }
-
-  useEffect(() => {
-    reload().catch((e) => setError(e instanceof Error ? e.message : "加载失败"));
-  }, []);
-
-  async function onCreate(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    try {
-      await apiFetch("/api/v1/seller/coupons", {
-        method: "POST",
-        json: {
-          code,
-          title,
-          discountCents: Math.round(parseFloat(discountYuan) * 100),
-          minSpendCents: Math.round(parseFloat(minYuan) * 100),
-          totalQuota: parseInt(quota, 10)
-        }
-      });
-      await reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "创建失败");
+  const columns: ProColumns<CouponSummary>[] = [
+    { title: "券码", dataIndex: "code", copyable: true },
+    { title: "标题", dataIndex: "title" },
+    {
+      title: "面额",
+      render: (_, r) => `¥${(r.discountCents / 100).toFixed(2)}`
+    },
+    {
+      title: "门槛",
+      render: (_, r) => `¥${(r.minSpendCents / 100).toFixed(2)}`
+    },
+    {
+      title: "领取",
+      render: (_, r) => `${r.claimedCount ?? 0}/${r.totalQuota || "∞"}`
+    },
+    {
+      title: "状态",
+      dataIndex: "status",
+      render: (_, r) => <Tag>{r.status}</Tag>
     }
-  }
+  ];
 
   return (
-    <PageShell title="店券" subtitle="店铺发券；与平台券默认互斥（MUTUAL_EXCLUSIVE）">
-      <p><Link to="/">返回概览</Link></p>
-      {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
-      <form onSubmit={onCreate}>
-        <input value={code} onChange={(e) => setCode(e.target.value)} placeholder="券码" required />{" "}
-        <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="标题" required />{" "}
-        <input value={discountYuan} onChange={(e) => setDiscountYuan(e.target.value)} placeholder="面额元" />{" "}
-        <input value={minYuan} onChange={(e) => setMinYuan(e.target.value)} placeholder="门槛元" />{" "}
-        <input value={quota} onChange={(e) => setQuota(e.target.value)} placeholder="总量" />{" "}
-        <button type="submit">创建</button>
-      </form>
-      <ul>
-        {list.map((c) => (
-          <li key={c.id}>
-            {c.code} · {c.title} · 减¥{(c.discountCents / 100).toFixed(2)} · 满¥{(c.minSpendCents / 100).toFixed(2)}
-            · 已领 {c.claimedCount}/{c.totalQuota || "∞"} · {c.status}
-          </li>
-        ))}
-      </ul>
-    </PageShell>
+    <PageContainer header={{ title: "店券", subTitle: "店铺级优惠券" }}>
+      <ProTable<CouponSummary>
+        actionRef={actionRef}
+        rowKey="id"
+        search={false}
+        columns={columns}
+        toolBarRender={() => [
+          <ModalForm
+            key="create"
+            title="创建店券"
+            trigger={<Button type="primary">新建店券</Button>}
+            onFinish={async (values) => {
+              try {
+                await apiFetch("/api/v1/seller/coupons", {
+                  method: "POST",
+                  json: {
+                    code: values.code,
+                    title: values.title,
+                    discountCents: Math.round(Number(values.discountYuan) * 100),
+                    minSpendCents: Math.round(Number(values.minYuan) * 100),
+                    totalQuota: Number(values.quota)
+                  }
+                });
+                message.success("已创建");
+                actionRef.current?.reload();
+                return true;
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "创建失败");
+                return false;
+              }
+            }}
+          >
+            <ProFormText name="code" label="券码" initialValue="WELCOME10" rules={[{ required: true }]} />
+            <ProFormText name="title" label="标题" initialValue="新人减10元" rules={[{ required: true }]} />
+            <ProFormDigit name="discountYuan" label="面额（元）" initialValue={10} rules={[{ required: true }]} />
+            <ProFormDigit name="minYuan" label="门槛（元）" initialValue={50} rules={[{ required: true }]} />
+            <ProFormDigit name="quota" label="总量" initialValue={100} rules={[{ required: true }]} />
+          </ModalForm>
+        ]}
+        request={async () => {
+          const data = await apiFetch<CouponSummary[]>("/api/v1/seller/coupons");
+          return { data, success: true, total: data.length };
+        }}
+      />
+    </PageContainer>
   );
 }

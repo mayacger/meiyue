@@ -1,0 +1,38 @@
+.my-od {
+  max-width: var(--my-max);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  display: grid;
+  gap: 1.75rem;
+}
+
+.my-od h1 {
+  font-family: var(--my-font-brand);
+  font-weight: 500;
+  color: var(--my-ink-deep);
+  margin: 0;
+}
+
+.my-od h2 {
+  font-size: 1.1rem;
+  margin: 0 0 0.75rem;
+}
+
+.my-od__form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.my-od__form input,
+.my-od__form select {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--my-line);
+  border-radius: 8px;
+}
+
+.my-od__ship {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--my-line);
+}

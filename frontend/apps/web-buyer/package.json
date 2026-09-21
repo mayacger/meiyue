@@ -3,18 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "description": "美月商城买家 PC（设计向，非 Pro 后台）",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit -p tsconfig.json && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@meiyue/api": "workspace:*",
     "@meiyue/types": "workspace:*",
-    "@meiyue/ui": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0",
-    "@meiyue/api": "workspace:*"
+    "react-router-dom": "^6.28.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

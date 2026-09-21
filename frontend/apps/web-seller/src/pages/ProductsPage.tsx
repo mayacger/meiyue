@@ -1,184 +1,146 @@
-import { FormEvent, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import type { ActionType, ProColumns } from "@ant-design/pro-components";
+import {
+  ModalForm,
+  PageContainer,
+  ProFormDigit,
+  ProFormSelect,
+  ProFormText,
+  ProTable
+} from "@ant-design/pro-components";
+import { App, Button, Space, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
-import { PageShell } from "@meiyue/ui";
+import type { ProductSummary } from "@meiyue/types";
 
 interface Category {
   id: number;
   name: string;
 }
-interface Product {
-  id: number;
-  title: string;
-  status: string;
-  promoVideoUrl?: string | null;
-  skus: { skuCode: string; priceCents: number; stockQty: number }[];
-}
 
-interface VideoTask {
-  id: number;
-  status: string;
-  prompt: string;
-  resultUrl: string | null;
-  productId: number | null;
-}
-
-/** 商家商品管理 + AI 推广视频 MOCK（I2/I11） */
+/**
+ * 商品管理 ProTable
+ * API：GET/POST /seller/products；POST /:id/status
+ * 字段：title / categoryId / skuCode / priceCents / stockQty
+ */
 export function ProductsPage() {
+  const actionRef = useRef<ActionType>();
+  const { message } = App.useApp();
   const [categories, setCategories] = useState<Category[]>([]);
-  const [list, setList] = useState<Product[]>([]);
-  const [videos, setVideos] = useState<VideoTask[]>([]);
-  const [title, setTitle] = useState("");
-  const [categoryId, setCategoryId] = useState<number | "">("");
-  const [skuCode, setSkuCode] = useState("");
-  const [priceYuan, setPriceYuan] = useState("99");
-  const [stock, setStock] = useState("10");
-  const [videoPrompt, setVideoPrompt] = useState("商品展示短视频");
-  const [videoProductId, setVideoProductId] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  async function reload() {
-    const products = await apiFetch<Product[]>("/api/v1/seller/products");
-    setList(products);
-    setVideos(await apiFetch<VideoTask[]>("/api/v1/seller/ai/videos"));
-  }
 
   useEffect(() => {
     apiFetch<Category[]>("/api/v1/categories").then(setCategories).catch(() => undefined);
-    reload().catch((e) => setError(e instanceof Error ? e.message : "加载失败"));
   }, []);
 
-  async function onCreate(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    try {
-      await apiFetch("/api/v1/seller/products", {
-        method: "POST",
-        json: {
-          categoryId: categoryId === "" ? null : categoryId,
-          title,
-          subtitle: "",
-          detailHtml: "",
-          skus: [
-            {
-              skuCode,
-              specText: "默认",
-              priceCents: Math.round(parseFloat(priceYuan) * 100),
-              stockQty: parseInt(stock, 10)
-            }
-          ]
-        }
-      });
-      setTitle("");
-      setSkuCode("");
-      await reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "创建失败");
+  const columns: ProColumns<ProductSummary>[] = [
+    { title: "ID", dataIndex: "id", width: 72 },
+    { title: "标题", dataIndex: "title" },
+    {
+      title: "状态",
+      dataIndex: "status",
+      width: 100,
+      render: (_, r) => <Tag>{r.status}</Tag>
+    },
+    {
+      title: "价格",
+      render: (_, r) => `¥${((r.skus[0]?.priceCents ?? 0) / 100).toFixed(2)}`
+    },
+    {
+      title: "库存",
+      render: (_, r) => r.skus[0]?.stockQty ?? "-"
+    },
+    {
+      title: "操作",
+      valueType: "option",
+      render: (_, r) => (
+        <Space>
+          <Button
+            type="link"
+            onClick={async () => {
+              await apiFetch(`/api/v1/seller/products/${r.id}/status`, {
+                method: "POST",
+                json: { status: "ON_SALE" }
+              });
+              message.success("已上架");
+              actionRef.current?.reload();
+            }}
+          >
+            上架
+          </Button>
+          <Button
+            type="link"
+            onClick={async () => {
+              await apiFetch(`/api/v1/seller/products/${r.id}/status`, {
+                method: "POST",
+                json: { status: "OFF_SALE" }
+              });
+              message.success("已下架");
+              actionRef.current?.reload();
+            }}
+          >
+            下架
+          </Button>
+        </Space>
+      )
     }
-  }
-
-  async function setStatus(id: number, status: string) {
-    await apiFetch(`/api/v1/seller/products/${id}/status`, {
-      method: "POST",
-      json: { status }
-    });
-    await reload();
-  }
-
-  async function submitVideo(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    try {
-      await apiFetch("/api/v1/seller/ai/videos", {
-        method: "POST",
-        json: {
-          prompt: videoPrompt,
-          productId: videoProductId ? Number(videoProductId) : null
-        }
-      });
-      setMsg("视频任务已提交（MOCK 异步），稍后刷新查看");
-      await reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "提交失败");
-    }
-  }
+  ];
 
   return (
-    <PageShell title="商品管理" subtitle="SPU/SKU · AI 推广视频 MOCK（非直播，I2/I11）">
-      <p>
-        <Link to="/">返回概览</Link> · <Link to="/decoration">店铺装修</Link>
-      </p>
-      <form onSubmit={onCreate} style={{ display: "grid", gap: 8, maxWidth: 420 }}>
-        <label>
-          类目
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value ? Number(e.target.value) : "")} required>
-            <option value="">请选择</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          标题
-          <input value={title} onChange={(e) => setTitle(e.target.value)} required />
-        </label>
-        <label>
-          SKU 编码
-          <input value={skuCode} onChange={(e) => setSkuCode(e.target.value)} required />
-        </label>
-        <label>
-          价格（元）
-          <input value={priceYuan} onChange={(e) => setPriceYuan(e.target.value)} required />
-        </label>
-        <label>
-          库存
-          <input value={stock} onChange={(e) => setStock(e.target.value)} required />
-        </label>
-        {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
-        {msg ? <p>{msg}</p> : null}
-        <button type="submit">创建草稿商品</button>
-      </form>
-
-      <h2>AI 推广视频（MOCK）</h2>
-      <form onSubmit={submitVideo}>
-        <input value={videoPrompt} onChange={(e) => setVideoPrompt(e.target.value)} placeholder="提示词" />{" "}
-        <select value={videoProductId} onChange={(e) => setVideoProductId(e.target.value)}>
-          <option value="">不挂商品</option>
-          {list.map((p) => <option key={p.id} value={p.id}>#{p.id} {p.title}</option>)}
-        </select>{" "}
-        <button type="submit">提交任务</button>{" "}
-        <button type="button" onClick={() => reload().catch(() => undefined)}>刷新任务</button>
-      </form>
-      <ul>
-        {videos.map((v) => (
-          <li key={v.id}>
-            任务#{v.id} [{v.status}] {v.prompt}
-            {v.resultUrl ? ` → ${v.resultUrl}` : ""}
-            {v.productId ? ` · 商品#${v.productId}` : ""}
-          </li>
-        ))}
-      </ul>
-
-      <h2>我的商品</h2>
-      <ul>
-        {list.map((p) => (
-          <li key={p.id}>
-            #{p.id} {p.title} [{p.status}] ¥
-            {((p.skus[0]?.priceCents ?? 0) / 100).toFixed(2)}
-            {p.promoVideoUrl ? ` · 视频 ${p.promoVideoUrl}` : ""}
-            {" "}
-            <button type="button" onClick={() => setStatus(p.id, "ON_SALE")}>
-              上架
-            </button>{" "}
-            <button type="button" onClick={() => setStatus(p.id, "OFF_SALE")}>
-              下架
-            </button>
-          </li>
-        ))}
-      </ul>
-    </PageShell>
+    <PageContainer header={{ title: "商品管理", subTitle: "SPU/SKU · 上下架" }}>
+      <ProTable<ProductSummary>
+        actionRef={actionRef}
+        rowKey="id"
+        search={false}
+        columns={columns}
+        toolBarRender={() => [
+          <ModalForm
+            key="create"
+            title="创建草稿商品"
+            trigger={<Button type="primary">新建商品</Button>}
+            onFinish={async (values) => {
+              try {
+                await apiFetch("/api/v1/seller/products", {
+                  method: "POST",
+                  json: {
+                    categoryId: values.categoryId,
+                    title: values.title,
+                    subtitle: "",
+                    detailHtml: "",
+                    skus: [
+                      {
+                        skuCode: values.skuCode,
+                        specText: "默认",
+                        priceCents: Math.round(Number(values.priceYuan) * 100),
+                        stockQty: Number(values.stock)
+                      }
+                    ]
+                  }
+                });
+                message.success("已创建");
+                actionRef.current?.reload();
+                return true;
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "创建失败");
+                return false;
+              }
+            }}
+          >
+            <ProFormSelect
+              name="categoryId"
+              label="类目"
+              options={categories.map((c) => ({ label: c.name, value: c.id }))}
+              rules={[{ required: true }]}
+            />
+            <ProFormText name="title" label="标题" rules={[{ required: true }]} />
+            <ProFormText name="skuCode" label="SKU 编码" rules={[{ required: true }]} />
+            <ProFormDigit name="priceYuan" label="价格（元）" initialValue={99} min={0.01} rules={[{ required: true }]} />
+            <ProFormDigit name="stock" label="库存" initialValue={10} min={0} rules={[{ required: true }]} />
+          </ModalForm>
+        ]}
+        request={async () => {
+          const data = await apiFetch<ProductSummary[]>("/api/v1/seller/products");
+          return { data, success: true, total: data.length };
+        }}
+      />
+    </PageContainer>
   );
 }

@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { PageContainer, ProCard, ProTable } from "@ant-design/pro-components";
+import type { ProColumns } from "@ant-design/pro-components";
+import { App, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
-import { PageShell } from "@meiyue/ui";
 
 interface Bill {
   id: number;
@@ -11,7 +12,6 @@ interface Bill {
   status: string;
   periodKey: string;
   remark: string | null;
-  createdAt: string;
 }
 
 interface Period {
@@ -21,11 +21,11 @@ interface Period {
   entryCount: number;
 }
 
-/** 商家结算账单（MVP 记账） */
+/** 结算账本：周期汇总 + 明细（不自动打款） */
 export function SettlementsPage() {
-  const [bills, setBills] = useState<Bill[]>([]);
+  const { message } = App.useApp();
   const [periods, setPeriods] = useState<Period[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const [bills, setBills] = useState<Bill[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -33,35 +33,58 @@ export function SettlementsPage() {
         setPeriods(await apiFetch<Period[]>("/api/v1/seller/settlements/periods"));
         setBills(await apiFetch<Bill[]>("/api/v1/seller/settlements/bills"));
       } catch (e) {
-        setError(e instanceof Error ? e.message : "加载失败");
+        message.error(e instanceof Error ? e.message : "加载失败");
       }
     })();
-  }, []);
+  }, [message]);
+
+  const periodCols: ProColumns<Period>[] = [
+    { title: "周期", dataIndex: "periodKey" },
+    {
+      title: "状态",
+      dataIndex: "status",
+      render: (_, r) => <Tag>{r.status}</Tag>
+    },
+    {
+      title: "金额",
+      render: (_, r) => `¥${(r.amountCents / 100).toFixed(2)}`
+    },
+    { title: "笔数", dataIndex: "entryCount" }
+  ];
+
+  const billCols: ProColumns<Bill>[] = [
+    { title: "ID", dataIndex: "id", width: 72 },
+    { title: "订单", dataIndex: "orderId" },
+    { title: "类型", dataIndex: "entryType" },
+    {
+      title: "金额",
+      render: (_, r) => `¥${(r.amountCents / 100).toFixed(2)}`
+    },
+    { title: "状态", dataIndex: "status" },
+    { title: "周期", dataIndex: "periodKey" }
+  ];
 
   return (
-    <PageShell title="结算账本" subtitle="周期汇总 + 明细（不自动打款）">
-      <p><Link to="/">返回概览</Link></p>
-      {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
-      <section>
-        <h2>周期汇总</h2>
-        <ul>
-          {periods.map((p, i) => (
-            <li key={`${p.periodKey}-${p.status}-${i}`}>
-              {p.periodKey} · {p.status} · ¥{(p.amountCents / 100).toFixed(2)} · {p.entryCount} 笔
-            </li>
-          ))}
-        </ul>
-      </section>
-      <section>
-        <h2>账单明细</h2>
-        <ul>
-          {bills.map((b) => (
-            <li key={b.id}>
-              #{b.id} 订单{b.orderId} · {b.entryType} · ¥{(b.amountCents / 100).toFixed(2)} · {b.status} · {b.periodKey}
-            </li>
-          ))}
-        </ul>
-      </section>
-    </PageShell>
+    <PageContainer header={{ title: "结算账本", subTitle: "MVP 记账结算，不自动打款" }}>
+      <ProCard title="周期汇总" style={{ marginBottom: 16 }}>
+        <ProTable<Period>
+          rowKey={(r) => `${r.periodKey}-${r.status}`}
+          search={false}
+          toolBarRender={false}
+          pagination={false}
+          dataSource={periods}
+          columns={periodCols}
+        />
+      </ProCard>
+      <ProCard title="账单明细">
+        <ProTable<Bill>
+          rowKey="id"
+          search={false}
+          toolBarRender={false}
+          dataSource={bills}
+          columns={billCols}
+        />
+      </ProCard>
+    </PageContainer>
   );
 }

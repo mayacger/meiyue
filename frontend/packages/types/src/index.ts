@@ -1,9 +1,11 @@
 /**
- * 美月商城共享类型（I1 扩展）
+ * 美月商城共享类型
+ * 与后端 ApiResponse / DTO 对齐；前端各端共用。
  */
 
 export type ActorType = "BUYER" | "SELLER" | "PLATFORM" | "ANONYMOUS";
 
+/** 统一响应外壳：success / code / message / data */
 export interface ApiResponse<T> {
   success: boolean;
   code: string;
@@ -19,7 +21,7 @@ export interface PingPayload {
   actorType: ActorType;
 }
 
-/** 用户资料 */
+/** 用户资料：id / username / displayName / roles / tenantId / storeId / actorType */
 export interface UserProfile {
   id: number;
   username: string;
@@ -31,7 +33,7 @@ export interface UserProfile {
   actorType: ActorType;
 }
 
-/** 登录/注册响应 */
+/** 登录/注册响应：accessToken / expiresIn / user */
 export interface AuthResult {
   accessToken: string;
   tokenType: string;
@@ -39,7 +41,7 @@ export interface AuthResult {
   user: UserProfile;
 }
 
-/** 入驻申请 */
+/** 入驻申请：shopName / shopSlug / status PENDING|APPROVED|REJECTED */
 export interface OnboardingApplication {
   id: number;
   applicantUserId: number;
@@ -54,7 +56,7 @@ export interface OnboardingApplication {
   reviewedAt: string | null;
 }
 
-/** 店铺 */
+/** 店铺：id / tenantId / name / slug / status */
 export interface StoreInfo {
   id: number;
   tenantId: number;
@@ -62,4 +64,73 @@ export interface StoreInfo {
   slug: string;
   status: string;
   createdAt: string;
+}
+
+/** SKU 摘要 */
+export interface SkuSummary {
+  id: number;
+  skuCode: string;
+  specText?: string;
+  priceCents: number;
+  stockQty?: number;
+}
+
+/** 商品列表项 */
+export interface ProductSummary {
+  id: number;
+  tenantId: number;
+  title: string;
+  subtitle?: string;
+  status?: string;
+  skus: SkuSummary[];
+  promoVideoUrl?: string | null;
+}
+
+/** 购物车行 */
+export interface CartItem {
+  id: number;
+  productTitle: string;
+  skuCode: string;
+  unitPriceCents: number;
+  quantity: number;
+  lineTotalCents: number;
+  skuId: number;
+  tenantId?: number;
+}
+
+/** 订单摘要 */
+export interface OrderSummary {
+  id: number;
+  orderNo: string;
+  status: string;
+  totalCents: number;
+  paymentNo?: string;
+}
+
+/** 平台/店券 */
+export interface CouponSummary {
+  id: number;
+  code: string;
+  title: string;
+  discountCents: number;
+  minSpendCents: number;
+  totalQuota?: number;
+  claimedCount?: number;
+  status?: string;
+}
+
+/** 券领取记录 */
+export interface CouponClaim {
+  id: number;
+  couponId: number;
+  status: string;
+}
+
+/** 站内通知 */
+export interface NotificationItem {
+  id: number;
+  title: string;
+  body: string;
+  category: string;
+  read: boolean;
 }

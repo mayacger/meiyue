@@ -1,0 +1,32 @@
+.my-list__head {
+  max-width: var(--my-max);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 0;
+}
+
+.my-list__head h1 {
+  margin: 0 0 1rem;
+  font-family: var(--my-font-brand);
+  font-weight: 500;
+  color: var(--my-ink-deep);
+}
+
+.my-list__search {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.my-list__search input {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--my-line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.my-error {
+  color: #a33;
+  margin-top: 0.75rem;
+}

@@ -1,22 +1,22 @@
-import { FormEvent, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
+import type { ActionType, ProColumns } from "@ant-design/pro-components";
+import {
+  ModalForm,
+  PageContainer,
+  ProFormCheckbox,
+  ProFormSelect,
+  ProFormText,
+  ProTable
+} from "@ant-design/pro-components";
+import { App, Button, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
-import { PageShell } from "@meiyue/ui";
-
-interface OrderItem {
-  id: number;
-  productTitle: string;
-  skuCode: string;
-  quantity: number;
-  lineTotalCents: number;
-}
 
 interface Order {
   id: number;
   orderNo: string;
   status: string;
   totalCents: number;
-  items: OrderItem[];
+  items: { id: number; productTitle: string }[];
 }
 
 interface Shipment {
@@ -27,163 +27,100 @@ interface Shipment {
   trackingNo: string;
   packageSeq: number;
   ewaybillNo: string | null;
-  ewaybillLabelUrl: string | null;
-  tracks: { status: string; description: string }[];
 }
 
-const FORWARD_FLOW = ["PENDING_PICKUP", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"];
-
-/** 商家发货：多包裹 + MOCK 电子面单 */
+/**
+ * 发货履约
+ * API：GET /seller/orders · GET/POST /seller/shipments
+ */
 export function ShipmentsPage() {
+  const actionRef = useRef<ActionType>();
+  const { message } = App.useApp();
   const [orders, setOrders] = useState<Order[]>([]);
-  const [shipments, setShipments] = useState<Shipment[]>([]);
-  const [orderId, setOrderId] = useState("");
-  const [orderItemId, setOrderItemId] = useState("");
-  const [carrier, setCarrier] = useState("SF");
-  const [tracking, setTracking] = useState("");
-  const [printEb, setPrintEb] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [msg, setMsg] = useState<string | null>(null);
-
-  async function reload() {
-    setOrders(await apiFetch<Order[]>("/api/v1/seller/orders"));
-    setShipments(await apiFetch<Shipment[]>("/api/v1/seller/shipments"));
-  }
 
   useEffect(() => {
-    reload().catch((e) => setError(e instanceof Error ? e.message : "加载失败"));
+    apiFetch<Order[]>("/api/v1/seller/orders").then(setOrders).catch(() => undefined);
   }, []);
 
-  async function createShip(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
-    setMsg(null);
-    try {
-      const body: Record<string, unknown> = {
-        orderId: Number(orderId),
-        carrierCode: carrier,
-        printEwaybill: printEb,
-        receiverName: "买家",
-        receiverPhone: "",
-        receiverAddress: ""
-      };
-      if (tracking.trim()) body.trackingNo = tracking.trim();
-      if (orderItemId.trim()) body.orderItemId = Number(orderItemId);
-      const s = await apiFetch<Shipment>("/api/v1/seller/shipments", { method: "POST", json: body });
-      setTracking("");
-      setMsg(`已创建包裹#${s.packageSeq}` + (s.ewaybillNo ? ` 面单 ${s.ewaybillNo}` : ""));
-      await reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "发货失败");
+  const columns: ProColumns<Shipment>[] = [
+    { title: "包裹 ID", dataIndex: "id", width: 80 },
+    { title: "订单", dataIndex: "orderId" },
+    { title: "序号", dataIndex: "packageSeq", width: 64 },
+    { title: "承运商", dataIndex: "carrierCode" },
+    { title: "运单号", dataIndex: "trackingNo" },
+    { title: "面单号", dataIndex: "ewaybillNo" },
+    {
+      title: "状态",
+      dataIndex: "status",
+      render: (_, r) => <Tag>{r.status}</Tag>
     }
-  }
-
-  async function advance(id: number, status: string) {
-    setError(null);
-    try {
-      await apiFetch(`/api/v1/seller/shipments/${id}/status`, {
-        method: "POST",
-        json: { status, description: `推进到 ${status}` }
-      });
-      await reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "状态更新失败");
-    }
-  }
-
-  async function printEwaybill(id: number) {
-    setError(null);
-    try {
-      const s = await apiFetch<Shipment>(`/api/v1/seller/shipments/${id}/ewaybill/print`, { method: "POST" });
-      setMsg(`面单 ${s.ewaybillNo} · ${s.ewaybillLabelUrl}`);
-      await reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "打单失败");
-    }
-  }
-
-  async function syncTracks(id: number) {
-    try {
-      await apiFetch(`/api/v1/seller/shipments/${id}/sync-tracks`, { method: "POST" });
-      await reload();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "同步轨迹失败");
-    }
-  }
-
-  function nextStatus(cur: string): string | null {
-    const i = FORWARD_FLOW.indexOf(cur);
-    if (i < 0 || i >= FORWARD_FLOW.length - 1) return null;
-    return FORWARD_FLOW[i + 1];
-  }
-
-  const selectedOrder = orders.find((o) => String(o.id) === orderId);
+  ];
 
   return (
-    <PageShell title="发货管理" subtitle="多包裹 · MOCK 电子面单（I5/I11）">
-      <p><Link to="/">返回概览</Link></p>
-      {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
-      {msg ? <p style={{ color: "green" }}>{msg}</p> : null}
-
-      <section>
-        <h2>可履约订单</h2>
-        <ul>
-          {orders.map((o) => (
-            <li key={o.id}>
-              #{o.id} {o.orderNo} · {o.status} · ¥{(o.totalCents / 100).toFixed(2)}
-              <button type="button" style={{ marginLeft: 8 }} onClick={() => { setOrderId(String(o.id)); setOrderItemId(""); }}>选中发货</button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      <section>
-        <h2>新建运单 / 拆包</h2>
-        <form onSubmit={createShip}>
-          <label>订单ID <input value={orderId} onChange={(e) => setOrderId(e.target.value)} required /></label>{" "}
-          <label>
-            订单行（可选拆包）{" "}
-            <select value={orderItemId} onChange={(e) => setOrderItemId(e.target.value)}>
-              <option value="">整店发货</option>
-              {(selectedOrder?.items || []).map((it) => (
-                <option key={it.id} value={it.id}>{it.productTitle} (行#{it.id})</option>
-              ))}
-            </select>
-          </label>{" "}
-          <label>承运商 <input value={carrier} onChange={(e) => setCarrier(e.target.value)} /></label>{" "}
-          <label>运单号（可空，MOCK 打单生成） <input value={tracking} onChange={(e) => setTracking(e.target.value)} /></label>{" "}
-          <label>
-            <input type="checkbox" checked={printEb} onChange={(e) => setPrintEb(e.target.checked)} /> MOCK 电子面单
-          </label>{" "}
-          <button type="submit">发货</button>
-        </form>
-      </section>
-
-      <section>
-        <h2>我的运单</h2>
-        <ul>
-          {shipments.map((s) => {
-            const next = nextStatus(s.status);
-            return (
-              <li key={s.id} style={{ marginBottom: 12 }}>
-                运单#{s.id} 订单{s.orderId} 包裹#{s.packageSeq} · {s.carrierCode}/{s.trackingNo} · <b>{s.status}</b>
-                {s.ewaybillNo ? <span> · 面单 {s.ewaybillNo}</span> : null}
-                {" "}
-                {next ? <button type="button" onClick={() => advance(s.id, next)}>→ {next}</button> : null}
-                {" "}
-                <button type="button" onClick={() => printEwaybill(s.id)}>补打面单</button>
-                {" "}
-                <button type="button" onClick={() => syncTracks(s.id)}>同步轨迹</button>
-                <ul>
-                  {(s.tracks || []).map((t, idx) => (
-                    <li key={idx}>{t.status}: {t.description}</li>
-                  ))}
-                </ul>
-              </li>
-            );
-          })}
-        </ul>
-      </section>
-    </PageShell>
+    <PageContainer header={{ title: "发货履约", subTitle: "多包裹 · MOCK 面单" }}>
+      <ProTable<Shipment>
+        actionRef={actionRef}
+        rowKey="id"
+        search={false}
+        columns={columns}
+        toolBarRender={() => [
+          <ModalForm
+            key="ship"
+            title="创建发货包裹"
+            trigger={<Button type="primary">发货</Button>}
+            onFinish={async (values) => {
+              try {
+                await apiFetch("/api/v1/seller/shipments", {
+                  method: "POST",
+                  json: {
+                    orderId: Number(values.orderId),
+                    carrierCode: values.carrierCode,
+                    trackingNo: values.trackingNo || undefined,
+                    printEwaybill: !!values.printEwaybill,
+                    receiverName: "买家",
+                    receiverPhone: "",
+                    receiverAddress: ""
+                  }
+                });
+                message.success("已创建包裹");
+                actionRef.current?.reload();
+                return true;
+              } catch (err) {
+                message.error(err instanceof Error ? err.message : "发货失败");
+                return false;
+              }
+            }}
+          >
+            <ProFormSelect
+              name="orderId"
+              label="订单"
+              options={orders.map((o) => ({
+                label: `${o.orderNo} [${o.status}]`,
+                value: o.id
+              }))}
+              rules={[{ required: true }]}
+            />
+            <ProFormSelect
+              name="carrierCode"
+              label="承运商"
+              initialValue="SF"
+              options={[
+                { label: "顺丰 SF", value: "SF" },
+                { label: "中通 ZTO", value: "ZTO" },
+                { label: "圆通 YTO", value: "YTO" }
+              ]}
+            />
+            <ProFormText name="trackingNo" label="运单号（可空，走 MOCK 面单）" />
+            <ProFormCheckbox name="printEwaybill" initialValue={true}>
+              打印 MOCK 电子面单
+            </ProFormCheckbox>
+          </ModalForm>
+        ]}
+        request={async () => {
+          const data = await apiFetch<Shipment[]>("/api/v1/seller/shipments");
+          return { data, success: true, total: data.length };
+        }}
+      />
+    </PageContainer>
   );
 }

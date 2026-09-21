@@ -1,26 +1,17 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
+    "moduleResolution": "Bundler",
     "jsx": "react-jsx",
     "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "baseUrl": ".",
-    "paths": {
-      "@meiyue/ui": ["../../packages/ui/src/index.ts"],
-      "@meiyue/types": ["../../packages/types/src/index.ts"],
-      "@meiyue/api": ["../../packages/api/src/index.ts"]
-    }
+    "skipLibCheck": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "baseUrl": "."
   },
-  "include": ["src", "../../packages/ui/src", "../../packages/types/src", "../../packages/api/src"]
+  "include": ["src"]
 }

@@ -3,7 +3,7 @@
 > B2B2C 多租户电商平台 · 中国大陆 · 工程标识 `meiyue-mall`  
 > 仓库：`mayacger/meiyue`（前后端同仓）  
 > 规划定稿：见项目 Context 中 `ecommerce-platform-plan.md` **v1.2**  
-> 进度：`docs/dev-progress.md`（**I1→I12 已完成**；C19；运维见 `docs/ops-runbook.md`；冒烟 `scripts/smoke-e2e.sh`）
+> 进度：`docs/dev-progress.md`（**I1→I14**；C19+C20；前端四端见 `frontend/README.md`）
 
 ---
 
@@ -20,13 +20,14 @@
 │   ├── meiyue-catalog/      # 类目 / SPU·SKU（I2）
 │   ├── meiyue-decoration/   # 模板装修（I2）
 │   └── meiyue-payment/      # 微信/支付宝通道占位
-├── frontend/                # pnpm monorepo · React + TS + Vite
-│   ├── apps/web-buyer       # 买家商城
-│   ├── apps/web-seller      # 商家后台
-│   ├── apps/web-admin       # 平台后台
+├── frontend/                # pnpm monorepo · React + Taro
+│   ├── apps/web-buyer       # 买家 PC（设计向）
+│   ├── apps/web-seller      # 商家后台（Ant Design Pro）
+│   ├── apps/web-admin       # 平台后台（Ant Design Pro）
+│   ├── apps/taro-buyer      # 买家移动（Taro H5+weapp）
 │   └── packages/ui|types|api
 ├── docs/                    # scaffold-progress / dev-progress
-└── docker/                  # docker-compose（PostgreSQL）
+└── docker/                  # docker-compose（PostgreSQL + Redis）
 ```
 
 ---
@@ -46,7 +47,7 @@
                     │meiyue-worker│ 空壳  │
                     └─────────────┘      │
                                          │
-  web-buyer / web-seller / web-admin ────┘ /api proxy
+  web-buyer / web-seller / web-admin / taro-buyer ─── /api proxy
 ```
 
 与规划文档对应：

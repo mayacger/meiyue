@@ -1,4 +1,5 @@
-# pnpm workspace：apps 为三端应用，packages 为共享包
+# pnpm workspace：四端应用 + 共享包
+# apps: web-admin / web-seller / web-buyer / taro-buyer
 packages:
   - "apps/*"
   - "packages/*"

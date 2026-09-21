@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useRef } from "react";
+import type { ActionType, ProColumns } from "@ant-design/pro-components";
+import { PageContainer, ProTable } from "@ant-design/pro-components";
+import { App, Button, Space, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
-import { PageShell } from "@meiyue/ui";
 
 interface Aftersale {
   id: number;
@@ -11,71 +12,98 @@ interface Aftersale {
   status: string;
   reason: string;
   refundCents: number;
-  reviewNote: string | null;
   reverseShipmentId: number | null;
 }
 
-/** 商家售后审核 */
+/**
+ * 售后审核
+ * approve / reject / confirm-return
+ */
 export function AftersalesPage() {
-  const [list, setList] = useState<Aftersale[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  const actionRef = useRef<ActionType>();
+  const { message } = App.useApp();
 
-  async function reload() {
-    setList(await apiFetch<Aftersale[]>("/api/v1/seller/aftersales"));
-  }
-
-  useEffect(() => {
-    reload().catch((e) => setError(e instanceof Error ? e.message : "加载失败"));
-  }, []);
-
-  async function approve(id: number) {
-    await apiFetch(`/api/v1/seller/aftersales/${id}/approve`, {
-      method: "POST",
-      json: { reviewNote: "商家同意" }
-    });
-    await reload();
-  }
-
-  async function reject(id: number) {
-    await apiFetch(`/api/v1/seller/aftersales/${id}/reject`, {
-      method: "POST",
-      json: { reviewNote: "商家拒绝" }
-    });
-    await reload();
-  }
-
-  async function confirmReturn(id: number) {
-    await apiFetch(`/api/v1/seller/aftersales/${id}/confirm-return`, { method: "POST" });
-    await reload();
-  }
+  const columns: ProColumns<Aftersale>[] = [
+    { title: "单号", dataIndex: "aftersaleNo" },
+    { title: "订单", dataIndex: "orderId", width: 80 },
+    { title: "类型", dataIndex: "type" },
+    {
+      title: "状态",
+      dataIndex: "status",
+      render: (_, r) => <Tag>{r.status}</Tag>
+    },
+    { title: "原因", dataIndex: "reason", ellipsis: true },
+    {
+      title: "退款",
+      render: (_, r) => `¥${(r.refundCents / 100).toFixed(2)}`
+    },
+    {
+      title: "操作",
+      valueType: "option",
+      render: (_, r) => (
+        <Space>
+          {(r.status === "REVIEWING" || r.status === "APPLIED") && (
+            <>
+              <Button
+                type="link"
+                onClick={async () => {
+                  await apiFetch(`/api/v1/seller/aftersales/${r.id}/approve`, {
+                    method: "POST",
+                    json: { reviewNote: "商家同意" }
+                  });
+                  message.success("已同意");
+                  actionRef.current?.reload();
+                }}
+              >
+                同意
+              </Button>
+              <Button
+                type="link"
+                danger
+                onClick={async () => {
+                  await apiFetch(`/api/v1/seller/aftersales/${r.id}/reject`, {
+                    method: "POST",
+                    json: { reviewNote: "商家拒绝" }
+                  });
+                  message.success("已拒绝");
+                  actionRef.current?.reload();
+                }}
+              >
+                拒绝
+              </Button>
+            </>
+          )}
+          {r.type === "RETURN_REFUND" && r.status === "APPROVED" && r.reverseShipmentId ? (
+            <Button
+              type="link"
+              onClick={async () => {
+                await apiFetch(`/api/v1/seller/aftersales/${r.id}/confirm-return`, {
+                  method: "POST"
+                });
+                message.success("已确认收货");
+                actionRef.current?.reload();
+              }}
+            >
+              确认退货签收
+            </Button>
+          ) : null}
+        </Space>
+      )
+    }
+  ];
 
   return (
-    <PageShell title="售后审核" subtitle="同意 / 拒绝 / 确认退货">
-      <p><Link to="/">返回概览</Link></p>
-      {error ? <p style={{ color: "crimson" }}>{error}</p> : null}
-      <ul>
-        {list.map((a) => (
-          <li key={a.id} style={{ marginBottom: 12 }}>
-            {a.aftersaleNo} · 订单{a.orderId} · {a.type} · <b>{a.status}</b>
-            <br />
-            原因：{a.reason} · 退款 ¥{(a.refundCents / 100).toFixed(2)}
-            {a.reviewNote ? <> · 备注：{a.reviewNote}</> : null}
-            <div>
-              {(a.status === "REVIEWING" || a.status === "APPLIED") && (
-                <>
-                  <button type="button" onClick={() => approve(a.id).catch((e) => setError(e.message))}>同意</button>{" "}
-                  <button type="button" onClick={() => reject(a.id).catch((e) => setError(e.message))}>拒绝</button>
-                </>
-              )}
-              {a.type === "RETURN_REFUND" && a.status === "APPROVED" && a.reverseShipmentId && (
-                <button type="button" onClick={() => confirmReturn(a.id).catch((e) => setError(e.message))}>
-                  确认收到退货
-                </button>
-              )}
-            </div>
-          </li>
-        ))}
-      </ul>
-    </PageShell>
+    <PageContainer header={{ title: "售后审核", subTitle: "48h 超时自动同意由后端保障" }}>
+      <ProTable<Aftersale>
+        actionRef={actionRef}
+        rowKey="id"
+        search={false}
+        columns={columns}
+        request={async () => {
+          const data = await apiFetch<Aftersale[]>("/api/v1/seller/aftersales");
+          return { data, success: true, total: data.length };
+        }}
+      />
+    </PageContainer>
   );
 }

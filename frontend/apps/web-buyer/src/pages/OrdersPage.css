@@ -1,0 +1,30 @@
+.my-orders {
+  max-width: var(--my-max);
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.my-orders h1 {
+  font-family: var(--my-font-brand);
+  font-weight: 500;
+  color: var(--my-ink-deep);
+}
+
+.my-orders ul {
+  list-style: none;
+  padding: 0;
+}
+
+.my-orders li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--my-line);
+}
+
+.my-orders a {
+  font-weight: 600;
+  color: var(--my-ink);
+}

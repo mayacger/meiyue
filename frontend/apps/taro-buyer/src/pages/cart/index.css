@@ -1,0 +1,28 @@
+.page {
+  padding: 32px;
+}
+
+.h1 {
+  display: block;
+  font-size: 40px;
+  font-weight: 700;
+  color: #0f3d38;
+  margin-bottom: 24px;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  padding: 24px 0;
+  border-bottom: 1px solid rgba(26, 77, 69, 0.12);
+  font-size: 28px;
+}
+
+.price {
+  color: #1a4d45;
+  font-weight: 700;
+}
+
+.muted {
+  color: #5a6b66;
+}

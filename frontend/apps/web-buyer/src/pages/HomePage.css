@@ -1,0 +1,116 @@
+.my-hero {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  min-height: calc(100vh - 4.5rem);
+  align-items: stretch;
+}
+
+.my-hero__copy {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3rem 1.5rem 3rem clamp(1.5rem, 6vw, 4rem);
+  max-width: 36rem;
+  margin-left: auto;
+}
+
+.my-hero__brand {
+  margin: 0 0 0.75rem;
+  font-family: var(--my-font-brand);
+  font-size: clamp(2.4rem, 5vw, 3.4rem);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--my-ink-deep);
+  line-height: 1.15;
+}
+
+.my-hero__copy h1 {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.4vw, 1.85rem);
+  font-weight: 500;
+  color: var(--my-text);
+  line-height: 1.35;
+}
+
+.my-hero__lead {
+  margin: 1rem 0 1.75rem;
+  color: var(--my-muted);
+  line-height: 1.65;
+  max-width: 28rem;
+}
+
+.my-hero__cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.my-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.35rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  transition:
+    transform 0.3s var(--my-ease),
+    background 0.3s var(--my-ease),
+    color 0.3s var(--my-ease);
+}
+
+.my-btn:hover {
+  transform: translateY(-2px);
+}
+
+.my-btn--primary {
+  background: var(--my-ink);
+  color: #f7f6f3;
+}
+
+.my-btn--ghost {
+  border-color: var(--my-ink);
+  color: var(--my-ink);
+  background: transparent;
+}
+
+.my-hero__visual {
+  position: relative;
+  overflow: hidden;
+  min-height: 320px;
+}
+
+.my-hero__plane {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(15, 61, 56, 0.55), rgba(26, 77, 69, 0.2)),
+    radial-gradient(circle at 70% 30%, rgba(196, 163, 90, 0.35), transparent 45%),
+    linear-gradient(160deg, #2d6b61, #0f3d38 60%, #1a4d45);
+  animation: my-ken-burns 18s var(--my-ease) alternate infinite;
+}
+
+.my-hero__plane::after {
+  content: "";
+  position: absolute;
+  inset: 12% 18%;
+  border: 1px solid rgba(247, 246, 243, 0.28);
+  border-radius: 40% 60% 55% 45% / 45% 40% 60% 55%;
+}
+
+@media (max-width: 860px) {
+  .my-hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .my-hero__copy {
+    margin: 0;
+    max-width: none;
+    padding: 2.5rem 1.25rem 1.5rem;
+  }
+
+  .my-hero__visual {
+    min-height: 42vh;
+  }
+}

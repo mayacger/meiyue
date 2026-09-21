@@ -1,0 +1,68 @@
+.my-rail {
+  max-width: var(--my-max);
+  margin: 0 auto;
+  padding: 2.5rem 1.25rem 1rem;
+}
+
+.my-rail__title {
+  font-family: var(--my-font-brand);
+  font-weight: 500;
+  font-size: 1.6rem;
+  color: var(--my-ink-deep);
+  margin: 0 0 1.5rem;
+}
+
+.my-rail__grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem 1.25rem;
+}
+
+.my-rail__item {
+  display: block;
+  transition: transform 0.35s var(--my-ease);
+}
+
+.my-rail__item:hover {
+  transform: translateY(-4px);
+}
+
+.my-rail__visual {
+  aspect-ratio: 4 / 5;
+  background:
+    linear-gradient(145deg, var(--my-fog), var(--my-mist)),
+    radial-gradient(circle at 30% 20%, rgba(26, 77, 69, 0.18), transparent 55%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.my-rail__visual span {
+  font-family: var(--my-font-brand);
+  font-size: 3rem;
+  color: rgba(15, 61, 56, 0.35);
+}
+
+.my-rail__meta h3 {
+  margin: 0.85rem 0 0.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.my-rail__meta p {
+  margin: 0;
+  color: var(--my-ink);
+  font-weight: 600;
+}
+
+@media (max-width: 960px) {
+  .my-rail__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 520px) {
+  .my-rail__grid {
+    grid-template-columns: 1fr;
+  }
+}

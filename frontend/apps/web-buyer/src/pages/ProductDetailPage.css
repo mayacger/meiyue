@@ -1,0 +1,91 @@
+.my-detail {
+  max-width: var(--my-max);
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 3rem;
+}
+
+.my-detail__crumb {
+  color: var(--my-muted);
+  margin-bottom: 1.5rem;
+}
+
+.my-detail__grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.my-detail__visual {
+  aspect-ratio: 1;
+  background:
+    linear-gradient(145deg, var(--my-fog), var(--my-mist)),
+    radial-gradient(circle at 40% 30%, rgba(26, 77, 69, 0.2), transparent 50%);
+  display: grid;
+  place-items: center;
+}
+
+.my-detail__visual span {
+  font-family: var(--my-font-brand);
+  font-size: 5rem;
+  color: rgba(15, 61, 56, 0.3);
+}
+
+.my-detail__info h1 {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 600;
+}
+
+.my-detail__price {
+  margin: 1rem 0;
+  font-size: 1.5rem;
+  color: var(--my-ink);
+  font-weight: 700;
+}
+
+.my-detail__sub {
+  color: var(--my-muted);
+  margin-bottom: 1.5rem;
+}
+
+.my-detail__cart-link {
+  display: inline-block;
+  margin-left: 1rem;
+  color: var(--my-ink-soft);
+}
+
+.my-detail__reviews {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--my-line);
+}
+
+.my-detail__reviews h2 {
+  font-family: var(--my-font-brand);
+  font-weight: 500;
+}
+
+.my-detail__reviews ul {
+  list-style: none;
+  padding: 0;
+}
+
+.my-detail__reviews li {
+  padding: 0.85rem 0;
+  border-bottom: 1px solid var(--my-line);
+}
+
+.my-muted {
+  color: var(--my-muted);
+}
+
+.my-ok {
+  color: var(--my-ink);
+}
+
+@media (max-width: 800px) {
+  .my-detail__grid {
+    grid-template-columns: 1fr;
+  }
+}
