@@ -93,6 +93,13 @@ export default function MinePage() {
             >
               收货地址
             </Button>
+            <Button
+              className="btn ghost"
+              size="mini"
+              onClick={() => Taro.navigateTo({ url: "/pages/notifications/index" })}
+            >
+              站内通知
+            </Button>
             <Button className="btn ghost" size="mini" onClick={logout}>
               退出
             </Button>

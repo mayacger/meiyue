@@ -40,3 +40,43 @@
 .err {
   color: #a33;
 }
+
+.reviews {
+  margin-top: 48px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(26, 77, 69, 0.12);
+}
+
+.h2 {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  color: #0f3d38;
+  margin-bottom: 16px;
+}
+
+.muted {
+  display: block;
+  color: #5a6b66;
+  font-size: 24px;
+  margin-top: 8px;
+}
+
+.review {
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(26, 77, 69, 0.08);
+}
+
+.rating {
+  display: block;
+  color: #1a4d45;
+  font-weight: 700;
+  font-size: 26px;
+}
+
+.content {
+  display: block;
+  margin-top: 8px;
+  font-size: 26px;
+  line-height: 1.5;
+}

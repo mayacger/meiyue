@@ -26,6 +26,31 @@
   background: rgba(255, 255, 255, 0.7);
 }
 
+.my-list__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.my-chip {
+  border: 1px solid var(--my-line);
+  background: transparent;
+  color: var(--my-muted);
+  padding: 0.35rem 0.85rem;
+  cursor: pointer;
+}
+
+.my-chip.is-active {
+  border-color: var(--my-ink);
+  color: var(--my-ink-deep);
+  background: rgba(26, 77, 69, 0.06);
+}
+
+.my-list__count {
+  margin: 0.75rem 0 0;
+}
+
 .my-error {
   color: #a33;
   margin-top: 0.75rem;

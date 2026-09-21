@@ -83,8 +83,10 @@ export function ProductDetailPage() {
         </div>
       ) : null}
       <section className="my-detail__reviews">
-        <h2>买家评价</h2>
-        {reviews.length === 0 ? <p className="my-muted">暂无评价</p> : null}
+        <h2>买家评价{reviews.length > 0 ? `（${reviews.length}）` : ""}</h2>
+        {reviews.length === 0 ? (
+          <p className="my-muted">暂无评价，确认收货后可在订单详情提交</p>
+        ) : null}
         <ul>
           {reviews.map((r) => (
             <li key={r.id}>

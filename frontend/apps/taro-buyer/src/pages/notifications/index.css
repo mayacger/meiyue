@@ -1,0 +1,60 @@
+.page {
+  padding: 32px;
+}
+
+.h1 {
+  display: block;
+  font-size: 40px;
+  font-weight: 700;
+  color: #0f3d38;
+  margin-bottom: 8px;
+}
+
+.muted {
+  display: block;
+  color: #5a6b66;
+  margin-bottom: 16px;
+  font-size: 26px;
+}
+
+.err {
+  display: block;
+  color: #a33;
+  margin-bottom: 12px;
+}
+
+.btn {
+  margin-bottom: 20px;
+  background: #1a4d45 !important;
+  color: #f7f6f3 !important;
+}
+
+.card {
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(26, 77, 69, 0.12);
+}
+
+.card.read {
+  opacity: 0.7;
+}
+
+.title {
+  display: block;
+  font-size: 30px;
+  font-weight: 600;
+  color: #0f3d38;
+}
+
+.meta {
+  display: block;
+  margin-top: 6px;
+  color: #5a6b66;
+  font-size: 22px;
+}
+
+.body {
+  display: block;
+  margin: 10px 0 12px;
+  font-size: 26px;
+  line-height: 1.5;
+}

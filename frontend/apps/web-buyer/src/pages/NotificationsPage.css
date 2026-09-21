@@ -1,0 +1,47 @@
+/**
+ * 买家通知列表（I19）
+ */
+
+.my-notify__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.my-notify__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.my-notify__list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.1rem 0;
+  border-bottom: 1px solid var(--my-line);
+}
+
+.my-notify__list li.is-unread strong {
+  color: var(--my-ink-deep);
+}
+
+.my-notify__list li.is-read {
+  opacity: 0.72;
+}
+
+.my-notify__list p {
+  margin: 0.4rem 0 0;
+  color: var(--my-text);
+  line-height: 1.5;
+}
+
+.my-notify__meta {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--my-muted);
+}

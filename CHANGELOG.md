@@ -1,6 +1,22 @@
 # 美月商城 · CHANGELOG
 
-## [0.1.0-SNAPSHOT] · I18 后端缺口 + 四端接线（当前 PR）
+## [0.1.0-SNAPSHOT] · I19 搜索/评价/通知打磨（当前 PR）
+
+- 买家 PC：商品列表类目芯片筛选、`/notifications` 通知箱
+- Taro：首页搜索、分类筛商品、详情评价、订单评价、通知页
+- 商家 Pro：通知箱 `/notifications`（已读）
+- 文档：`dev-progress.md` · `frontend-architecture.md` v1.3
+
+### 验证
+
+```bash
+cd frontend && pnpm build && pnpm build:taro:h5
+pnpm --filter @meiyue/taro-buyer build:weapp
+```
+
+---
+
+## [0.1.0-SNAPSHOT] · I18 后端缺口 + 四端接线
 
 - 后端：`/admin/categories` 创建/更新/启停；`/buyer/addresses` CRUD；`/admin/users` 列表+启停；Flyway V13
 - Admin Pro：类目可管理；账号页对接用户目录

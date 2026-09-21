@@ -47,6 +47,9 @@ export default function OrderDetailPage() {
   const [typeIndex, setTypeIndex] = useState(0);
   const [reason, setReason] = useState("不想要了");
   const [refundYuan, setRefundYuan] = useState("99");
+  const [reviewItemId, setReviewItemId] = useState<number | null>(null);
+  const [rating, setRating] = useState(5);
+  const [reviewContent, setReviewContent] = useState("很好");
   const types = [
     { label: "仅退款", value: "REFUND_ONLY" },
     { label: "退货退款", value: "RETURN_REFUND" }
@@ -59,6 +62,7 @@ export default function OrderDetailPage() {
     }
     const o = await apiFetch<Order>(`/api/v1/buyer/orders/${orderId}`);
     setOrder(o);
+    if (o.items?.[0] && reviewItemId == null) setReviewItemId(o.items[0].id);
     setShipments(await apiFetch<Shipment[]>(`/api/v1/buyer/orders/${orderId}/shipments`));
     const all = await apiFetch<Aftersale[]>("/api/v1/buyer/aftersales");
     setAftersales(all.filter((a) => a.orderId === orderId));
@@ -99,6 +103,27 @@ export default function OrderDetailPage() {
     }
   }
 
+  async function submitReview() {
+    if (!reviewItemId) {
+      Taro.showToast({ title: "请选择商品行", icon: "none" });
+      return;
+    }
+    try {
+      await apiFetch("/api/v1/buyer/reviews", {
+        method: "POST",
+        data: {
+          orderId,
+          orderItemId: reviewItemId,
+          rating,
+          content: reviewContent
+        }
+      });
+      Taro.showToast({ title: "评价已提交", icon: "success" });
+    } catch (e) {
+      Taro.showToast({ title: e instanceof Error ? e.message : "评价失败", icon: "none" });
+    }
+  }
+
   return (
     <View className="page">
       <Text className="h1">{order?.orderNo || `订单 #${orderId}`}</Text>
@@ -126,6 +151,44 @@ export default function OrderDetailPage() {
             {s.carrierCode} {s.trackingNo} · {s.status}
           </Text>
         ))}
+      </View>
+
+      <View className="section">
+        <Text className="h2">评价</Text>
+        <Picker
+          mode="selector"
+          range={order?.items?.map((it) => it.productTitle) || []}
+          value={Math.max(
+            0,
+            (order?.items || []).findIndex((it) => it.id === reviewItemId)
+          )}
+          onChange={(e) => {
+            const it = order?.items?.[Number(e.detail.value)];
+            if (it) setReviewItemId(it.id);
+          }}
+        >
+          <View className="picker">
+            商品行：
+            {order?.items?.find((it) => it.id === reviewItemId)?.productTitle || "请选择"}
+          </View>
+        </Picker>
+        <Picker
+          mode="selector"
+          range={["1", "2", "3", "4", "5"]}
+          value={rating - 1}
+          onChange={(e) => setRating(Number(e.detail.value) + 1)}
+        >
+          <View className="picker">评分：{rating} 星</View>
+        </Picker>
+        <Input
+          className="input"
+          value={reviewContent}
+          onInput={(e) => setReviewContent(e.detail.value)}
+          placeholder="评价内容"
+        />
+        <Button className="btn ghost" onClick={submitReview}>
+          提交评价
+        </Button>
       </View>
 
       <View className="section">

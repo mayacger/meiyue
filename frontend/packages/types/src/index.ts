@@ -126,13 +126,18 @@ export interface CouponClaim {
   status: string;
 }
 
-/** 站内通知 */
+/** 站内通知（与后端 NotificationResponse 对齐） */
 export interface NotificationItem {
   id: number;
+  /** 受众 BUYER / SELLER / PLATFORM */
+  audience?: string;
   title: string;
   body: string;
   category: string;
+  refType?: string | null;
+  refId?: string | null;
   read: boolean;
+  createdAt?: string;
 }
 
 /**

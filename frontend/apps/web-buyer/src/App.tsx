@@ -10,11 +10,12 @@ import { OrderDetailPage } from "./pages/OrderDetailPage";
 import { LoginPage } from "./pages/LoginPage";
 import { AftersalesPage } from "./pages/AftersalesPage";
 import { AddressPage } from "./pages/AddressPage";
+import { NotificationsPage } from "./pages/NotificationsPage";
 
 /**
- * 买家 PC 路由
- * / 首页英雄 · /products 列表 · /products/:id 详情
- * /cart /checkout · /orders /orders/:id · /addresses · /aftersales · /login
+ * 买家 PC 路由（I19）
+ * / 首页 · /products · /products/:id · /cart /checkout
+ * /orders · /addresses · /notifications · /aftersales · /login
  */
 export function App() {
   return (
@@ -28,6 +29,7 @@ export function App() {
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/orders/:id" element={<OrderDetailPage />} />
         <Route path="/addresses" element={<AddressPage />} />
+        <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/aftersales" element={<AftersalesPage />} />
         <Route path="/login" element={<LoginPage />} />
       </Route>

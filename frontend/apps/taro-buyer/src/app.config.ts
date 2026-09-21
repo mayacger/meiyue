@@ -1,7 +1,7 @@
 /**
  * 全局页面配置（I16）
  * Tab：首页 / 分类 / 购物车 / 我的
- * 二级：详情 / 订单列表 / 订单详情 / 地址占位
+ * 二级：详情 / 订单列表 / 订单详情 / 地址 / 通知
  */
 export default defineAppConfig({
   pages: [
@@ -12,7 +12,8 @@ export default defineAppConfig({
     "pages/detail/index",
     "pages/orders/index",
     "pages/order-detail/index",
-    "pages/address/index"
+    "pages/address/index",
+    "pages/notifications/index"
   ],
   window: {
     backgroundTextStyle: "light",
