@@ -52,9 +52,9 @@ public class SellerOnboardingController {
         return ApiResponse.ok(onboardingService.myStore());
     }
 
-    /** I22：更新店名/简介/Logo */
+    /** I22/I26：更新店名/简介/Logo（仅店主） */
     @PutMapping("/store")
-    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    @PreAuthorize("hasRole('SELLER_OWNER')")
     public ApiResponse<StoreResponse> updateStore(@Valid @RequestBody StoreUpdateRequest request) {
         return ApiResponse.ok(onboardingService.updateMyStore(request));
     }

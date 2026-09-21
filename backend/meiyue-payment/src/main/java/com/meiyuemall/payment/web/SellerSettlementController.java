@@ -21,7 +21,7 @@ import java.util.List;
  */
 @RestController
 @RequestMapping(SecurityConstants.API_PREFIX + "/seller/settlements")
-@PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+@PreAuthorize("hasRole('SELLER_OWNER')")
 public class SellerSettlementController {
 
     private final SettlementLedgerService settlementLedgerService;

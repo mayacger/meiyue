@@ -61,7 +61,14 @@ info:
     name: 美月商城
     code: meiyue-mall
     module: boot
-    description: B2B2C 多租户电商 API（I1–I13）
+    description: B2B2C 多租户电商 API（I1–I27）
+
+# I26：默认关闭 OpenAPI（demo/dev profile 打开）
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
 
 # JWT（生产务必用环境变量覆盖 secret）
 meiyue:

@@ -25,4 +25,13 @@ public class UserRoleService {
         user.getRoles().add(role);
         userAccountRepository.save(user);
     }
+
+    /** I26：移除角色（如解除店员） */
+    @Transactional
+    public void revokeRole(Long userId, RoleCode role) {
+        UserAccount user = userAccountRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("user not found: " + userId));
+        user.getRoles().remove(role);
+        userAccountRepository.save(user);
+    }
 }

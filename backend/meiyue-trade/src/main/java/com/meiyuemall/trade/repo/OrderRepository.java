@@ -71,4 +71,19 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     /** I22：全站已支付订单（Admin 导出） */
     List<Order> findByPaidAtIsNotNullOrderByPaidAtDesc();
+
+    /** I27：全站区间内已支付订单数 */
+    @Query("""
+            select count(o) from Order o
+            where o.paidAt is not null and o.paidAt >= :from and o.paidAt < :to
+            """)
+    long countPaidBetween(@Param("from") Instant from, @Param("to") Instant to);
+
+    /** I27：全站区间销售额（分） */
+    @Query("""
+            select coalesce(sum(i.lineTotalCents), 0) from OrderItem i
+            join i.order o
+            where o.paidAt is not null and o.paidAt >= :from and o.paidAt < :to
+            """)
+    long sumSalesCentsBetween(@Param("from") Instant from, @Param("to") Instant to);
 }

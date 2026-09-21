@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-# 美月商城 · I18/I20/I24/I25 轻量冒烟
-# 覆盖：类目 / 地址簿 / 用户 / 库存 / 概览 / 改密资料 / 审计 / 批量上下架 / 库存预警 / 通知
-# 前置：API 已启动；依赖 curl、python3
+# 美月商城 · I18/I20/I24–I27 轻量冒烟
+# 覆盖：类目 / 地址簿 / 用户 / 库存 / 概览 / 改密资料 / 审计 / 批量上下架 /
+#       库存预警 / 通知 / 员工邀请 / OpenAPI / 看板序列 / 草稿箱
+# 前置：API 已启动（demo profile 以开放 OpenAPI）；依赖 curl、python3
 # 用法：BASE_URL=http://localhost:8080 ./scripts/smoke-i18.sh
 # ============================================================
 set -euo pipefail
@@ -138,7 +139,49 @@ req("GET", "/api/v1/buyer/addresses", buyer_token)
 req("POST", f"/api/v1/buyer/addresses/{addr['id']}/default", buyer_token)
 req("DELETE", f"/api/v1/buyer/addresses/{addr['id']}", buyer_token)
 
+print("==> I26 OpenAPI + staff")
+with urllib.request.urlopen(BASE + "/v3/api-docs") as resp:
+    docs = json.loads(resp.read().decode())
+assert "openapi" in docs
+staff_user = f"i18_st_{SUFFIX}"
+req("POST", "/api/v1/auth/register", body={
+    "username": staff_user, "password": PASS, "displayName": staff_user, "role": "BUYER"
+})
+req("POST", "/api/v1/seller/staff/invite", seller_token, {"username": staff_user})
+staff_token = req("POST", "/api/v1/auth/login", body={"username": staff_user, "password": PASS})["accessToken"]
+req("GET", "/api/v1/seller/products", staff_token)
+
+def expect_403(method, path, token):
+    headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
+    r = urllib.request.Request(BASE + path, headers=headers, method=method)
+    try:
+        urllib.request.urlopen(r)
+        print(f"FAIL expected 403 {path}", file=sys.stderr)
+        raise SystemExit(1)
+    except urllib.error.HTTPError as e:
+        if e.code != 403:
+            print(f"FAIL expected 403 got {e.code} {path}", file=sys.stderr)
+            raise SystemExit(1)
+
+expect_403("GET", "/api/v1/seller/settlements/periods", staff_token)
+expect_403("GET", "/api/v1/seller/staff", staff_token)
+
+print("==> I27 series + drafts")
+ser = req("GET", "/api/v1/seller/dashboard/series?days=7", seller_token)
+assert len(ser["days"]) == 7
+req("GET", "/api/v1/admin/dashboard/series?days=7", admin_token)
+drafts = req("GET", "/api/v1/seller/products/drafts", seller_token)
+assert isinstance(drafts, list)
+# 新建商品默认草稿
+d = req("POST", "/api/v1/seller/products", seller_token, {
+    "categoryId": cat_id, "title": f"草稿{SUFFIX}", "subtitle": "d",
+    "detailHtml": "<p>d</p>",
+    "skus": [{"skuCode": f"DR-{SUFFIX}", "specText": "默认", "priceCents": 100, "stockQty": 1}]
+})
+drafts2 = req("GET", "/api/v1/seller/products/drafts", seller_token)
+assert any(p["id"] == d["id"] for p in drafts2)
+
 print("")
-print("SMOKE I18/I20/I24/I25 PASSED")
-print(f"  seller={seller} buyer={buyer} sku={sku_id} cat={cat['id']}")
+print("SMOKE I18/I20/I24–I27 PASSED")
+print(f"  seller={seller} buyer={buyer} staff={staff_user} sku={sku_id} cat={cat['id']}")
 PY

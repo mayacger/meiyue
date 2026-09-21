@@ -1,9 +1,10 @@
 package com.meiyuemall.boot.service;
 
+import com.meiyuemall.boot.dto.AdminDashboardResponse;
+import com.meiyuemall.boot.dto.DashboardSeriesResponse;
+import com.meiyuemall.boot.dto.SellerDashboardResponse;
 import com.meiyuemall.aftersale.domain.AftersaleStatus;
 import com.meiyuemall.aftersale.repo.AftersaleRepository;
-import com.meiyuemall.boot.dto.AdminDashboardResponse;
-import com.meiyuemall.boot.dto.SellerDashboardResponse;
 import com.meiyuemall.catalog.domain.CategoryStatus;
 import com.meiyuemall.catalog.domain.ProductStatus;
 import com.meiyuemall.catalog.repo.CategoryRepository;
@@ -26,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -99,6 +101,48 @@ public class DashboardAggregateService {
         long coupons = platformCouponRepository.count();
         long onSale = productRepository.findByStatusOrderByUpdatedAtDesc(ProductStatus.ON_SALE).size();
         return new AdminDashboardResponse(pendingOnboarding, buyers, sellers, categories, coupons, onSale);
+    }
+
+    /**
+     * I27：近 days 日商家销售额/订单序列（含今日）。
+     */
+    @Transactional(readOnly = true)
+    public DashboardSeriesResponse sellerSeries(int days) {
+        Long tenantId = requireSellerTenant();
+        return buildSeries(days, (from, to) -> new long[]{
+                orderRepository.countPaidTodayForSeller(tenantId, from, to),
+                orderRepository.sumSalesCentsTodayForSeller(tenantId, from, to)
+        });
+    }
+
+    /**
+     * I27：近 days 日平台销售额/订单序列。
+     */
+    @Transactional(readOnly = true)
+    public DashboardSeriesResponse adminSeries(int days) {
+        return buildSeries(days, (from, to) -> new long[]{
+                orderRepository.countPaidBetween(from, to),
+                orderRepository.sumSalesCentsBetween(from, to)
+        });
+    }
+
+    private DashboardSeriesResponse buildSeries(int days, DayAggregator agg) {
+        int n = Math.min(Math.max(days, 1), 30);
+        LocalDate today = LocalDate.now(ZONE);
+        List<DashboardSeriesResponse.DayPoint> points = new ArrayList<>();
+        for (int i = n - 1; i >= 0; i--) {
+            LocalDate d = today.minusDays(i);
+            Instant from = d.atStartOfDay(ZONE).toInstant();
+            Instant to = d.plusDays(1).atStartOfDay(ZONE).toInstant();
+            long[] v = agg.aggregate(from, to);
+            points.add(new DashboardSeriesResponse.DayPoint(d.toString(), v[0], v[1]));
+        }
+        return new DashboardSeriesResponse(points);
+    }
+
+    @FunctionalInterface
+    private interface DayAggregator {
+        long[] aggregate(Instant from, Instant to);
     }
 
     private Long requireSellerTenant() {

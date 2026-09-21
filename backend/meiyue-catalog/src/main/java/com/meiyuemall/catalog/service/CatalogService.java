@@ -231,6 +231,14 @@ public class CatalogService {
                 .toList();
     }
 
+    /** I27：本店草稿箱（status=DRAFT） */
+    @Transactional(readOnly = true)
+    public List<ProductResponse> listDrafts() {
+        Long tenantId = requireSellerTenant();
+        return productRepository.findByTenantIdAndStatusOrderByUpdatedAtDesc(tenantId, ProductStatus.DRAFT)
+                .stream().map(this::toResponse).toList();
+    }
+
     @Transactional(readOnly = true)
     public List<ProductResponse> listOnSale() {
         return productRepository.findByStatusOrderByUpdatedAtDesc(ProductStatus.ON_SALE).stream()

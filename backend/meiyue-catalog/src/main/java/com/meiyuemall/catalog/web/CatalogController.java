@@ -68,6 +68,13 @@ public class CatalogController {
         return ApiResponse.ok(catalogService.listMine());
     }
 
+    /** I27：草稿箱 */
+    @GetMapping(SecurityConstants.API_PREFIX + "/seller/products/drafts")
+    @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
+    public ApiResponse<List<ProductResponse>> drafts() {
+        return ApiResponse.ok(catalogService.listDrafts());
+    }
+
     @PostMapping(SecurityConstants.API_PREFIX + "/seller/products")
     @PreAuthorize("hasAnyRole('SELLER_OWNER','SELLER_STAFF')")
     public ApiResponse<ProductResponse> create(@Valid @RequestBody ProductUpsertRequest request) {

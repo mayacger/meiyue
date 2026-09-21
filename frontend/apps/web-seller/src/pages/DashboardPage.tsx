@@ -2,14 +2,31 @@ import { useEffect, useState } from "react";
 import { PageContainer, ProCard, StatisticCard } from "@ant-design/pro-components";
 import { App, Descriptions, Spin } from "antd";
 import { Link, useNavigate } from "react-router-dom";
+import {
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from "recharts";
 import { apiFetch } from "@meiyue/api";
 import type { StoreInfo, UserProfile } from "@meiyue/types";
 
 /**
- * 商家经营概览（I20）
- * API：GET /seller/dashboard · /auth/me · /seller/store
+ * 商家经营概览（I20 + I27 图表）
+ *
+ * API：
+ *   - GET /seller/dashboard
+ *   - GET /seller/dashboard/series?days=7
+ *   - GET /auth/me · /seller/store
+ *
  * 指标：待发货 / 待售后 / 今日订单 / 今日销售额 / 低库存 SKU
+ * 图表：近 7 日订单数 & 销售额（Recharts）
  */
+
 interface SellerDashboard {
   pendingShipCount: number;
   pendingAftersaleCount: number;
@@ -18,12 +35,24 @@ interface SellerDashboard {
   lowStockSkuCount: number;
 }
 
+/** 序列日点：date / orderCount / salesCents */
+interface DayPoint {
+  date: string;
+  orderCount: number;
+  salesCents: number;
+}
+
+interface DashboardSeries {
+  days: DayPoint[];
+}
+
 export function DashboardPage() {
   const navigate = useNavigate();
   const { message } = App.useApp();
   const [me, setMe] = useState<UserProfile | null>(null);
   const [store, setStore] = useState<StoreInfo | null>(null);
   const [stats, setStats] = useState<SellerDashboard | null>(null);
+  const [series, setSeries] = useState<DayPoint[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,12 +64,14 @@ export function DashboardPage() {
           navigate("/onboarding");
           return;
         }
-        const [s, d] = await Promise.all([
+        const [s, d, ser] = await Promise.all([
           apiFetch<StoreInfo>("/api/v1/seller/store"),
-          apiFetch<SellerDashboard>("/api/v1/seller/dashboard")
+          apiFetch<SellerDashboard>("/api/v1/seller/dashboard"),
+          apiFetch<DashboardSeries>("/api/v1/seller/dashboard/series?days=7")
         ]);
         setStore(s);
         setStats(d);
+        setSeries(ser.days || []);
       } catch (err) {
         message.error(err instanceof Error ? err.message : "加载失败");
       } finally {
@@ -48,6 +79,13 @@ export function DashboardPage() {
       }
     })();
   }, [navigate, message]);
+
+  /** 图表用：销售额转元 */
+  const chartData = series.map((p) => ({
+    date: p.date.slice(5),
+    orderCount: p.orderCount,
+    salesYuan: Number((p.salesCents / 100).toFixed(2))
+  }));
 
   if (loading) {
     return (
@@ -58,7 +96,7 @@ export function DashboardPage() {
   }
 
   return (
-    <PageContainer header={{ title: "店铺概览", subTitle: "经营待办 · 今日表现" }}>
+    <PageContainer header={{ title: "店铺概览", subTitle: "经营待办 · 今日表现 · 近7日趋势" }}>
       <StatisticCard.Group>
         <StatisticCard
           statistic={{ title: "待发货", value: stats?.pendingShipCount ?? 0 }}
@@ -81,6 +119,38 @@ export function DashboardPage() {
           extra={<Link to="/inventory">库存</Link>}
         />
       </StatisticCard.Group>
+
+      <ProCard title="近 7 日订单与销售额" style={{ marginTop: 16 }} bodyStyle={{ height: 320 }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={chartData} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e8e8e8" />
+            <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+            <YAxis yAxisId="left" tick={{ fontSize: 12 }} allowDecimals={false} />
+            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 12 }} />
+            <Tooltip />
+            <Legend />
+            <Line
+              yAxisId="left"
+              type="monotone"
+              dataKey="orderCount"
+              name="订单数"
+              stroke="#0F3D38"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+            />
+            <Line
+              yAxisId="right"
+              type="monotone"
+              dataKey="salesYuan"
+              name="销售额(元)"
+              stroke="#C4A35A"
+              strokeWidth={2}
+              dot={{ r: 3 }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </ProCard>
+
       <ProCard title="店铺信息" style={{ marginTop: 16 }} extra={<Link to="/inventory">库存管理</Link>}>
         {store ? (
           <Descriptions column={2}>

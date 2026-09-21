@@ -9,7 +9,7 @@ import {
   ProFormTextArea,
   ProTable
 } from "@ant-design/pro-components";
-import { App, Button, Space, Tag } from "antd";
+import { App, Button, Space, Tabs, Tag } from "antd";
 import { apiFetch } from "@meiyue/api";
 import type { ProductSummary } from "@meiyue/types";
 
@@ -27,9 +27,13 @@ interface MediaAsset {
 }
 
 /**
- * 商品管理 CRUD（I16 + I22 封面选用 + I25 批量上下架）
- * GET/POST /seller/products · PUT /:id · POST /:id/status · POST /batch-status
- * 封面：POST /seller/ai/manual-images 登记 URL → POST …/cover-asset 挂接
+ * 商品管理 CRUD（I16 + I22 封面选用 + I25 批量上下架 + I27 草稿箱）
+ *
+ * 入口：SellerLayout → /products
+ * API：
+ *   - GET/POST /seller/products · PUT /:id · POST /:id/status · POST /batch-status
+ *   - GET /seller/products/drafts（草稿箱 Tab）
+ * 封面：POST /seller/ai/manual-images → POST …/cover-asset
  */
 export function ProductsPage() {
   const actionRef = useRef<ActionType>();
@@ -38,6 +42,8 @@ export function ProductsPage() {
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   /** I25：批量上下架选中行 */
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
+  /** I27：全部 | 草稿箱 */
+  const [tab, setTab] = useState<"all" | "drafts">("all");
 
   useEffect(() => {
     apiFetch<Category[]>("/api/v1/categories").then(setCategories).catch(() => undefined);
@@ -47,6 +53,11 @@ export function ProductsPage() {
       )
       .catch(() => setAssets([]));
   }, []);
+
+  useEffect(() => {
+    setSelectedRowKeys([]);
+    actionRef.current?.reload();
+  }, [tab]);
 
   async function batchStatus(status: "ON_SALE" | "OFF_SALE") {
     if (selectedRowKeys.length === 0) {
@@ -223,7 +234,16 @@ export function ProductsPage() {
   ];
 
   return (
-    <PageContainer header={{ title: "商品管理", subTitle: "SPU/SKU · 批量上下架 · 封面素材" }}>
+    <PageContainer header={{ title: "商品管理", subTitle: "SPU/SKU · 草稿箱 · 批量上下架 · 封面素材" }}>
+      <Tabs
+        activeKey={tab}
+        onChange={(k) => setTab(k as "all" | "drafts")}
+        items={[
+          { key: "all", label: "全部商品" },
+          { key: "drafts", label: "草稿箱" }
+        ]}
+        style={{ marginBottom: 8 }}
+      />
       <ProTable<ProductSummary>
         actionRef={actionRef}
         rowKey="id"
@@ -264,7 +284,8 @@ export function ProductsPage() {
                     ]
                   }
                 });
-                message.success("已创建");
+                message.success("已创建草稿");
+                setTab("drafts");
                 actionRef.current?.reload();
                 return true;
               } catch (err) {
@@ -294,8 +315,13 @@ export function ProductsPage() {
             <ProFormTextArea name="detailHtml" label="详情 HTML" />
           </ModalForm>
         ]}
+        params={{ tab }}
         request={async () => {
-          const data = await apiFetch<ProductSummary[]>("/api/v1/seller/products");
+          const path =
+            tab === "drafts"
+              ? "/api/v1/seller/products/drafts"
+              : "/api/v1/seller/products";
+          const data = await apiFetch<ProductSummary[]>(path);
           return { data, success: true, total: data.length };
         }}
       />

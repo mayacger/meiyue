@@ -74,14 +74,24 @@ public class SecurityConfig {
                         ).permitAll()
                         .requestMatchers(SecurityConstants.API_PREFIX + "/admin/**")
                         .hasRole("PLATFORM_ADMIN")
-                        .requestMatchers(SecurityConstants.API_PREFIX + "/seller/store")
+                        // I26：店铺写 / 结算 / 员工仅店主
+                        .requestMatchers(HttpMethod.PUT, SecurityConstants.API_PREFIX + "/seller/store")
+                        .hasRole("SELLER_OWNER")
+                        .requestMatchers(HttpMethod.GET, SecurityConstants.API_PREFIX + "/seller/store")
                         .hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
+                        .requestMatchers(
+                                SecurityConstants.API_PREFIX + "/seller/settlements",
+                                SecurityConstants.API_PREFIX + "/seller/settlements/**",
+                                SecurityConstants.API_PREFIX + "/seller/staff",
+                                SecurityConstants.API_PREFIX + "/seller/staff/**"
+                        ).hasRole("SELLER_OWNER")
                         .requestMatchers(
                                 SecurityConstants.API_PREFIX + "/seller/products",
                                 SecurityConstants.API_PREFIX + "/seller/products/**",
                                 SecurityConstants.API_PREFIX + "/seller/inventory",
                                 SecurityConstants.API_PREFIX + "/seller/inventory/**",
-                                SecurityConstants.API_PREFIX + "/seller/dashboard"
+                                SecurityConstants.API_PREFIX + "/seller/dashboard",
+                                SecurityConstants.API_PREFIX + "/seller/dashboard/**"
                         ).hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
                         .requestMatchers(
                                 SecurityConstants.API_PREFIX + "/seller/decoration",
@@ -96,8 +106,6 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/seller/ai/**",
                                 SecurityConstants.API_PREFIX + "/seller/orders",
                                 SecurityConstants.API_PREFIX + "/seller/orders/**",
-                                SecurityConstants.API_PREFIX + "/seller/settlements",
-                                SecurityConstants.API_PREFIX + "/seller/settlements/**",
                                 SecurityConstants.API_PREFIX + "/seller/coupons",
                                 SecurityConstants.API_PREFIX + "/seller/coupons/**",
                                 SecurityConstants.API_PREFIX + "/seller/reviews",
@@ -105,6 +113,13 @@ public class SecurityConfig {
                                 SecurityConstants.API_PREFIX + "/seller/tickets",
                                 SecurityConstants.API_PREFIX + "/seller/tickets/**"
                         ).hasAnyRole("SELLER_OWNER", "SELLER_STAFF")
+                        // I26：OpenAPI（仅 demo/dev profile 启用文档本体；路径常开避免 401）
+                        .requestMatchers(
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**"
+                        ).permitAll()
                         .requestMatchers(SecurityConstants.API_PREFIX + "/seller/onboarding/**")
                         .authenticated()
                         .requestMatchers(SecurityConstants.API_PREFIX + "/**").authenticated()

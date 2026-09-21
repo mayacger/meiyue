@@ -69,4 +69,9 @@ public class SellerMember {
     public void setMemberRole(MemberRole memberRole) {
         this.memberRole = memberRole;
     }
+
+    /** I26：加入时间（邀请/开店写入） */
+    public Instant getCreatedAt() {
+        return createdAt;
+    }
 }

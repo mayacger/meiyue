@@ -139,6 +139,57 @@ uc = req("GET", "/api/v1/notifications/unread-count", buyer_token)
 assert "unread" in uc
 req("POST", "/api/v1/notifications/read-all", buyer_token)
 
+print("==> I26 OpenAPI (demo profile)")
+# /v3/api-docs 为 springdoc 原生 JSON，非 ApiResponse 包装
+import urllib.request as ur
+with ur.urlopen(BASE + "/v3/api-docs") as resp:
+    docs = json.loads(resp.read().decode())
+assert "openapi" in docs and "paths" in docs
+
+print("==> I26 staff invite + OWNER-only")
+staff_user = f"sm_st_{SUFFIX}"
+req("POST", "/api/v1/auth/register", body={
+    "username": staff_user, "password": PASS, "displayName": staff_user, "role": "BUYER"
+})
+invited = req("POST", "/api/v1/seller/staff/invite", seller_token, {"username": staff_user})
+assert invited["memberRole"] == "STAFF"
+members = req("GET", "/api/v1/seller/staff", seller_token)
+assert any(m["username"] == staff_user for m in members)
+staff_token = req("POST", "/api/v1/auth/login", body={"username": staff_user, "password": PASS})["accessToken"]
+# 店员可看商品
+req("GET", "/api/v1/seller/products", staff_token)
+# 结算 / 店铺写 / 员工列表仅店主
+def expect_403(method, path, token, body=None):
+    data = None if body is None else json.dumps(body).encode()
+    headers = {"Accept": "application/json", "Authorization": f"Bearer {token}"}
+    if body is not None:
+        headers["Content-Type"] = "application/json"
+    r = urllib.request.Request(BASE + path, data=data, headers=headers, method=method)
+    try:
+        urllib.request.urlopen(r)
+        print(f"FAIL expected 403 {method} {path}", file=sys.stderr)
+        raise SystemExit(1)
+    except urllib.error.HTTPError as e:
+        if e.code != 403:
+            print(f"FAIL expected 403 got {e.code} {path}: {e.read().decode()}", file=sys.stderr)
+            raise SystemExit(1)
+expect_403("GET", "/api/v1/seller/settlements/periods", staff_token)
+expect_403("PUT", "/api/v1/seller/store", staff_token, {"name": "x", "description": "", "logoUrl": ""})
+expect_403("GET", "/api/v1/seller/staff", staff_token)
+
+print("==> I27 series + drafts")
+ser = req("GET", "/api/v1/seller/dashboard/series?days=7", seller_token)
+assert "days" in ser and len(ser["days"]) == 7
+aser = req("GET", "/api/v1/admin/dashboard/series?days=7", admin_token)
+assert "days" in aser and len(aser["days"]) == 7
+draft = req("POST", "/api/v1/seller/products", seller_token, {
+    "categoryId": cat_id, "title": f"草稿{SUFFIX}", "subtitle": "d",
+    "detailHtml": "<p>d</p>",
+    "skus": [{"skuCode": f"DR-{SUFFIX}", "specText": "默认", "priceCents": 100, "stockQty": 1}]
+})
+drafts = req("GET", "/api/v1/seller/products/drafts", seller_token)
+assert any(p["id"] == draft["id"] for p in drafts)
+
 print("==> I18 admin categories + users")
 cats = req("GET", "/api/v1/admin/categories", admin_token)
 assert isinstance(cats, list) and len(cats) >= 1
