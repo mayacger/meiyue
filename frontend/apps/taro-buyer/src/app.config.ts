@@ -1,7 +1,7 @@
 /**
  * 全局页面配置（I22/I23）
  * Tab：首页 / 分类 / 购物车 / 我的
- * 二级：详情 / 订单 / 地址 / 通知 / 收藏 / 店铺 / 领券
+ * 二级：详情 / 订单 / 地址 / 通知 / 收藏 / 足迹 / 店铺 / 领券
  */
 export default defineAppConfig({
   pages: [
@@ -15,6 +15,7 @@ export default defineAppConfig({
     "pages/address/index",
     "pages/notifications/index",
     "pages/favorites/index",
+    "pages/browse-history/index",
     "pages/store/index",
     "pages/coupons/index",
     "pages/settings/index"

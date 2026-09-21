@@ -137,6 +137,41 @@
   color: var(--my-ink);
 }
 
+.my-detail__related {
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--my-line);
+}
+
+.my-detail__related h2 {
+  margin: 0 0 0.35rem;
+  font-family: var(--my-font-brand);
+  font-weight: 500;
+  color: var(--my-ink-deep);
+}
+
+.my-detail__related-list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+}
+
+.my-detail__related-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--my-line);
+}
+
+.my-detail__related-list a {
+  flex: 1;
+  min-width: 10rem;
+  color: var(--my-ink-deep);
+  font-weight: 500;
+}
+
 .my-muted {
   color: var(--my-muted);
 }

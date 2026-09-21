@@ -99,3 +99,30 @@
   font-size: 26px;
   line-height: 1.5;
 }
+
+.related {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(26, 77, 69, 0.12);
+}
+
+.related-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(15, 61, 56, 0.08);
+}
+
+.related-title {
+  flex: 1;
+  font-size: 28px;
+  color: #1a2e2b;
+}
+
+.related-row .price {
+  font-size: 28px;
+  margin-bottom: 0;
+}
+

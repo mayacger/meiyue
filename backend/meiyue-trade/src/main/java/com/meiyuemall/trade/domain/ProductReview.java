@@ -27,6 +27,13 @@ public class ProductReview {
     private String sellerReply;
     @Column(name = "replied_at")
     private Instant repliedAt;
+    /** I30：平台隐藏 */
+    @Column(nullable = false)
+    private boolean hidden = false;
+    @Column(name = "hidden_reason", length = 256)
+    private String hiddenReason;
+    @Column(name = "hidden_at")
+    private Instant hiddenAt;
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 
@@ -49,5 +56,11 @@ public class ProductReview {
     public void setSellerReply(String sellerReply) { this.sellerReply = sellerReply; }
     public Instant getRepliedAt() { return repliedAt; }
     public void setRepliedAt(Instant repliedAt) { this.repliedAt = repliedAt; }
+    public boolean isHidden() { return hidden; }
+    public void setHidden(boolean hidden) { this.hidden = hidden; }
+    public String getHiddenReason() { return hiddenReason; }
+    public void setHiddenReason(String hiddenReason) { this.hiddenReason = hiddenReason; }
+    public Instant getHiddenAt() { return hiddenAt; }
+    public void setHiddenAt(Instant hiddenAt) { this.hiddenAt = hiddenAt; }
     public Instant getCreatedAt() { return createdAt; }
 }

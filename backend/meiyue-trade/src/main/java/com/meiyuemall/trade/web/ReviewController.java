@@ -44,4 +44,24 @@ public class ReviewController {
     public ApiResponse<ProductReviewResponse> reply(@PathVariable Long id, @RequestBody Map<String, String> body) {
         return ApiResponse.ok(reviewService.reply(id, body.getOrDefault("reply", "")));
     }
+
+    /** I30：Admin 评价列表 */
+    @GetMapping(SecurityConstants.API_PREFIX + "/admin/reviews")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public ApiResponse<List<ProductReviewResponse>> adminList() {
+        return ApiResponse.ok(reviewService.listAllAdmin());
+    }
+
+    @PostMapping(SecurityConstants.API_PREFIX + "/admin/reviews/{id}/hide")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public ApiResponse<ProductReviewResponse> hide(@PathVariable Long id, @RequestBody(required = false) Map<String, String> body) {
+        String reason = body == null ? null : body.get("reason");
+        return ApiResponse.ok(reviewService.hide(id, reason));
+    }
+
+    @PostMapping(SecurityConstants.API_PREFIX + "/admin/reviews/{id}/restore")
+    @PreAuthorize("hasRole('PLATFORM_ADMIN')")
+    public ApiResponse<ProductReviewResponse> restore(@PathVariable Long id) {
+        return ApiResponse.ok(reviewService.restore(id));
+    }
 }

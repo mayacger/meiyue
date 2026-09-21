@@ -14,12 +14,13 @@ import { NotificationsPage } from "./pages/NotificationsPage";
 import { TicketsPage } from "./pages/TicketsPage";
 import { StorePage } from "./pages/StorePage";
 import { FavoritesPage } from "./pages/FavoritesPage";
+import { BrowseHistoryPage } from "./pages/BrowseHistoryPage";
 import { CouponsPage } from "./pages/CouponsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 
 /**
- * 买家 PC 路由（I24）
- * /settings 个人设置 · /stores/:tenantId · /favorites · /coupons · …
+ * 买家 PC 路由（I24 + I30）
+ * /settings · /stores/:tenantId · /favorites · /browse-history · /coupons · …
  */
 export function App() {
   return (
@@ -30,6 +31,7 @@ export function App() {
         <Route path="/products/:id" element={<ProductDetailPage />} />
         <Route path="/stores/:tenantId" element={<StorePage />} />
         <Route path="/favorites" element={<FavoritesPage />} />
+        <Route path="/browse-history" element={<BrowseHistoryPage />} />
         <Route path="/coupons" element={<CouponsPage />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/checkout" element={<CheckoutPage />} />

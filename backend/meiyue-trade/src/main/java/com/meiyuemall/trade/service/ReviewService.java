@@ -1,9 +1,6 @@
 package com.meiyuemall.trade.service;
 
-import com.meiyuemall.trade.domain.ProductReview;
-import com.meiyuemall.trade.dto.CreateReviewRequest;
-import com.meiyuemall.trade.dto.ProductReviewResponse;
-import com.meiyuemall.trade.repo.ProductReviewRepository;
+import com.meiyuemall.common.audit.Audited;
 import com.meiyuemall.common.error.BusinessException;
 import com.meiyuemall.common.error.ErrorCode;
 import com.meiyuemall.common.security.MeiyuePrincipal;
@@ -11,7 +8,11 @@ import com.meiyuemall.common.security.SecurityUtils;
 import com.meiyuemall.trade.domain.Order;
 import com.meiyuemall.trade.domain.OrderItem;
 import com.meiyuemall.trade.domain.OrderStatus;
+import com.meiyuemall.trade.domain.ProductReview;
+import com.meiyuemall.trade.dto.CreateReviewRequest;
+import com.meiyuemall.trade.dto.ProductReviewResponse;
 import com.meiyuemall.trade.repo.OrderRepository;
+import com.meiyuemall.trade.repo.ProductReviewRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,7 +20,7 @@ import java.time.Instant;
 import java.util.List;
 
 /**
- * 商品评价：订单 COMPLETED 后可评；商品详情公开；商家可见并可回复。
+ * 商品评价：订单 COMPLETED 后可评；公开列表过滤隐藏；Admin 可隐藏/恢复（I30）。
  */
 @Service
 public class ReviewService {
@@ -59,9 +60,10 @@ public class ReviewService {
         return toResponse(r);
     }
 
+    /** 公开：仅未隐藏 */
     @Transactional(readOnly = true)
     public List<ProductReviewResponse> listByProduct(Long productId) {
-        return reviewRepository.findByProductIdOrderByCreatedAtDesc(productId).stream()
+        return reviewRepository.findByProductIdAndHiddenFalseOrderByCreatedAtDesc(productId).stream()
                 .map(this::toResponse).toList();
     }
 
@@ -69,6 +71,13 @@ public class ReviewService {
     public List<ProductReviewResponse> listMineSeller() {
         Long tenantId = requireSellerTenant();
         return reviewRepository.findByTenantIdOrderByCreatedAtDesc(tenantId).stream()
+                .map(this::toResponse).toList();
+    }
+
+    /** I30：Admin 全量评价（含隐藏） */
+    @Transactional(readOnly = true)
+    public List<ProductReviewResponse> listAllAdmin() {
+        return reviewRepository.findAllByOrderByCreatedAtDesc().stream()
                 .map(this::toResponse).toList();
     }
 
@@ -85,6 +94,28 @@ public class ReviewService {
         return toResponse(r);
     }
 
+    @Transactional
+    @Audited(action = "REVIEW_HIDE", resourceType = "ProductReview")
+    public ProductReviewResponse hide(Long reviewId, String reason) {
+        ProductReview r = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "评价不存在"));
+        r.setHidden(true);
+        r.setHiddenReason(reason == null || reason.isBlank() ? "不当内容" : reason.trim());
+        r.setHiddenAt(Instant.now());
+        return toResponse(r);
+    }
+
+    @Transactional
+    @Audited(action = "REVIEW_RESTORE", resourceType = "ProductReview")
+    public ProductReviewResponse restore(Long reviewId) {
+        ProductReview r = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "评价不存在"));
+        r.setHidden(false);
+        r.setHiddenReason(null);
+        r.setHiddenAt(null);
+        return toResponse(r);
+    }
+
     private Long requireSellerTenant() {
         MeiyuePrincipal p = SecurityUtils.requirePrincipal();
         if (p.getTenantId() == null) {
@@ -97,7 +128,9 @@ public class ReviewService {
         return new ProductReviewResponse(
                 r.getId(), r.getProductId(), r.getOrderId(), r.getOrderItemId(), r.getTenantId(),
                 r.getRating(), r.getContent(), r.getSellerReply(),
-                r.getCreatedAt() == null ? null : r.getCreatedAt().toString()
+                r.getCreatedAt() == null ? null : r.getCreatedAt().toString(),
+                r.isHidden(),
+                r.getHiddenReason()
         );
     }
 }

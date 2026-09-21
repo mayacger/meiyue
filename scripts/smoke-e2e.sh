@@ -268,10 +268,19 @@ req("PUT", f"/api/v1/buyer/addresses/{addr['id']}", buyer_token, {
 })
 req("POST", f"/api/v1/buyer/addresses/{addr['id']}/default", buyer_token)
 
-print("==> add cart + checkout")
+print("==> add cart + freight estimate + checkout")
 req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
+# I31：商家设置运费模板（默认 8 元，满 199 包邮；单价 99 未达包邮）
+req("PUT", "/api/v1/seller/store", seller_token, {
+    "freightCents": 800, "freeShippingThresholdCents": 19900
+})
+fest = req("POST", "/api/v1/buyer/orders/freight-estimate", buyer_token, {})
+assert fest["freightCents"] == 800, fest
 order = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})
 order_id = order["id"]
+assert order.get("freightCents") == 800, order
+assert order.get("goodsCents") == 9900, order
+assert order["totalCents"] == 10700, order
 
 print(f"==> mock pay #{order_id}")
 req("POST", f"/api/v1/buyer/orders/{order_id}/mock-pay", buyer_token)
@@ -293,10 +302,29 @@ print("==> confirm receipt")
 req("POST", f"/api/v1/buyer/orders/{order_id}/confirm-receipt", buyer_token)
 item_id = req("GET", f"/api/v1/buyer/orders/{order_id}", buyer_token)["items"][0]["id"]
 
-print("==> review")
+print("==> review + I30 related/browse/hide")
 req("POST", "/api/v1/buyer/reviews", buyer_token, {
     "orderId": order_id, "orderItemId": item_id, "rating": 5, "content": "冒烟评价 OK"
 })
+# 相关推荐（同店至少自身被排除，可为空列表）
+rel = req("GET", f"/api/v1/products/{prod_id}/related?limit=5")
+assert isinstance(rel, list)
+# 浏览足迹
+req("POST", f"/api/v1/buyer/browse-history/{prod_id}", buyer_token)
+bh = req("GET", "/api/v1/buyer/browse-history", buyer_token)
+assert any(p["id"] == prod_id for p in bh)
+req("DELETE", "/api/v1/buyer/browse-history", buyer_token)
+bh2 = req("GET", "/api/v1/buyer/browse-history", buyer_token)
+assert bh2 == []
+# 评价审核：隐藏后公开列表不可见
+admin_revs = req("GET", "/api/v1/admin/reviews", admin_token)
+rev = next(r for r in admin_revs if r["orderItemId"] == item_id)
+req("POST", f"/api/v1/admin/reviews/{rev['id']}/hide", admin_token, {"reason": "smoke hide"})
+pub = req("GET", f"/api/v1/products/{prod_id}/reviews")
+assert all(r["id"] != rev["id"] for r in pub)
+req("POST", f"/api/v1/admin/reviews/{rev['id']}/restore", admin_token)
+pub2 = req("GET", f"/api/v1/products/{prod_id}/reviews")
+assert any(r["id"] == rev["id"] for r in pub2)
 
 print("==> aftersale REFUND_ONLY (MOCK channel refund)")
 req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})

@@ -19,6 +19,12 @@ public class Order {
     private OrderStatus status;
     @Column(name = "total_cents", nullable = false)
     private long totalCents;
+    /** I31：商品应付（券后、运费前） */
+    @Column(name = "goods_cents")
+    private Long goodsCents;
+    /** I31：运费合计 */
+    @Column(name = "freight_cents", nullable = false)
+    private long freightCents = 0;
     @Column(name = "pay_expire_at", nullable = false)
     private Instant payExpireAt;
     @Column(name = "paid_at")
@@ -52,6 +58,10 @@ public class Order {
     public void setStatus(OrderStatus status) { this.status = status; }
     public long getTotalCents() { return totalCents; }
     public void setTotalCents(long totalCents) { this.totalCents = totalCents; }
+    public Long getGoodsCents() { return goodsCents; }
+    public void setGoodsCents(Long goodsCents) { this.goodsCents = goodsCents; }
+    public long getFreightCents() { return freightCents; }
+    public void setFreightCents(long freightCents) { this.freightCents = freightCents; }
     public Instant getPayExpireAt() { return payExpireAt; }
     public void setPayExpireAt(Instant payExpireAt) { this.payExpireAt = payExpireAt; }
     public Instant getPaidAt() { return paidAt; }

@@ -3,16 +3,10 @@ package com.meiyuemall.tenant.dto;
 import java.time.Instant;
 
 /**
- * 店铺视图（I22 含简介与 Logo）。
+ * 店铺视图（I22 + I31 运费）。
  *
- * @param id          主键
- * @param tenantId    租户
- * @param name        店名
- * @param slug        短链
- * @param description 简介
- * @param logoUrl     Logo URL
- * @param status      OPEN / CLOSED
- * @param createdAt   创建时间
+ * @param freightCents                 默认运费（分）
+ * @param freeShippingThresholdCents   包邮门槛（分，可空）
  */
 public record StoreResponse(
         Long id,
@@ -22,5 +16,7 @@ public record StoreResponse(
         String description,
         String logoUrl,
         String status,
-        Instant createdAt
+        Instant createdAt,
+        long freightCents,
+        Long freeShippingThresholdCents
 ) {}

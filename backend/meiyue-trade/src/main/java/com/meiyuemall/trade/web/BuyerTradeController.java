@@ -5,6 +5,7 @@ import com.meiyuemall.common.web.ApiResponse;
 import com.meiyuemall.trade.dto.CartAddRequest;
 import com.meiyuemall.trade.dto.CartItemResponse;
 import com.meiyuemall.trade.dto.CheckoutRequest;
+import com.meiyuemall.trade.dto.FreightEstimateResponse;
 import com.meiyuemall.trade.dto.OrderResponse;
 import com.meiyuemall.trade.service.CartService;
 import com.meiyuemall.trade.service.OrderService;
@@ -15,9 +16,10 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 /**
- * 买家交易 API（I3）。
+ * 买家交易 API（I3 + I31）。
  * <ul>
  *   <li>购物车：/api/v1/buyer/cart</li>
+ *   <li>运费预估：POST /api/v1/buyer/orders/freight-estimate</li>
  *   <li>下单：POST /api/v1/buyer/orders/checkout</li>
  *   <li>模拟支付：POST /api/v1/buyer/orders/{id}/mock-pay</li>
  * </ul>
@@ -49,6 +51,18 @@ public class BuyerTradeController {
     public ApiResponse<Void> removeCart(@PathVariable Long id) {
         cartService.remove(id);
         return ApiResponse.ok(null);
+    }
+
+    /**
+     * I31：结算页运费预估。
+     * body 可空；有 {@code cartItemIds} 时仅估算所选行，否则整车。
+     */
+    @PostMapping("/orders/freight-estimate")
+    public ApiResponse<FreightEstimateResponse> freightEstimate(
+            @RequestBody(required = false) CheckoutRequest request
+    ) {
+        List<Long> ids = request == null ? null : request.cartItemIds();
+        return ApiResponse.ok(orderService.estimateFreightForCart(ids));
     }
 
     @PostMapping("/orders/checkout")

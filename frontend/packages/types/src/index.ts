@@ -56,7 +56,7 @@ export interface OnboardingApplication {
   reviewedAt: string | null;
 }
 
-/** 店铺：id / tenantId / name / slug / description / logoUrl / status */
+/** 店铺：id / tenantId / name / slug / description / logoUrl / status + I31 运费 */
 export interface StoreInfo {
   id: number;
   tenantId: number;
@@ -68,6 +68,10 @@ export interface StoreInfo {
   logoUrl?: string | null;
   status: string;
   createdAt: string;
+  /** I31：默认运费（分） */
+  freightCents?: number;
+  /** I31：包邮门槛（分）；null=无包邮 */
+  freeShippingThresholdCents?: number | null;
 }
 
 /** SKU 摘要 */
@@ -104,13 +108,49 @@ export interface CartItem {
   tenantId?: number;
 }
 
-/** 订单摘要 */
+/** 订单摘要（I31 含运费拆分） */
 export interface OrderSummary {
   id: number;
   orderNo: string;
   status: string;
   totalCents: number;
+  /** 商品应付（券后、运费前） */
+  goodsCents?: number | null;
+  /** 运费合计 */
+  freightCents?: number;
   paymentNo?: string;
+}
+
+/** I31：结算运费预估（对齐 FreightEstimateResponse） */
+export interface FreightEstimate {
+  goodsCents: number;
+  freightCents: number;
+  /** 商品+运费（未扣券） */
+  totalCents: number;
+  shops: {
+    tenantId: number;
+    storeName: string;
+    goodsCents: number;
+    freightCents: number;
+    freeShipping: boolean;
+    /** 包邮门槛（分）；null=无包邮 */
+    thresholdCents: number | null;
+  }[];
+}
+
+/** I30：商品评价（含隐藏状态，Admin 可见） */
+export interface ProductReview {
+  id: number;
+  productId: number;
+  orderId?: number;
+  orderItemId?: number;
+  tenantId?: number;
+  rating: number;
+  content: string;
+  sellerReply: string | null;
+  createdAt: string;
+  hidden?: boolean;
+  hiddenReason?: string | null;
 }
 
 /** 平台/店券 */

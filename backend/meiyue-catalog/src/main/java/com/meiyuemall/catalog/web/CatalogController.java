@@ -57,6 +57,15 @@ public class CatalogController {
         return ApiResponse.ok(catalogService.getOnSale(id));
     }
 
+    /** I30：相关推荐（同店优先，同类目补齐） */
+    @GetMapping(SecurityConstants.API_PREFIX + "/products/{id}/related")
+    public ApiResponse<List<ProductResponse>> related(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "8") int limit
+    ) {
+        return ApiResponse.ok(catalogService.listRelated(id, limit));
+    }
+
     @GetMapping(SecurityConstants.API_PREFIX + "/stores/{tenantId}/products")
     public ApiResponse<List<ProductResponse>> storeProducts(@PathVariable Long tenantId) {
         return ApiResponse.ok(catalogService.listOnSaleByTenant(tenantId));

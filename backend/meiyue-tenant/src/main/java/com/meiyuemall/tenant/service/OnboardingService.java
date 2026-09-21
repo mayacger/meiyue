@@ -209,12 +209,14 @@ public class OnboardingService {
                 store.getDescription(),
                 store.getLogoUrl(),
                 store.getStatus().name(),
-                store.getCreatedAt()
+                store.getCreatedAt(),
+                store.getFreightCents(),
+                store.getFreeShippingThresholdCents()
         );
     }
 
     /**
-     * I22：更新本店名称/简介/Logo。
+     * I22/I31：更新本店名称/简介/Logo/运费模板。
      */
     @Transactional
     @Audited(action = "STORE_UPDATE", resourceType = "Store")
@@ -233,6 +235,17 @@ public class OnboardingService {
         }
         if (request.logoUrl() != null) {
             store.setLogoUrl(request.logoUrl().isBlank() ? null : request.logoUrl().trim());
+        }
+        if (request.freightCents() != null) {
+            store.setFreightCents(Math.max(0, request.freightCents()));
+        }
+        if (request.freeShippingThresholdCents() != null) {
+            // 负数约定：清空包邮门槛
+            if (request.freeShippingThresholdCents() < 0) {
+                store.setFreeShippingThresholdCents(null);
+            } else {
+                store.setFreeShippingThresholdCents(request.freeShippingThresholdCents());
+            }
         }
         return toStoreResponse(store);
     }

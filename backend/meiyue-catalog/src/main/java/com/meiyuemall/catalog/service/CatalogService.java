@@ -272,6 +272,40 @@ public class CatalogService {
     }
 
     /**
+     * I30：相关推荐 — 优先同店在售，不足则补同类目；排除自身；上限 limit（1–20）。
+     */
+    @Transactional(readOnly = true)
+    public List<ProductResponse> listRelated(Long productId, int limit) {
+        int n = Math.min(Math.max(limit, 1), 20);
+        Product seed = productRepository.findById(productId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "商品不存在"));
+        List<Product> result = new ArrayList<>();
+        java.util.LinkedHashSet<Long> seen = new java.util.LinkedHashSet<>();
+        seen.add(productId);
+        for (Product p : productRepository.findByTenantIdAndStatusAndIdNotOrderByUpdatedAtDesc(
+                seed.getTenantId(), ProductStatus.ON_SALE, productId)) {
+            if (seen.add(p.getId())) {
+                result.add(p);
+            }
+            if (result.size() >= n) {
+                break;
+            }
+        }
+        if (result.size() < n && seed.getCategoryId() != null) {
+            for (Product p : productRepository.findByCategoryIdAndStatusAndIdNotOrderByUpdatedAtDesc(
+                    seed.getCategoryId(), ProductStatus.ON_SALE, productId)) {
+                if (seen.add(p.getId())) {
+                    result.add(p);
+                }
+                if (result.size() >= n) {
+                    break;
+                }
+            }
+        }
+        return result.stream().map(this::toResponse).toList();
+    }
+
+    /**
      * I20：本店全部 SKU 库存列表。
      */
     @Transactional(readOnly = true)

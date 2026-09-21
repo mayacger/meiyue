@@ -14,6 +14,7 @@ import { PlatformConfigPage } from "./pages/PlatformConfigPage";
 import { AuditLogsPage } from "./pages/AuditLogsPage";
 import { BannersPage } from "./pages/BannersPage";
 import { SettlementsPage } from "./pages/SettlementsPage";
+import { ReviewsPage } from "./pages/ReviewsPage";
 
 /** 未登录跳转登录页 */
 function RequireAuth({ children }: { children: ReactNode }) {
@@ -24,8 +25,8 @@ function RequireAuth({ children }: { children: ReactNode }) {
 }
 
 /**
- * 平台后台路由（I22–I28）
- * /banners · /settlements · /platform-config · …
+ * 平台后台路由（I22–I30）
+ * /banners · /settlements · /reviews · /platform-config · …
  */
 export function App() {
   return (
@@ -45,6 +46,7 @@ export function App() {
         <Route path="coupons" element={<CouponsPage />} />
         <Route path="banners" element={<BannersPage />} />
         <Route path="settlements" element={<SettlementsPage />} />
+        <Route path="reviews" element={<ReviewsPage />} />
         <Route path="platform-config" element={<PlatformConfigPage />} />
         <Route path="audit-logs" element={<AuditLogsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />

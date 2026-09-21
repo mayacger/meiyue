@@ -13,14 +13,15 @@ interface Review {
 }
 
 /**
- * 商品详情（I19 + I22 收藏/进店）
- * API：GET /products/:id · favorites · 加购
+ * 商品详情（I19 + I22 + I30）
+ * API：GET /products/:id · reviews · related · favorites · browse-history · 加购
  */
 export default function DetailPage() {
   const { params } = useRouter();
   const id = params.id;
   const [product, setProduct] = useState<ProductSummary | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [related, setRelated] = useState<ProductSummary[]>([]);
   const [favorited, setFavorited] = useState(false);
   const [error, setError] = useState("");
 
@@ -28,12 +29,17 @@ export default function DetailPage() {
     if (!id) return;
     Promise.all([
       apiFetch<ProductSummary>(`/api/v1/products/${id}`),
-      apiFetch<Review[]>(`/api/v1/products/${id}/reviews`).catch(() => [] as Review[])
+      apiFetch<Review[]>(`/api/v1/products/${id}/reviews`).catch(() => [] as Review[]),
+      apiFetch<ProductSummary[]>(`/api/v1/products/${id}/related?limit=6`).catch(
+        () => [] as ProductSummary[]
+      )
     ])
-      .then(([p, r]) => {
+      .then(([p, r, rel]) => {
         setProduct(p);
         setReviews(r);
+        setRelated(rel);
         if (getToken()) {
+          apiFetch(`/api/v1/buyer/browse-history/${id}`, { method: "POST" }).catch(() => undefined);
           apiFetch<{ favorited: boolean }>(`/api/v1/buyer/favorites/${id}/status`)
             .then((s) => setFavorited(s.favorited))
             .catch(() => setFavorited(false));
@@ -130,6 +136,22 @@ export default function DetailPage() {
           </View>
         ))}
       </View>
+
+      {related.length > 0 ? (
+        <View className="related">
+          <Text className="h2">相关推荐</Text>
+          {related.map((p) => (
+            <View
+              key={p.id}
+              className="related-row"
+              onClick={() => Taro.navigateTo({ url: `/pages/detail/index?id=${p.id}` })}
+            >
+              <Text className="related-title">{p.title}</Text>
+              <Text className="price">¥{((p.skus[0]?.priceCents ?? 0) / 100).toFixed(2)}</Text>
+            </View>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }

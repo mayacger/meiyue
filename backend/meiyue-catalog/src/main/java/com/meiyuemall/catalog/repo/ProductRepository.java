@@ -15,6 +15,16 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     Optional<Product> findByIdAndTenantId(Long id, Long tenantId);
     List<Product> findByStatusOrderByUpdatedAtDesc(ProductStatus status);
 
+    /** I30：同店在售（排除自身） */
+    List<Product> findByTenantIdAndStatusAndIdNotOrderByUpdatedAtDesc(
+            Long tenantId, ProductStatus status, Long id
+    );
+
+    /** I30：同类目在售（排除自身） */
+    List<Product> findByCategoryIdAndStatusAndIdNotOrderByUpdatedAtDesc(
+            Long categoryId, ProductStatus status, Long id
+    );
+
     /**
      * I10 基础搜索：标题 / 副标题 / 类目名 LIKE；可选精确类目过滤。
      * 不上 OpenSearch；类目名通过 left join Category 匹配关键词。

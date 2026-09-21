@@ -143,6 +143,9 @@ public class DemoSeeder implements ApplicationRunner {
         store.setName("美月鲜花示范店");
         store.setSlug(STORE_SLUG);
         store.setStatus(StoreStatus.OPEN);
+        // I31：示范店默认运费 8 元，满 199 包邮
+        store.setFreightCents(800);
+        store.setFreeShippingThresholdCents(19900L);
         storeRepository.save(store);
 
         SellerMember member = new SellerMember();

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # ============================================================
-# 美月商城 · I18–I29 轻量冒烟
+# 美月商城 · I18–I31 轻量冒烟
 # 覆盖：类目 / 地址簿 / 用户 / 库存 / 概览 / 改密资料 / 审计 / 批量上下架 /
 #       库存预警 / 通知 / 员工 / OpenAPI / series / 草稿 / Banner / 结算 /
+#       凭证图+退货物流 / 相关推荐 / 足迹 / 评价审核 / 运费模板
 #       售后凭证与退货物流
 # 前置：API 已启动（demo profile）；依赖 curl、python3
 # 用法：BASE_URL=http://localhost:8080 ./scripts/smoke-i18.sh
@@ -214,8 +215,42 @@ req("POST", f"/api/v1/buyer/aftersales/{as_ev['id']}/reverse-tracking", buyer_to
 })
 req("POST", f"/api/v1/seller/aftersales/{as_ev['id']}/confirm-return", seller_token)
 
+print("==> I30 related + browse + review moderation")
+rel = req("GET", f"/api/v1/products/{prod['id']}/related?limit=5")
+assert isinstance(rel, list)
+req("POST", f"/api/v1/buyer/browse-history/{prod['id']}", buyer_token)
+bh = req("GET", "/api/v1/buyer/browse-history", buyer_token)
+assert any(p["id"] == prod["id"] for p in bh)
+req("DELETE", "/api/v1/buyer/browse-history", buyer_token)
+# 评价审核：走一笔完整收货评价
+req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
+ord_r = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})
+req("POST", f"/api/v1/buyer/orders/{ord_r['id']}/mock-pay", buyer_token)
+req("POST", f"/api/v1/buyer/orders/{ord_r['id']}/confirm-receipt", buyer_token)
+item_r = req("GET", f"/api/v1/buyer/orders/{ord_r['id']}", buyer_token)["items"][0]["id"]
+rev = req("POST", "/api/v1/buyer/reviews", buyer_token, {
+    "orderId": ord_r["id"], "orderItemId": item_r, "rating": 4, "content": "i18 review"
+})
+req("POST", f"/api/v1/admin/reviews/{rev['id']}/hide", admin_token, {"reason": "spam"})
+pub = req("GET", f"/api/v1/products/{prod['id']}/reviews")
+assert all(r["id"] != rev["id"] for r in pub)
+req("POST", f"/api/v1/admin/reviews/{rev['id']}/restore", admin_token)
+
+print("==> I31 freight template")
+req("PUT", "/api/v1/seller/store", seller_token, {
+    "freightCents": 600, "freeShippingThresholdCents": 50000
+})
+store = req("GET", "/api/v1/seller/store", seller_token)
+assert store["freightCents"] == 600
+req("POST", "/api/v1/buyer/cart/items", buyer_token, {"skuId": sku_id, "quantity": 1})
+fest = req("POST", "/api/v1/buyer/orders/freight-estimate", buyer_token, {})
+assert fest["freightCents"] == 600
+ord_f = req("POST", "/api/v1/buyer/orders/checkout", buyer_token, {})
+assert ord_f["freightCents"] == 600
+assert ord_f["totalCents"] == ord_f["goodsCents"] + 600
+
 print("")
-print("SMOKE I18–I29 PASSED")
+print("SMOKE I18–I31 PASSED")
 print(f"  seller={seller} buyer={buyer} staff={staff_user} sku={sku_id} cat={cat['id']}")
 PY
 

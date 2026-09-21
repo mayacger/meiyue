@@ -46,6 +46,14 @@ public class Store {
     @Column(name = "logo_url", length = 1024)
     private String logoUrl;
 
+    /** I31：默认运费（分） */
+    @Column(name = "freight_cents", nullable = false)
+    private long freightCents = 0;
+
+    /** I31：包邮门槛（分）；null 表示无包邮 */
+    @Column(name = "free_shipping_threshold_cents")
+    private Long freeShippingThresholdCents;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -114,6 +122,22 @@ public class Store {
 
     public void setLogoUrl(String logoUrl) {
         this.logoUrl = logoUrl;
+    }
+
+    public long getFreightCents() {
+        return freightCents;
+    }
+
+    public void setFreightCents(long freightCents) {
+        this.freightCents = freightCents;
+    }
+
+    public Long getFreeShippingThresholdCents() {
+        return freeShippingThresholdCents;
+    }
+
+    public void setFreeShippingThresholdCents(Long freeShippingThresholdCents) {
+        this.freeShippingThresholdCents = freeShippingThresholdCents;
     }
 
     public Instant getCreatedAt() {

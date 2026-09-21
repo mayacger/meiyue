@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch, getToken } from "@meiyue/api";
-import type { CartItem, CouponClaim, OrderSummary } from "@meiyue/types";
+import type { CartItem, CouponClaim, FreightEstimate, OrderSummary } from "@meiyue/types";
 import "./CheckoutPage.css";
 
 /**
- * 结算页（I17 体验）：店券与平台券互斥
- * POST /buyer/orders/checkout
+ * 结算页（I17 + I31）
+ * POST /buyer/orders/freight-estimate · /buyer/orders/checkout
+ * 运费：按店默认运费 / 包邮门槛；券后商品 + 运费 = 应付
  */
 export function CheckoutPage() {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ export function CheckoutPage() {
   const [platformClaims, setPlatformClaims] = useState<CouponClaim[]>([]);
   const [storeClaimId, setStoreClaimId] = useState("");
   const [platformClaimId, setPlatformClaimId] = useState("");
+  const [freight, setFreight] = useState<FreightEstimate | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -25,9 +27,18 @@ export function CheckoutPage() {
     }
     (async () => {
       try {
-        setCart(await apiFetch<CartItem[]>("/api/v1/buyer/cart"));
+        const c = await apiFetch<CartItem[]>("/api/v1/buyer/cart");
+        setCart(c);
         setStoreClaims(await apiFetch<CouponClaim[]>("/api/v1/buyer/coupons/claims"));
         setPlatformClaims(await apiFetch<CouponClaim[]>("/api/v1/buyer/platform-coupons/claims"));
+        if (c.length > 0) {
+          setFreight(
+            await apiFetch<FreightEstimate>("/api/v1/buyer/orders/freight-estimate", {
+              method: "POST",
+              json: {}
+            })
+          );
+        }
       } catch (e) {
         setError(e instanceof Error ? e.message : "加载失败");
       }
@@ -55,13 +66,16 @@ export function CheckoutPage() {
     }
   }
 
-  const total = cart.reduce((s, c) => s + c.lineTotalCents, 0);
+  const goods = cart.reduce((s, c) => s + c.lineTotalCents, 0);
+  const freightCents = freight?.freightCents ?? 0;
 
   return (
     <div className="my-checkout my-page">
       <h1 className="my-page-title my-fade-up">结算</h1>
       <p className="my-page-lead">
-        共 {cart.length} 件 · 合计 ¥{(total / 100).toFixed(2)} · <Link to="/cart">返回购物车</Link>
+        共 {cart.length} 件 · 商品 ¥{(goods / 100).toFixed(2)}
+        {freight ? ` · 运费 ¥${(freightCents / 100).toFixed(2)}` : ""} ·{" "}
+        <Link to="/cart">返回购物车</Link>
       </p>
       {cart.length === 0 ? (
         <div className="my-empty">
@@ -69,6 +83,27 @@ export function CheckoutPage() {
         </div>
       ) : (
         <div className="my-checkout__panel my-fade-up">
+          {freight ? (
+            <div className="my-checkout__freight">
+              <p>
+                <strong>运费预估</strong> · 商品 ¥{(freight.goodsCents / 100).toFixed(2)} + 运费 ¥
+                {(freight.freightCents / 100).toFixed(2)} = ¥{(freight.totalCents / 100).toFixed(2)}
+                （未扣券）
+              </p>
+              <ul>
+                {freight.shops.map((s) => (
+                  <li key={s.tenantId}>
+                    {s.storeName}：运费 ¥{(s.freightCents / 100).toFixed(2)}
+                    {s.freeShipping
+                      ? "（已包邮）"
+                      : s.thresholdCents != null
+                        ? `（满 ¥${(s.thresholdCents / 100).toFixed(0)} 包邮）`
+                        : ""}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
           <p className="my-hint">券规则：店券与平台券互斥，不可同时选择</p>
           <label>
             店券

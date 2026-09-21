@@ -23,3 +23,17 @@
   color: var(--my-muted);
   margin: 0;
 }
+
+.my-checkout__freight {
+  padding: 0.85rem 1rem;
+  background: rgba(15, 61, 56, 0.06);
+  border-radius: 10px;
+  font-size: 0.92rem;
+}
+
+.my-checkout__freight ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  color: var(--my-muted);
+}
+

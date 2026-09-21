@@ -96,6 +96,13 @@ export default function MinePage() {
             <Button
               className="btn ghost"
               size="mini"
+              onClick={() => Taro.navigateTo({ url: "/pages/browse-history/index" })}
+            >
+              浏览足迹
+            </Button>
+            <Button
+              className="btn ghost"
+              size="mini"
               onClick={() => Taro.navigateTo({ url: "/pages/coupons/index" })}
             >
               领券中心

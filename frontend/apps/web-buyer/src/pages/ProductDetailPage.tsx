@@ -14,15 +14,16 @@ interface Review {
 }
 
 /**
- * 商品详情（I20 视觉打磨）
- * GET /products/:id · /products/:id/reviews · POST 加购
- * 加载态 / 空评价 / 品牌排版
+ * 商品详情（I20 + I30）
+ * GET /products/:id · /products/:id/reviews · /products/:id/related
+ * 登录态：POST /buyer/browse-history/{id} 记足迹 · 收藏/加购
  */
 export function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState<ProductSummary | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [related, setRelated] = useState<ProductSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,13 +34,17 @@ export function ProductDetailPage() {
     setError(null);
     Promise.all([
       fetch(`/api/v1/products/${id}`).then((r) => r.json()),
-      fetch(`/api/v1/products/${id}/reviews`).then((r) => r.json())
+      fetch(`/api/v1/products/${id}/reviews`).then((r) => r.json()),
+      fetch(`/api/v1/products/${id}/related?limit=8`).then((r) => r.json())
     ])
-      .then(([prod, rev]) => {
+      .then(([prod, rev, rel]) => {
         if (!prod.success) throw new Error(prod.message);
         setProduct(prod.data);
         if (rev.success) setReviews(rev.data);
+        if (rel.success) setRelated(rel.data || []);
         if (getToken()) {
+          // I30：记录浏览足迹（失败静默）
+          apiFetch(`/api/v1/buyer/browse-history/${id}`, { method: "POST" }).catch(() => undefined);
           apiFetch<{ favorited: boolean }>(`/api/v1/buyer/favorites/${id}/status`)
             .then((s) => setFavorited(s.favorited))
             .catch(() => setFavorited(false));
@@ -161,6 +166,20 @@ export function ProductDetailPage() {
                 <strong>★{r.rating}</strong>
                 <span>{r.content}</span>
                 {r.sellerReply ? <div className="my-muted">商家回复：{r.sellerReply}</div> : null}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+      {!loading && related.length > 0 ? (
+        <section className="my-detail__related my-fade-up">
+          <h2>相关推荐</h2>
+          <p className="my-muted">同店 / 同类目在售</p>
+          <ul className="my-detail__related-list">
+            {related.map((p) => (
+              <li key={p.id}>
+                <Link to={`/products/${p.id}`}>{p.title}</Link>
+                <span>¥{((p.skus[0]?.priceCents ?? 0) / 100).toFixed(2)}</span>
               </li>
             ))}
           </ul>

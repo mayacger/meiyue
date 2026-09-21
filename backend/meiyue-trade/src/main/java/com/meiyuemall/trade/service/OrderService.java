@@ -52,6 +52,7 @@ public class OrderService {
     private final String couponStackingMode;
     private final NotificationPublisher notificationPublisher;
     private final SellerOwnerLookup sellerOwnerLookup;
+    private final FreightService freightService;
 
     public OrderService(
             CartItemRepository cartItemRepository,
@@ -63,7 +64,8 @@ public class OrderService {
             PlatformCouponService platformCouponService,
             @org.springframework.beans.factory.annotation.Value("${meiyue.coupon.stacking:MUTUAL_EXCLUSIVE}") String couponStackingMode,
             NotificationPublisher notificationPublisher,
-            SellerOwnerLookup sellerOwnerLookup
+            SellerOwnerLookup sellerOwnerLookup,
+            FreightService freightService
     ) {
         this.cartItemRepository = cartItemRepository;
         this.orderRepository = orderRepository;
@@ -75,6 +77,7 @@ public class OrderService {
         this.couponStackingMode = couponStackingMode;
         this.notificationPublisher = notificationPublisher;
         this.sellerOwnerLookup = sellerOwnerLookup;
+        this.freightService = freightService;
     }
 
     @Transactional
@@ -156,6 +159,21 @@ public class OrderService {
             order.setTotalCents(total);
             orderRepository.save(order);
         }
+
+        // I31：券后商品金额 + 按店运费
+        long goodsCents = total;
+        var freightEst = freightService.estimateFromLines(
+                order.getItems().stream()
+                        .map(i -> new FreightService.Line(i.getTenantId(), i.getLineTotalCents()))
+                        .toList()
+        );
+        // 运费按券前各店小计估算（MVP）；包邮门槛对照行小计
+        long freightCents = freightEst.freightCents();
+        order.setGoodsCents(goodsCents);
+        order.setFreightCents(freightCents);
+        total = goodsCents + freightCents;
+        order.setTotalCents(total);
+        orderRepository.save(order);
 
         // I9：Redis 延迟关单（DB 扫描仍作兜底）
         delayTaskPort.schedule(DelayTaskPort.TYPE_ORDER_EXPIRE, String.valueOf(order.getId()), order.getPayExpireAt());
@@ -394,6 +412,32 @@ public class OrderService {
         return p.getTenantId();
     }
 
+    /**
+     * I31：当前购物车运费预估（登录买家）。
+     */
+    @Transactional(readOnly = true)
+    public com.meiyuemall.trade.dto.FreightEstimateResponse estimateFreightForCart(List<Long> cartItemIds) {
+        Long buyerId = SecurityUtils.requirePrincipal().getUserId();
+        List<CartItem> cartItems = cartItemRepository.findByBuyerUserIdOrderByUpdatedAtDesc(buyerId);
+        if (cartItemIds != null && !cartItemIds.isEmpty()) {
+            cartItems = cartItems.stream().filter(c -> cartItemIds.contains(c.getId())).toList();
+        }
+        List<FreightService.Line> lines = new ArrayList<>();
+        for (CartItem cartItem : cartItems) {
+            ProductSku sku = productSkuRepository.findById(cartItem.getSkuId())
+                    .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "SKU 不存在"));
+            Product product = sku.getProduct();
+            if (product == null) {
+                continue;
+            }
+            lines.add(new FreightService.Line(
+                    product.getTenantId(),
+                    sku.getPriceCents() * cartItem.getQuantity()
+            ));
+        }
+        return freightService.estimateFromLines(lines);
+    }
+
     private OrderResponse toResponse(Order order, String paymentNo) {
         List<OrderItemResponse> items = order.getItems().stream()
                 .map(i -> new OrderItemResponse(
@@ -406,6 +450,8 @@ public class OrderService {
                 order.getOrderNo(),
                 order.getStatus().name(),
                 order.getTotalCents(),
+                order.getGoodsCents(),
+                order.getFreightCents(),
                 order.getPayExpireAt().toString(),
                 order.getPaidAt() == null ? null : order.getPaidAt().toString(),
                 items,

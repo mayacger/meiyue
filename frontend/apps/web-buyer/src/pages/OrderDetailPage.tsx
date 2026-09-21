@@ -42,6 +42,9 @@ interface Order {
   id: number;
   orderNo: string;
   status: string;
+  totalCents?: number;
+  goodsCents?: number | null;
+  freightCents?: number;
   items: OrderItem[];
 }
 
@@ -104,6 +107,7 @@ export function OrderDetailPage() {
       await apiFetch("/api/v1/buyer/reviews", {
         method: "POST",
         json: {
+          orderId,
           orderItemId: Number(reviewItemId),
           rating: Number(rating),
           content
@@ -149,6 +153,14 @@ export function OrderDetailPage() {
       </p>
       <h1>{order?.orderNo ?? `订单 #${id}`}</h1>
       <p>状态：{order?.status}</p>
+      {order?.totalCents != null ? (
+        <p className="my-muted">
+          应付 ¥{(order.totalCents / 100).toFixed(2)}
+          {order.goodsCents != null
+            ? `（商品 ¥${(order.goodsCents / 100).toFixed(2)} + 运费 ¥${((order.freightCents ?? 0) / 100).toFixed(2)}）`
+            : ""}
+        </p>
+      ) : null}
       {loading ? <Skeleton rows={4} /> : null}
       {error ? <p className="my-error">{error}</p> : null}
       {msg ? <p className="my-ok">{msg}</p> : null}

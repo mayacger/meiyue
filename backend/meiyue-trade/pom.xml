@@ -23,6 +23,10 @@
     </dependency>
     <dependency>
       <groupId>com.meiyuemall</groupId>
+      <artifactId>meiyue-tenant</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.meiyuemall</groupId>
       <artifactId>meiyue-payment</artifactId>
     </dependency>
     <dependency>

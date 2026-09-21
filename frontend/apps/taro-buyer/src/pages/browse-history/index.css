@@ -1,0 +1,66 @@
+.page {
+  padding: 24px;
+  min-height: 100vh;
+  background: #f7f6f3;
+}
+
+.brand {
+  display: block;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  color: #5a6b66;
+  margin-bottom: 4px;
+}
+
+.h1 {
+  display: block;
+  font-size: 28px;
+  font-weight: 600;
+  color: #0f3d38;
+  margin-bottom: 20px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(15, 61, 56, 0.1);
+}
+
+.info {
+  flex: 1;
+}
+
+.title {
+  display: block;
+  font-size: 16px;
+  color: #1a2e2b;
+  margin-bottom: 4px;
+}
+
+.price {
+  font-size: 15px;
+  color: #1a4d45;
+  font-weight: 600;
+}
+
+.btn.ghost {
+  background: transparent !important;
+  color: #1a4d45 !important;
+  border: 1px solid #1a4d45 !important;
+}
+
+.err {
+  color: #8b2e26;
+  margin-bottom: 12px;
+  display: block;
+}
+
+.muted.empty {
+  display: block;
+  text-align: center;
+  padding: 48px 0;
+  color: #5a6b66;
+}
